@@ -60,7 +60,7 @@ Currently Miril is installable only from C<CPAN>. Simply run C<install Miril> fr
 
 =head2 Create a cgi script
 
-Once you have installed Miril, create a cgi script named C<'miril.pl'> or C<'miril.cgi'> with the following content:
+Once you have installed Miril, create a cgi script named C<miril.pl> or C<miril.cgi> with the following content:
 
   #!usr/bin/perl
   
@@ -93,7 +93,7 @@ A minimal configuration file has the following content:
 
     <http_dir></http_dir>
     <files_http_dir>/files</files_http_dir>
-    <domain>http://www.mechanicalrevolution.com</domain>
+    <domain>http://www.example.com</domain>
 
     <secret>Some secret line</secret>
 
@@ -225,25 +225,187 @@ Miril allows you to create special pages which combine data from multiple items 
   ...
   </xml>
 
+=over
+
+=item id
+
+A unique alphanumeric string identifying the list.
+
+=item template
+
+The template file Miril will use to create this list.
+
+=item location
+
+The location of the file, relative to C<output_path>, where Miril will write this list.
+
+=item match
+
+The C<match> elemement is used to determine which items are included in the list. The filtering criteria are:
+
+=over 2
+
+=item type
+
+Only return items with this type id.
+
+=item author
+
+Only return items with the specified author.
+
+=item topic
+
+Only return items with the specified topic id.
+
+=item last
+
+Only return the N most recent items matching the above criteria.
+
+=back
+
+Only published items can be included in the list (i.e. items whose status is C<published> and not C<draft>).
+
+=back
+
 =head3 Specifying authors
 
+Miril allows you to specify the author of each post. The list of authors is specified in the confuguration file as follows:
 
+  <xml>
+  ...
+
+    <authors>
+      <author>J. R. R. Tolkien</author>
+      <author>J. K. Rowling</author>
+    </authors>
+
+  ...
+  </xml>
+
+Note that any registered user can specify any author name for any post, so this is used only to display post information in the published site rather than to control access. This is part of Miril's design philosophy (trusted team).
 
 =head2 Create a users file
 
+You need a file with information about users and passwords in order to run Miril. The location of the users file is specified in the C<user_config> option in the main configuration file. Currently only XML is supported as the configuration file format. The structure is as follows:
+
+  <xml>
+    <user>
+      <name>J. R. R. Tolkien</name>
+      <password>123456</password>
+      <username>tolkien</username>
+    </user>
+    <user>
+      <name>J. K. Rowling</name>
+      <password>123456</password>
+      <username>rowling</username>
+    </user>
+  </xml>
+
+Passwords can be stored either in plain text, or encrypted (using the MD5 algorithm). When you create a new user, you initially specify their password in plain text and them tell them to log in with this password but change it immediately afterwards. When a password is changed using Miril's user interface, it  will be stored encrypted in the above XML file. Similarly, if a user has forgotten their password, you can temporarily reset it manually to a plain-text password and ask them to change it again. 
+
+Miril is not accessible to unregistered users. All registered users have identical permissions and can edit and publish all types of content.
 
 =head2 Create your output templates
+
+Once the configuration and users files have been set up, you can run Miril and edit content. In order to publish content, however, you need to provide the templates which will be used to render your pages. The templates are located in the directory specified by the C<tmpl_path> option in the configuration file, and must contain all the templates specified when configuring content types and lists, as well as any additional templates referenced by them (such as headers and footers). Currently the only supported template format is L<HTML::Template> with L<HTML::Template::Plugin::Dot>. The templates are initialised with the C<die_on_bad_params> option set to false, and the C<global_vars> option set to true.
+
+Each template used to generate a page of a certain content type is passed an C<item> paremeter, which is an object containing all information about the item being rendered. The structure of the C<item> object is as follows:
+
+=over
+
+=item item.title
+
+The title of the item.
+
+=item item.author
+
+The author of the item.
+
+=back
+
+Each template used to generate a list is passed an C<items> paremeter, which is a list of objects containing all information about the items being rendered. The structure of those objects is the same as of the C<item> objects described above.
+
+Additionally, each template, whether for a content type or a list, is passed a C<cfg> parameter, which is a copy of the Miril configuration object. The actual structure of this object depends on the what you have in your configuration file.
 
 =head1 USER INTERFACE
 
 Once you have configured Miril, you can access it by typing the url of the cgi script you created, e.g. C<http://www.examle.com/cgi-bin/miril.pl>. Miril's user interface has the following elements:
 
+=head2 Entries
+
+This is the main screen. It displays a list of all content entries. It provides links to search entries or to post a new entry. 
+
+=head2 Files
+
+Displays a list of all files the user has uploaded and a link to a file upload form.
+
+=head2 Edit Item
+
+This screen is displayed when creating a new item or when modifying an existing one. Most of the options should be self explanatory, but there are a few things to keep in mind:
+
+=over 
+
+=item * 
+
+The ID field is an aplphanumeric string which servers as an unique id for this item. Future versions may create this id automatically and hide it from the user altogether. It may be useful, however, to specify it manually, since this id is used to generate the url of the output file (usually by attacing C<.html> at the end) and the user may want to have control over the url for SEO purposes.
+
+=item *
+
+The status field has two options - C<draft> and C<published>. Items marked as C<draft> will be available for viewing and editing from Miril's UI, but will not be published to the live website. 
+
+=item * 
+
+The item text is run through a filter before publishing. Currently only Markdown is available via the L<Text::MultiMarkdown> module. 
+
+Additionally, you can break your post into a teaser and full text by inserting the C<E<lt>!-- BREAK --E<gt>> string somewhere in the item text. The content before the break mark will be available in the C<teser> property of the C<item> object passed to your templates.
+
+=back
+
+=head1 CAVEATS
+
+=over
+
+=item *
+
+There are no tests yet. 
+
+=item *
+
+The code is currently pretty messy - this is still an alpha release! 
+
+=item *
+
+The API is going to be changing a lot before the 1.0 release, so be sure to keep up with the development process (see L</"SUPPORT"> below) if you plann to use Miril at this stage. Things that are going to change include the structure of the configuration file, the structure of the C<item> objects, and the API for extending Miril (which has not been documented yet anyway).
+
 =head1 SUPPORT
+
+=head2 Website
+
+The Miril website will be located at L<http://www.miril.org>.
 
 =head2 Bugs and feature requests
 
+Please use the Github issue tracker at L<http://github.com/pshangov/miril/issues> to report bugs and request features.
+
 =head2 Mailing list
+
+I will probably set up a group at Google Groups soon. In the meanwhile, contact me directly by email for any questions or help.
 
 =head2 Repository
 
+Miril is hosted on Github at L<http://github.com/pshangov/miril>.
+
+=head1 AUTHOR
+
+Peter Shangov, C<< <pshangov at yahoo.com> >>
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2009 Peter Shangov.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
 
