@@ -6,5 +6,6 @@ _build*
 pm_to_blib*
 *.tar.gz
 .lwpcookies
+*.swp
 Miril-*
 cover_db
