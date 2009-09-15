@@ -1,0 +1,249 @@
+=head1 NAME
+
+Miril::Manual - Why and how to use Miril, the static content management sytem.
+
+=head2 WHAT IS SPECIAL ABOUT MIRIL
+
+=over
+
+=item * 
+
+Miril is written in perl and uses the L<CGI::Application> framework. 
+
+=item * 
+
+Miril stores your data in a backend (text files, a database, etc.) and publishes it to static pages. Unlike homegrown static publishing solutions (e.g. scripts using the Template Toolkit), Miril provides a nice user interface for editing content.
+
+=item * 
+
+Miril has been designed from the very start to be extremely easy to deploy. The main distribution only has pure-perl dependencies. The immediate plans include bundling all prerequisites in a single file and shipping Miril as a standalone cgi script, to that installing on a typical shared host should be a no-brainer.
+
+=item * 
+
+Miril has been designed with small to medium-sized websites in mind, i.e. websites with hundreds of pages as opposed to thousands of pages. If you have a typical small website such as a corporate website or a personal blog Miril may be a better deal for you than full-blown content management systems since it is faster to deploy, easier to manage, and generally has less administrative overhead both for the site administrator and for the users.
+
+=item * 
+
+Miril has a user interface that has been deliberately kept extremely simple and uncluttered. The goal is for the end users of Miril (those in charge of managing content) to require little or no training to start using it. This means that some of the administrative tasks (such as user management and adding special types of pages) can only be performed by editing the configuration files and templates manually. For a similar reason, Miril also takes a very simplistic approach towards access management and does not provide roles or complex permissions. In fact, Miril has been designed to be used in teams where 1) users generally can trust each other and complicated access management is not necessary and 2) there is at least one tech-savvy user who can take care of the occasional administrative tasks.
+
+=item * 
+
+Miril is extensible. You can (or at least you will be able to in the near future) choose between different storage backends (or models), different templating systems, etc.
+
+=back
+
+=head1 DEPLOYMENT OPTIONS
+
+Miril is run as a cgi script. This means that:
+
+=over
+
+=item *
+
+On a shared host, you can run Miril from your C<cgi-bin> directory. It will run slower than in a C<mod_perl> environment, but since Miril will be used only when managing content this should not be a problem.
+
+=item *
+
+Of course, if you have sufficient control over your environment and the load on Miril demands it, you can accelerate Miril by running it under C<FastCGI> or C<mod_perl>.
+
+=item *
+
+Because Miril ultimately produces static content only, you can run it from your local machine and then synchronize your local output directory with the web server. This way you can manage websites on servers that don't even have C<perl> installed, or where installing Miril would be difficult.
+
+=back
+
+=head1 INSTALLATION
+
+Currently Miril is installable only from C<CPAN>. Simply run C<install Miril> from your favourite C<CPAN> shell. 
+
+=head1 CONFIGURATION
+
+=head2 Create a cgi script
+
+Once you have installed Miril, create a cgi script named C<'miril.pl'> or C<'miril.cgi'> with the following content:
+
+  #!usr/bin/perl
+  
+  use strict;
+  use warnings;
+  use Miril;
+
+  my $app = Miril->new( PARAMS => { cfg_file => 'miril.config' } );
+  $app->run;
+
+Change the shebang line to wherever your C<perl> is located and change C<miril.config> to wherever you configuration file (see below) is located. The configuration file path can be relative to the location of the cgi script. If this option is not provided, Miril will try to load a file named C<miril.config> and located in the same directory as the cgi script itself. Put that script in your C<cgi-bin> directory.
+
+=head2 Create a configuration file
+
+Make sure you create your configuration file in the location that you chose above. Currently only XML is supported for the configuration file format.
+
+=head3 Basic configuration options
+
+A minimal configuration file has the following content:
+
+  <xml>
+  
+    <data_path>../miril/data</data_path>
+    <tmpl_path>../miril/tmpl</tmpl_path>
+    <cache_path>../miril/cache</cache_path>
+    <cfg_path>../miril/cfg</cfg_path>
+  
+    <files_path>../htdocs/files</files_path>
+    <output_path>../htdocs</output_path>
+
+    <http_dir></http_dir>
+    <files_http_dir>/files</files_http_dir>
+    <domain>http://www.mechanicalrevolution.com</domain>
+
+    <secret>Some secret line</secret>
+
+  </xml>
+
+The options are explained here:
+
+=over
+
+=item data_path
+
+This is where Miril stores your content when it uses a file-based model (such as L<Miril::Model::File::XMLTPP>, which is the only model currently available). Miril must have read-write access to this directory.
+
+=item tmpl_path
+
+This is where you are going to put all the templates that Miril will use to build your website (see below). Miril must have read access to this directory.
+
+=item cache_path
+
+Miril may use this directory to store random information. It must have read-write access.
+
+=item user_config
+
+This is the location of the file with information about Miril's users. Miril must have read-write access to this file. You may want to put in in the same directory with your main configuration file.
+
+=item files_path
+
+This is the directory where files (e.g. images, pdf files, etc.) uploaded by Miril users will be stored. Miril must have read-write access to this directory. In a typical installation this directory will be somewhere below your server's document root.
+
+=item output_path
+
+This is the directory where Miril will place all the output files it produces. In a typical installation this directory will be somewhere below your server's document root. 
+
+=item http_root
+
+This is the base URL of your website and Miril will use this string to prefix all URL's that it produces. If your website is located at C<http://www.example.com>, you would set C<http_root> to C<http://www.example.com> to produce fully qualified URL's. If you want your website to have relative URL's, you need to leave this option empty. If your website is located at C<http://www.example.com/mywebsite>, you would set C<http_root> to C<http://www.example.com/mywebsite> for fully qualified URL's and to C</mywebsite> for relative URL's.
+
+=item files_http_root
+
+This option specifies the base URL for accessing the files managed by the C<files_path> option above. It follows the same rules as C<http_root>.
+
+=item domain
+
+If you have specified a relative URL in C<http_root> above, use this option to provide the domain name of your website for cases where fully qualified URL's are needed, such as RSS feeds. Leave empty if you have set C<http_root> to a fully-qualified URL.
+
+=item secret
+
+A random phrase used for security purposes when encrypting authentication data stored in cookies (required by L<CGI::Applciation::Plugin::Authentication::Cookie>).
+
+=back
+
+=head3 Configuring content types
+
+Next you may need to configure your content types. This is what a basic configuration looks like:
+
+  <xml>
+  ...
+
+    <types>
+      <type>
+        <name>Story</name>
+        <id>story</id>
+        <location>story</location>
+        <template>item.tmpl</template>
+      </type>
+      <type>
+        <name>Page</name>
+        <id>page</id>
+        <location></location>
+        <template>page.tmpl</template>
+      </type>
+    </types>
+
+  ...
+  </xml>
+
+You will get these two content types by default if you have not specified your own content types in the configuration file.
+
+=over
+
+=item name
+
+The user-friendly name of the content type, as it would appear to the end user.
+
+=item id
+
+A unique alphanumeric string identifying the content type, used internally by Miril.
+
+=item location
+
+The location, relative to C<output_path>, where Miril will write entries of this content type.
+
+=item template
+
+The template file Miril will use to create html pages of this content type.
+
+=back
+
+=head3 Creating lists
+
+Miril allows you to create special pages which combine data from multiple items - e.g. a list of articles, a RSS feed, etc. This is how you configure lists:
+
+  <xml>
+  ...
+
+    <lists>
+      <list>
+        <id>news</id>
+        <template>news.tmpl</template>
+        <location>news.html</location>
+        <match>
+          <type>story</type>
+          <status>published</status>
+          <last>6</last>
+        </match>
+      </list>
+      <list>
+        <id>feed</id>
+        <template>atom.tmpl</template>
+        <location>atom.xml</location>
+        <match>
+          <type>news</type>
+          <status>published</status>
+          <last>10</last>
+        </match>
+      </list>
+    </lists>
+
+  ...
+  </xml>
+
+=head3 Specifying authors
+
+
+
+=head2 Create a users file
+
+
+=head2 Create your output templates
+
+=head1 USER INTERFACE
+
+Once you have configured Miril, you can access it by typing the url of the cgi script you created, e.g. C<http://www.examle.com/cgi-bin/miril.pl>. Miril's user interface has the following elements:
+
+=head1 SUPPORT
+
+=head2 Bugs and feature requests
+
+=head2 Mailing list
+
+=head2 Repository
+
+
