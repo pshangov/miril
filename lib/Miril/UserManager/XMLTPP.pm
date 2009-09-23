@@ -18,6 +18,7 @@ sub new {
 
 	my $tpp = XML::TreePP->new();
 	$tpp->set( indent => 2 );
+	$tpp->set( force_array => ['user'] );
     my $tree;
 
 	try {
@@ -32,7 +33,6 @@ sub new {
 	$self->{tree} = $tree;
 	$self->{tpp} = $tpp;
 	$self->{xml_file} = $cfg->users_data;
-	$self->{admins} = $cfg->admins->username;
 
 	return $self;
 }
@@ -130,13 +130,6 @@ sub delete_user {
 	};
 }
 
-sub is_admin {
-	my $self = shift;
-	my $username = shift;
-
-	return ( grep {$username eq $_} $self->admins ? 1 : 0 );
-}
-
 sub encrypt {
 	my $self = shift;
 	my $password = shift;
@@ -151,7 +144,6 @@ sub encrypt {
 ### ACCESSORS ###
 
 sub users    { @{ shift->{users} };  }
-sub admins   { @{ shift->{admins} }; }
 sub tree     { shift->{tree};        }
 sub tpp      { shift->{tpp};         }
 sub xml_file { shift->{xml_file};    }

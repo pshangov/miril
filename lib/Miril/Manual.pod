@@ -115,9 +115,9 @@ This is where you are going to put all the templates that Miril will use to buil
 
 Miril may use this directory to store random information. It must have read-write access.
 
-=item user_config
+=item cfg_path
 
-This is the location of the file with information about Miril's users. Miril must have read-write access to this file. You may want to put in in the same directory with your main configuration file.
+This is the directory where the file with information about Miril's users will be located. Miril must have read-write access to this file. You may want to put in in the same directory with your main configuration file.
 
 =item files_path
 
@@ -286,7 +286,7 @@ Note that any registered user can specify any author name for any post, so this 
 
 =head2 Create a users file
 
-You need a file with information about users and passwords in order to run Miril. The location of the users file is specified in the C<user_config> option in the main configuration file. Currently only XML is supported as the configuration file format. The structure is as follows:
+You need a file with information about users and passwords in order to run Miril. The file must be named C<usres.xml> and be located in the directory specified by the C<cfg_path> option in the main configuration file. Currently only XML is supported as the configuration file format. The structure is as follows:
 
   <xml>
     <user>
@@ -315,17 +315,59 @@ Each template used to generate a page of a certain content type is passed an C<i
 
 =item item.title
 
-The title of the item.
+The title of the post.
+
+=item item.id
+
+The alphanumerical id of the post.
+
+=item item.teaser
+
+The teaser of the post, rendered into html.
+
+=item item.text
+
+The full text of the post, rendered into html.
+
+=item item.type
+
+The type of the post (e.g. "page").
+
+=item item.url
+
+The url at which the post will be accessible (e.g. "/news/my_first_post.html").
+
+=item item.full_url
+
+Contains the post url preceded by whatever is in the C<domain> configuration option (e.g. "http://www.example.com/news/my_first_post.html").
 
 =item item.author
 
-The author of the item.
+The author of the post.
+
+=item item.published.epoch
+
+The time when the post was published, in epoch format (e.g. "1249899886").
+
+=item item.published.epoch
+
+The time when the post was published, in iso format (e.g. "2009-08-10T13:24:46FLE Daylight Time").
+
+=item item.published.num
+
+The date when the post was published, in numeric format (e.g. "2009.08.10").
+
+=item item.published.print
+
+The date when the post was published, in word format (e.g. "Monday, 10 Aug 2009").
+
+=item item.modified.xxx
+
+Same as above, but refers to the time when the post was last modified.
 
 =back
 
 Each template used to generate a list is passed an C<items> paremeter, which is a list of objects containing all information about the items being rendered. The structure of those objects is the same as of the C<item> objects described above.
-
-Additionally, each template, whether for a content type or a list, is passed a C<cfg> parameter, which is a copy of the Miril configuration object. The actual structure of this object depends on the what you have in your configuration file.
 
 =head1 USER INTERFACE
 
@@ -389,7 +431,7 @@ Please use the Github issue tracker at L<http://github.com/pshangov/miril/issues
 
 =head2 Mailing list
 
-I will probably set up a group at Google Groups soon. In the meanwhile, contact me directly by email for any questions or help.
+Support can be obtained via the Google Groups page: L<http://groups.google.com/group/miril>.
 
 =head2 Repository
 

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xml>
+  <item>
+    <author />  <filename>..\miril_example\data\lorem_ipsum_dolor </filename>
+    <id>lorem_ipsum_dolor</id>
+    <modified>
+      <epoch>1253632123</epoch>
+      <iso>2009-09-22T18:08:43FLE Daylight Time</iso>
+      <num>2009.09.22</num>
+      <print>Tuesday, 22 Sep 2009</print>
+      <slash>2009/09/22 18:08</slash>
+    </modified>
+    <published>
+      <epoch>1253632123</epoch>
+      <iso>2009-09-22T18:08:43FLE Daylight Time</iso>
+      <num>2009.09.22</num>
+      <print>Tuesday, 22 Sep 2009</print>
+    </published>
+    <status>published</status>
+    <title>Lorem Ipsum Dolor </title>
+    <topic />  <type>news</type>
+  </item>
+  <item>
+    <author />  <filename>..\miril_example\data\contacts</filename>
+    <id>contacts</id>
+    <modified>
+      <epoch>1253631624</epoch>
+      <iso>2009-09-22T18:00:24FLE Daylight Time</iso>
+      <num>2009.09.22</num>
+      <print>Tuesday, 22 Sep 2009</print>
+      <slash>2009/09/22 18:00</slash>
+    </modified>
+    <published>
+      <epoch>1253631608</epoch>
+      <iso>2009-09-22T18:00:08FLE Daylight Time</iso>
+      <num>2009.09.22</num>
+      <print>Tuesday, 22 Sep 2009</print>
+    </published>
+    <status>published</status>
+    <title>Contacts</title>
+    <topic />  <type>page</type>
+  </item>
+  <item>
+    <author />  <filename>..\miril_example\data\index</filename>
+    <id>index</id>
+    <modified>
+      <epoch>1253631441</epoch>
+      <iso>2009-09-22T17:57:21FLE Daylight Time</iso>
+      <num>2009.09.22</num>
+      <print>Tuesday, 22 Sep 2009</print>
+      <slash>2009/09/22 17:57</slash>
+    </modified>
+    <published>
+      <epoch>1253630481</epoch>
+      <iso>2009-09-22T17:41:21FLE Daylight Time</iso>
+      <num>2009.09.22</num>
+      <print>Tuesday, 22 Sep 2009</print>
+    </published>
+    <status>published</status>
+    <title>Start Page</title>
+    <topic />  <type>page</type>
+  </item>
+  <item>
+    <author />  <id>aenean_eu_lorem</id>
+    <status>published</status>
+    <title>Aenean Eu Lorem</title>
+    <topic />  <type>news</type>
+  </item>
+</xml>

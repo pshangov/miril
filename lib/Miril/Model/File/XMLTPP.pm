@@ -21,22 +21,28 @@ sub new {
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['item'] );
 	$tpp->set( indent => 2 );
-    my $tree = $tpp->parsefile( $cfg->xml_data ) or miril_die($!);
-	my @items = map { dao $_ } @{ $tree->{xml}->{item} };
+    my ($tree, @items);
+	
+	if (-e $cfg->xml_data) {
+		$tree = $tpp->parsefile( $cfg->xml_data ) or miril_die($!);
+		@items = map { dao $_ } @{ $tree->{xml}{item} };
+	} else {
+		$tree = {};
+	}
 
 	my $self = bless {}, $class;
-	$self->{data_location} = $cfg->data_location;
+	$self->{data_path} = $cfg->data_path;
 	$self->{items} = \@items;
 	$self->apply_dates;
 
-	my @sorted_items = sort { $a->{published}->{epoch} < $b->{published}->{epoch} } @{ $self->{items} };
+	my @sorted_items = sort { $a->{published}{epoch} < $b->{published}{epoch} } @{ $self->{items} };
 	$self->{items} = \@sorted_items;
 
 	$self->{tree} = $tree;
 	$self->{tpp} = $tpp;
 	$self->{xml_file} = $cfg->xml_data;
 
-	$self->{topics} = $cfg->topics->topic;
+	$self->{topics} = $cfg->{topics}{topic};
 	$self->{cfg} = $cfg;
 
 	return $self;
@@ -55,10 +61,11 @@ sub get_item {
 
 		$match->{topic} = first { $_->{id} eq $match->{topic} } $self->topics;
 		
-		my $current_type = first { $_->m_name eq $match->{type} } $self->cfg->types->type;
+		my $current_type = first { $_->id eq $match->{type} } $self->cfg->types->type;
 		my @dirs = splitdir($current_type->location);
 		my $file_to_http_dir = join "/", @dirs;
-		$match->{target_filename} = $self->cfg->http_dir . "/" . $file_to_http_dir . "/" . $match->{id} . ".html";
+		$match->{url} = $self->cfg->http_dir . "/" . $file_to_http_dir . $match->{id} . ".html";
+		$match->{full_url} = $self->cfg->domain . $match->{url};
 		$match->{domain} = $self->cfg->domain;
 
 		my $item = dao $match;
@@ -115,7 +122,7 @@ sub save {
 		
 		# delete the old file if we have changed the id
 		if ($item->o_id ne $item->id) {
-			unlink($self->data_location . '/' . $item->o_id) 
+			unlink($self->data_path . '/' . $item->o_id) 
 				or miril_warn("Cannot delete old version of renamed item", $!);
 		}	
 
@@ -136,12 +143,14 @@ sub save {
 	# update the xml file
 	my $new_tree = $self->tree;
 	$new_tree->{xml}->{item} = \@items;
+	require Data::Dumper;
+	#warn Data::Dumper::Dumper($new_tree);
 	$self->{tree} = $new_tree;
 	$self->tpp->writefile($self->xml_file, $new_tree) 
 		or miril_die("Cannot update metadata file", $!);
 
 	# update the data file
-	my $fh = IO::File->new( File::Spec->catfile($self->data_location, $item->id), "w")
+	my $fh = IO::File->new( File::Spec->catfile($self->data_path, $item->id), "w")
 		or miril_die("Cannot update data file", $!);
 	$fh->print($item->text)
 		or miril_die("Cannot update data file", $!);;
@@ -170,7 +179,7 @@ sub delete {
 	$self->tpp->writefile($self->xml_file, $new_tree) 
 		or miril_die("Cannot update metadata file after deletion", $!);
 
-	unlink( File::Spec->catfile($self->data_location, $id) )
+	unlink( File::Spec->catfile($self->data_path, $id) )
 		or miril_die("Cannot delete data file", $!);
 }
 
@@ -182,7 +191,7 @@ sub apply_dates {
 	my @week_abbr = qw( Monday Tuesday Wednesday Thursday Friday Saturday Sunday );
 
 	map {
-		my $filename = File::Spec->catfile($self->data_location . '/' . $_->{id});
+		my $filename = File::Spec->catfile($self->data_path . '/' . $_->{id});
 		my $stat = stat($filename);
 		$_->{filename} = $filename;
 		
@@ -212,8 +221,8 @@ sub apply_dates {
 }
 
 sub items         { @{ shift->{items} };    }
-sub topics        { @{ shift->{topics} };   }
-sub data_location { shift->{data_location}; }
+sub topics        { shift->{topics} ? @{ shift->{topics} } : undef;   }
+sub data_path     { shift->{data_path}; }
 sub tree          { shift->{tree};          }
 sub tpp           { shift->{tpp};           }
 sub cfg           { shift->{cfg};           }

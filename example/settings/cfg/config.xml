@@ -1,0 +1,70 @@
+<xml>
+
+	<!-- PATHS - CHANGE TO MATCH YOUR SETUP -->
+	<data_path>../miril_settings/data</data_path>
+	<tmpl_path>../miril_settings/tmpl</tmpl_path>
+	<cache_path>../miril_settings/cache</cache_path>
+	<cfg_path>../miril_settings/cfg</cfg_path>
+
+	<output_path>../../htdocs/miril_example</output_path>
+	<files_path>../../htdocs/miril_example/files</files_path>
+
+	<!-- URL CONSTRUCTION -->
+	<http_dir>/miril_example</http_dir>
+	<files_http_dir>/miril_example/files</files_http_dir>
+	<domain>http://www.example.com</domain>
+
+	<!-- MAKE SURE YOU CHANGE THIS! -->
+	<secret>Some secret line</secret>
+
+	<types>
+ 		<type>
+			<name>News</name>
+			<id>news</id>
+			<location></location>
+			<template>page.tmpl</template>
+		</type>
+		<type>
+			<name>Page</name>
+			<id>page</id>
+			<location></location>
+			<template>page.tmpl</template>
+		</type>
+	</types>
+
+	<lists>
+
+		<!-- THE NEWS PAGE -->
+		<list>
+			<id>news</id>
+			<template>news.tmpl</template>
+			<location>news.html</location>
+			<match>
+				<type>news</type>
+				<last>6</last>
+			</match>
+		</list>
+
+		<!-- THE NEWS ARCHIVE -->
+		<list>
+			<id>news_archive</id>
+			<template>archive.tmpl</template>
+			<location>archive.html</location>
+			<match>
+				<type>news</type>
+			</match>
+		</list>
+
+		<!-- THE ATOM FEED WITH RECENT NEWS -->
+		<list>
+			<id>feed</id>
+			<template>atom.tmpl</template>
+			<location>atom.xml</location>
+			<match>
+				<type>news</type>
+				<last>12</last>
+			</match>
+		</list>
+	</lists>
+
+</xml>

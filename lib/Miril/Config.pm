@@ -5,6 +5,7 @@ use warnings;
 
 use XML::TreePP;
 use Data::AsObject qw(dao);
+use File::Spec::Functions qw(catfile);
 
 sub new {
 	my $class    = shift;
@@ -22,6 +23,11 @@ sub new {
 
 	$cfg->{items_per_page} = 10             unless defined $cfg->{items_per_page};
 
+	$cfg->{xml_data}       = catfile($cfg->{cache_path}, 'data.xml');
+	$cfg->{latest_data}    = catfile($cfg->{cache_path}, 'latest.xml');
+	$cfg->{users_data}     = catfile($cfg->{cfg_path}, 'users.xml');
+
+	$cfg->{workflow}{status} = [qw(draft published)];
 
 	return dao $cfg;
 }

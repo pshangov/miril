@@ -77,6 +77,7 @@ my $edit = <<EndOfHTML;
 					</select>
 					</p>
 
+					<TMPL_IF NAME="has_authors">
 					<p class="edit">Author:<br>
 					<select name="author">
 					<TMPL_LOOP NAME="authors">
@@ -84,7 +85,8 @@ my $edit = <<EndOfHTML;
 					</TMPL_LOOP>
 					</select>
 					</p>
-					
+					</TMPL_IF>
+
 					<p class="edit">Status:<br>
 					<select name="status">
 					<TMPL_LOOP NAME="statuses">
@@ -93,6 +95,7 @@ my $edit = <<EndOfHTML;
 					</select>
 					</p>
 
+					<TMPL_IF NAME="has_topics">
 					<p class="edit">Topic:<br>
 					<select name="topic">
 					<TMPL_LOOP NAME="topics">
@@ -100,6 +103,7 @@ my $edit = <<EndOfHTML;
 					</TMPL_LOOP>
 					</select>
 					</p>
+					</TMPL_IF>
 
 					<p class="edit" name="text">Text:<br>
 					<textarea name="text"><TMPL_VAR NAME="text"></textarea></p>
@@ -142,6 +146,9 @@ my $files = <<EndOfHTML;
 				<b>Modified:</b> <TMPL_VAR NAME="modified">
 			</p>
 		</TMPL_LOOP>
+		<div class="pager">
+			<TMPL_VAR NAME="pager">
+		</div>
 		<button type="submit" id="x" name="action" value="delete_files">Delete selected</button>
 		</form>
 	
@@ -319,6 +326,7 @@ my $search = <<EndOfHTML;
 				</select>
 				</p>
 
+				<TMPL_IF NAME="has_authors">
 				<p class="edit">Author:<br>
 				<select name="author">
 				<TMPL_LOOP NAME="authors">
@@ -326,6 +334,7 @@ my $search = <<EndOfHTML;
 				</TMPL_LOOP>
 				</select>
 				</p>
+				</TMPL_IF>
 				
 				<p class="edit">Status:<br>
 				<select name="status">
@@ -335,6 +344,7 @@ my $search = <<EndOfHTML;
 				</select>
 				</p>
 
+				<TMPL_IF NAME="has_topics">
 				<p class="edit">Topic:<br>
 				<select name="topic">
 				<TMPL_LOOP NAME="topics">
@@ -342,6 +352,7 @@ my $search = <<EndOfHTML;
 				</TMPL_LOOP>
 				</select>
 				</p>
+				</TMPL_IF>
 
 				<button id="x" name="action" value="list">search</button>
 
@@ -430,7 +441,7 @@ my $sidebar = <<EndOfHTML;
 				<h2 class="bold">Last edited</h2>
 				<ul>
 				<TMPL_LOOP NAME="latest">
-					<li><span class="dingbat">&#x2726;</span>
+					<li><div class="dingbat">&#x2726;</div>
 						<a href="?action=view&id=<TMPL_VAR NAME="id">">
 						<TMPL_VAR NAME="title">
 						</a>
@@ -729,13 +740,16 @@ input, textarea, select, button {
 
 #sidebar li li {
 	margin: 0;
-	padding: 3px 0;
+	padding: 6px 0;
 	border-bottom: 1px dashed #D1D1D1;
+	display: block;
 }
 
 #sidebar li li a {
 	margin: 0;
-	padding-left: 10px;
+	padding-left: 1.5em;
+	display: block;
+	line-height: 20px;
 }
 
 #sidebar h2 {
@@ -931,6 +945,13 @@ div#error {
 div.entry p {
 	line-height: 1.8em;
 	font-family: Georgia,"Times New Roman",Times,serif;
+	text-align: left;
+}
+
+div.entry li {
+	line-height: 1.8em;
+	font-family: Georgia,"Times New Roman",Times,serif;
+	text-align: left;
 }
 
 div.entry h1, h2, h3 {
@@ -940,6 +961,11 @@ div.entry h1, h2, h3 {
 
 div.pager {
 	text-align: center;
+}
+
+div.dingbat {
+	float: left;
+	width: 1.5em;
 }
 
 

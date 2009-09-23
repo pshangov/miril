@@ -18,8 +18,6 @@ $VERSION = eval $VERSION;
 
 use base ("CGI::Application");
 
-use lib 'c:\Documents\Development\CGI-Cookie-Storable\lib';
-
 use CGI::Application::Plugin::Redirect        qw(redirect);
 use CGI::Application::Plugin::Forward         qw(forward);
 use CGI::Application::Plugin::Authentication  qw(authen);
@@ -43,8 +41,10 @@ use Data::Page                                qw();
 
 sub setup {
 	my $self = shift;
-	my $config_filename = shift;
+	
+	my $config_filename = $self->param('cfg_file');
 	$config_filename = 'miril.config' unless $config_filename;
+
 
     $self->mode_param('action');
     $self->run_modes(
@@ -88,7 +88,6 @@ sub setup {
 
 	$self->{cfg} = $cfg;
 
-	
 	
 	# load model
 	my $model_name = "Miril::Model::" . $self->cfg->model;
@@ -173,6 +172,7 @@ sub cgiapp_postrun {
 sub error {
 	my $self = shift;
 	my $err_msg = shift;
+	warn $err_msg;
 
 	my $tmpl = $self->load_tmpl('error');
 	return $tmpl->output;
@@ -198,40 +198,8 @@ sub list_items {
 		#published_after   => $self->query->param('published_after'),
 	);
 
-	my @current_items;
+	my @current_items = $self->paginate(@items);
 	
-	if (@items) {
-
-		if (@items > $self->cfg->items_per_page) {
-
-			my $page = Data::Page->new;
-			$page->total_entries(scalar @items);
-			$page->entries_per_page($self->cfg->items_per_page);
-			$page->current_page($self->query->param('page_no') ? $self->query->param('page_no') : 1);
-			
-			my $pager;
-			
-			if ($page->current_page > 1) {
-				$pager->{first}    = $self->generate_paged_url($page->first_page);
-				$pager->{previous} = $self->generate_paged_url($page->previous_page);
-			}
-
-			warn $page->first_page;
-
-			if ($page->current_page < $page->last_page) {
-				$pager->{'last'} = $self->generate_paged_url($page->last_page);
-				$pager->{'next'} = $self->generate_paged_url($page->next_page);
-			}
-
-			$self->{pager} = $pager;
-			@current_items = $page->splice(\@items);
-
-		} else {
-			@current_items = @items;
-		}
-		 
-	}
-
 	my $tmpl = $self->load_tmpl('list');
 	$tmpl->param('items', \@current_items);
 	return $tmpl->output;
@@ -242,10 +210,16 @@ sub search_items {
 	my $self = shift;
 	my $tmpl = $self->load_tmpl('search');
 
-	my @authors  = map +{ "cfg_author", $_ }, $self->cfg->authors->author;
+	my (@authors, @topics);
+
+	my $has_authors = 1 if $self->cfg->{authors}{author};
+	my $has_topics  = 1 if $self->cfg->{topics}{topic};
+
+	@authors  = map +{ "cfg_author", $_ }, $self->cfg->authors->author if $has_authors;
+	@topics   = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $self->cfg->topics->topic if $has_topics;
+
 	my @statuses = map +{ "cfg_status", $_ }, $self->cfg->workflow->status;
-	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->m_name }, $self->cfg->types->type;
-	my @topics   = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id },     $self->cfg->topics->topic;
+	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $self->cfg->types->type;
 
 	unshift @authors,  { cfg_author => undef };
 	unshift @statuses, { cfg_status => undef };
@@ -257,6 +231,9 @@ sub search_items {
 	$tmpl->param('types',    \@types);
 	$tmpl->param('topics',   \@topics);
 
+	$tmpl->param('has_authors', 1) if $has_authors;
+	$tmpl->param('has_topics', 1) if $has_topics;
+
 	return $tmpl->output;
 }
 
@@ -266,15 +243,26 @@ sub create_item {
 
 	my $empty_item = {};
 
-	my @authors  = map +{ "cfg_author", $_ }, $self->cfg->authors->author;
-	my @statuses = map +{ "cfg_status", $_ }, $self->cfg->workflow->status;
-	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->m_name }, $self->cfg->types->type;
-	my @topics   = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id },     $self->cfg->topics->topic;
+	my $has_authors = 1 if $self->cfg->{authors}{author};
+	my $has_topics  = 1 if $self->cfg->{topics}{topic};
+
+	if ($has_authors) {
+		my @authors  = map +{ "cfg_author", $_ }, $self->cfg->authors->author;
+		$empty_item->{authors}  = \@authors;
+	}
 	
-	$empty_item->{authors}  = \@authors;
+	if ($has_topics) {
+		my @topics = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $self->cfg->topics->topic;
+		$empty_item->{topics} = \@topics;
+	}
+	my @statuses = map +{ "cfg_status", $_ }, $self->cfg->workflow->status;
+	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $self->cfg->types->type;
+	
 	$empty_item->{statuses} = \@statuses;
 	$empty_item->{types}    = \@types;
-	$empty_item->{topics}   = \@topics;
+
+	$empty_item->{has_authors} = 1 if $has_authors;
+	$empty_item->{has_topics}  = 1 if $has_topics;
 	
 	$tmpl->param('item', [$empty_item]);
 	
@@ -286,6 +274,10 @@ sub edit_item {
 
 	my $id = $self->query->param('id');
 	my $item = $self->model->get_item($id);
+
+	my $has_authors = 1 if $self->cfg->{authors}{author};
+	my $has_topics  = 1 if $self->cfg->{topics}{topic};
+
 	
 	my $cur_author = $item->{author};
 	my $cur_status = $item->{status};
@@ -293,15 +285,38 @@ sub edit_item {
 	my $cur_type   = $item->{type};
 	
 	# the "+" instructs map to produce a list of hashrefs, see "perldoc -f map"
-	my @authors  = map +{ "cfg_author", $_, "selected", $_ eq $cur_author ? 1 : 0 }, $self->cfg->authors->author;
-	my @statuses = map +{ "cfg_status", $_, "selected", $_ eq $cur_status ? 1 : 0 }, $self->cfg->workflow->status;
-	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->m_name, "selected", $_->m_name eq $cur_type   ? 1 : 0 }, $self->cfg->types->type;
-	my @topics   = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id,     "selected", $_->id     eq $cur_topic  ? 1 : 0 }, $self->cfg->topics->topic;
+	if ($has_authors) {
+		my @authors = map +{ 
+			"cfg_author", $_, 
+			"selected", $_ eq $cur_author ? 1 : 0 
+		}, $self->cfg->authors->author;
+		$item->{authors} = \@authors;
+	}
 	
-	$item->{authors}  = \@authors;
+	if ($has_topics) {
+		my @topics = map +{ 
+			"cfg_topic", $_->name, 
+			"cfg_topic_id", $_->id, 
+			"selected", $_->id eq $cur_topic ? 1 : 0 
+		}, $self->cfg->topics->topic;
+		$item->{topics}   = \@topics;
+	}
+
+	my @statuses = map +{ 
+		"cfg_status", $_, 
+		"selected", $_ eq $cur_status ? 1 : 0 
+	}, $self->cfg->workflow->status;
 	$item->{statuses} = \@statuses;
-	$item->{topics}   = \@topics;
+	
+	my @types = map +{ 
+		"cfg_type", $_->name, 
+		"cfg_m_type", $_->id, 
+		"selected", $_->id eq $cur_type ? 1 : 0 
+	}, $self->cfg->types->type;
 	$item->{types}    = \@types;
+	
+	$item->{has_authors} = 1 if $has_authors;
+	$item->{has_topics}  = 1 if $has_topics;
 
 	my $tmpl = $self->load_tmpl('edit');
 	$tmpl->param('item', [$item]);
@@ -315,11 +330,11 @@ sub update_item {
 	my $self = shift;
 	my $item = {
 		'id'        => $self->query->param('id'),
-		'author'    => $self->query->param('author'),
+		'author'    => $self->query->param('author') ? $self->query->param('author') : undef,
 		'status'    => $self->query->param('status'),
 		'text'      => $self->query->param('text'),
 		'title'     => $self->query->param('title'),
-		'topic'     => $self->query->param('topic'),
+		'topic'     => $self->query->param('topic') ? $self->query->param('topic') : undef,
 		'type'      => $self->query->param('type'),
 		'o_id'      => $self->query->param('o_id'),
 	};
@@ -412,20 +427,22 @@ sub update_user {
 sub view_files {
 	my $self = shift;
 
-	my $files_dir = $self->cfg->files_dir;
+	my $files_path = $self->cfg->files_path;
 	my $files_http_dir = $self->cfg->files_http_dir;
 	my @files;
 	
-	opendir(my $dir, $files_dir) or miril_die($!);
-	@files = grep { -f catfile($files_dir, $_) } readdir($dir);
+	opendir(my $dir, $files_path) or miril_die($!);
+	@files = grep { -f catfile($files_path, $_) } readdir($dir);
 	closedir $dir;
+
+	my @current_files = $self->paginate(@files);
 
 	my @files_with_data = map +{ 
 		name     => $_, 
 		href     => "$files_http_dir/$_", 
-		size     => format_bytes( -s catfile($files_dir, $_) ), 
-		modified => time_format( 'yyyy/mm/dd hh:mm', $self->get_last_modified_time( catfile($files_dir, $_) ) ), 
-	}, @files;
+		size     => format_bytes( -s catfile($files_path, $_) ), 
+		modified => time_format( 'yyyy/mm/dd hh:mm', $self->get_last_modified_time( catfile($files_path, $_) ) ), 
+	}, @current_files;
 
 	my $tmpl = $self->load_tmpl('files');
 	$tmpl->param('files', [@files_with_data]);
@@ -444,7 +461,7 @@ sub upload_files {
 		my $fh = $fhs[$i];
 
 		if ($filename and $fh) {
-			my $new_filename = catfile($self->cfg->files_dir, $filename);
+			my $new_filename = catfile($self->cfg->files_path, $filename);
 			my $new_fh = IO::File->new($new_filename, "w") 
 				or miril_warn("Could not upload file", $!);
 			copy($fh, $new_fh) 
@@ -470,7 +487,7 @@ sub delete_files {
 
 	try {
 		for (@filenames) {
-			unlink( catfile($self->cfg->files_dir, $_) )
+			unlink( catfile($self->cfg->files_path, $_) )
 				or miril_warn("Couod not delete file", $!);
 		}
 	};
@@ -509,7 +526,7 @@ sub publish {
 			$item->{text} = $self->filter->to_xhtml($item->{text});
 			$item->{teaser} = $self->filter->to_xhtml($item->{teaser});
 
-			my $type = first {$_->m_name eq $item->{type}} $self->cfg->types->type;
+			my $type = first {$_->id eq $item->{type}} $self->cfg->types->type;
 			
 			my $tmpl = $self->load_user_tmpl($type->template);
 			$tmpl->param('item', $item);
@@ -527,7 +544,7 @@ sub publish {
 		}
 
 		foreach my $list ($self->cfg->lists->list) {
-			if ( $list->id eq "front_page" or $list->id eq "archive" or $list->id eq "feed" ) {
+			if ( 1 ) {
 
 				my @params = qw(
 					author
@@ -560,7 +577,7 @@ sub publish {
 				$tmpl->param('items', \@items);
 				$tmpl->param('cfg', $self->cfg);
 
-				my $new_filename = catfile($self->cfg->root_dir, $list->location);
+				my $new_filename = catfile($self->cfg->output_path, $list->location);
 
 				my $fh = IO::File->new($new_filename, "w") 
 					or miril_warn("Cannot open file $new_filename for writing", $!);
@@ -602,8 +619,8 @@ sub get_target_filename {
 	my $self = shift;
 	my ($name, $type) = @_;
 
-	my $current_type = first {$_->m_name eq $type} $self->cfg->types->type;
-	my $target_filename = catfile($self->cfg->root_dir, $current_type->location, $name . ".html");
+	my $current_type = first {$_->id eq $type} $self->cfg->types->type;
+	my $target_filename = catfile($self->cfg->output_path, $current_type->location, $name . ".html");
 
 	return $target_filename;
 }
@@ -620,14 +637,17 @@ sub get_latest {
 	
 	require XML::TreePP;
     my $tpp = XML::TreePP->new();
+	$tpp->set( force_array => ['item'] );
 	my $tree;
+	my @items;
 	
 	try { 
 		$tree = $tpp->parsefile( $self->cfg->latest_data );
+		@items = dao @{ $tree->{xml}->{item} };
 	} catch {
 		miril_warn($_);
 	};
-	my @items = dao @{ $tree->{xml}->{item} };
+	
 
 	return \@items;
 }
@@ -638,15 +658,18 @@ sub add_to_latest {
 
 	require XML::TreePP;
     my $tpp = XML::TreePP->new();
-	my $tree;
+	my $tree = {};
+	my @items;
 	
-	try { 
-		$tree = $tpp->parsefile( $self->cfg->latest_data );
-	} catch {
-		miril_warn($_);
-	};
+	if ( -e $self->cfg->latest_data ) {
+		try { 
+			$tree = $tpp->parsefile( $self->cfg->latest_data );
+			@items = @{ $tree->{xml}->{item} };
+		} catch {
+			miril_warn($_);
+		};
+	}
 
-	my @items = @{ $tree->{xml}->{item} };
 	@items = grep { $_->{id} ne $id } @items;
 	unshift @items, { id => $id, title => $title};
 	@items = @items[0 .. 9] if @items > 10;
@@ -676,7 +699,7 @@ sub generate_paged_url {
 
 	my $q = $self->query;
 
-	my $paged_url = '?action=list';
+	my $paged_url = '?action=' . $q->param('action');
 
 	if (
 		$q->param('title')  or
@@ -695,6 +718,41 @@ sub generate_paged_url {
 	$paged_url .= "&page_no=$page_no";
 
 	return $paged_url;
+}
+
+sub paginate {
+	my $self = shift;
+	my @items = @_;
+	
+	return unless @items;
+
+	if (@items > $self->cfg->items_per_page) {
+
+		my $page = Data::Page->new;
+		$page->total_entries(scalar @items);
+		$page->entries_per_page($self->cfg->items_per_page);
+		$page->current_page($self->query->param('page_no') ? $self->query->param('page_no') : 1);
+		
+		my $pager;
+		
+		if ($page->current_page > 1) {
+			$pager->{first}    = $self->generate_paged_url($page->first_page);
+			$pager->{previous} = $self->generate_paged_url($page->previous_page);
+		}
+
+		warn $page->first_page;
+
+		if ($page->current_page < $page->last_page) {
+			$pager->{'last'} = $self->generate_paged_url($page->last_page);
+			$pager->{'next'} = $self->generate_paged_url($page->next_page);
+		}
+
+		$self->{pager} = $pager;
+		return $page->splice(\@items);
+
+	} else {
+		return @items;
+	}
 }
 
 sub load_tmpl {
@@ -732,7 +790,7 @@ sub load_tmpl {
 	$tmpl->param('authenticated', $self->authen->is_authenticated ? 1 : 0);
 	$tmpl->param('header' => $header->output, 'footer' => $footer->output );
 
-	if ( ($name eq 'list') and $self->pager ) {
+	if ($self->pager) {
 
 		my $pager_text = $self->tmpl->get('pager');
 		my $pager = HTML::Template::Pluggable->new( scalarref => \$pager_text, die_on_bad_params => 0 );
@@ -758,8 +816,8 @@ sub load_user_tmpl {
 	
 	try {
 		$tmpl = HTML::Template::Pluggable->new( 
-			filename          => catfile( $self->cfg->user_tmpl_dir, $tmpl_file ), 
-			path              => $self->cfg->user_tmpl_dir,
+			filename          => catfile( $self->cfg->tmpl_path, $tmpl_file ), 
+			path              => $self->cfg->tmpl_path,
 			die_on_bad_params => 0,
 			global_vars       => 1,
 		);
@@ -781,46 +839,6 @@ Miril is a lightweight static content management system written in perl and base
 
 Peter Shangov, C<< <pshangov at yahoo.com> >>
 
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-miril at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Miril>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc Miril
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Miril>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Miril>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Miril>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Miril/>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
-
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2009 Peter Shangov.
@@ -834,4 +852,3 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of Miril
