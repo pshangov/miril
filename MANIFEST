@@ -6,6 +6,7 @@ lib/Miril.pm
 lib/Miril/Config.pm
 lib/Miril/Error.pm
 lib/Miril/Manual.pod
+lib/Miril/Example.pod
 lib/Miril/Filter/Markdown.pm
 lib/Miril/Model/File/XMLTPP.pm
 lib/Miril/Theme/Flashyweb.pm

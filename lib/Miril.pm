@@ -9,11 +9,11 @@ Miril - A Static Content Management System
 
 =head1 VERSION
 
-Version 0.001
+Version 0.003
 
 =cut
 
-our $VERSION = '0.001';
+our $VERSION = '0.003';
 $VERSION = eval $VERSION;
 
 use base ("CGI::Application");
@@ -145,27 +145,27 @@ sub setup {
 	#$self->msg_add("basta");
 }
 
-=pod
-sub cgiapp_postrun {
-	my $self = shift;
-	my $cookie;
 
-	$self->msg_cookie 
-		? $cookie = $self->msg_cookie 
-		: $cookie = CGI::Cookie->new(
-			-name => 'miril_msg',
-			-expires => '+1d',
-		); 
-	my $errors = $self->errors;
-	if ($errors) {
-		$cookie->value($errors);
-	} else {
-		$cookie->expires('-1d');
-	}
+#sub cgiapp_postrun {
+#	my $self = shift;
+#	my $cookie;
+#
+#	$self->msg_cookie 
+#		? $cookie = $self->msg_cookie 
+#		: $cookie = CGI::Cookie->new(
+#			-name => 'miril_msg',
+#			-expires => '+1d',
+#		); 
+#	my $errors = $self->errors;
+#	if ($errors) {
+#		$cookie->value($errors);
+#	} else {
+#		$cookie->expires('-1d');
+#	}
+#
+#	$self->header_add(-cookie=>[$cookie]);
+#}
 
-	$self->header_add(-cookie=>[$cookie]);
-}
-=cut
 
 ### RUN MODES ###
 

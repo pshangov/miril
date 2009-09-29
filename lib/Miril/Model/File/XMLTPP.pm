@@ -61,7 +61,7 @@ sub get_item {
 
 		$match->{topic} = first { $_->{id} eq $match->{topic} } $self->topics;
 		
-		my $current_type = first { $_->id eq $match->{type} } $self->cfg->types->type;
+		my $current_type = first { $_->{id} eq $match->{type} } $self->cfg->types->type;
 		my @dirs = splitdir($current_type->location);
 		my $file_to_http_dir = join "/", @dirs;
 		$match->{url} = $self->cfg->http_dir . "/" . $file_to_http_dir . $match->{id} . ".html";
@@ -221,7 +221,7 @@ sub apply_dates {
 }
 
 sub items         { @{ shift->{items} };    }
-sub topics        { shift->{topics} ? @{ shift->{topics} } : undef;   }
+sub topics        { $_[0]->{topics} ? @{ shift->{topics} } : undef;   }
 sub data_path     { shift->{data_path}; }
 sub tree          { shift->{tree};          }
 sub tpp           { shift->{tpp};           }

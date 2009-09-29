@@ -2,7 +2,7 @@
 
 Miril::Manual - Why and how to use Miril, the static content management sytem.
 
-=head2 WHAT IS SPECIAL ABOUT MIRIL
+=head1 WHAT IS SPECIAL ABOUT MIRIL
 
 =over
 
@@ -398,6 +398,8 @@ The status field has two options - C<draft> and C<published>. Items marked as C<
 =item * 
 
 The item text is run through a filter before publishing. Currently only Markdown is available via the L<Text::MultiMarkdown> module. 
+
+=item *
 
 Additionally, you can break your post into a teaser and full text by inserting the C<E<lt>!-- BREAK --E<gt>> string somewhere in the item text. The content before the break mark will be available in the C<teser> property of the C<item> object passed to your templates.
 
