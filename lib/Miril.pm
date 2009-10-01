@@ -186,16 +186,7 @@ sub list_items {
 		title             => ( $self->query->param('title')  or undef ),
 		type              => ( $self->query->param('type')   or undef ),
 		status            => ( $self->query->param('status') or undef ),
-		topic             => ( $self->query->param('topic')  or undef ),
-		#created_before    => $self->query->param('created_before'),
-		#created_on        => $self->query->param('created_on'),
-		#created_after     => $self->query->param('created_after'),
-		#updated_before    => $self->query->param('updated_before'),
-		#updated_on        => $self->query->param('updated_on'),
-		#updated_after     => $self->query->param('updated_after'),
-		#published_before  => $self->query->param('published_before'),
-		#published_on      => $self->query->param('published_on'),
-		#published_after   => $self->query->param('published_after'),
+		topic             => ( $self->query->param('topic') ? \($self->query->param('topic')) : undef ),
 	);
 
 	my @current_items = $self->paginate(@items);
@@ -220,11 +211,6 @@ sub search_items {
 
 	my @statuses = map +{ "cfg_status", $_ }, $self->cfg->workflow->status;
 	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $self->cfg->types->type;
-
-	unshift @authors,  { cfg_author => undef };
-	unshift @statuses, { cfg_status => undef };
-	unshift @types,    { cfg_type => undef, cfg_m_type => undef };
-	unshift @topics,   { cfg_topic => undef, cfg_topic_id => undef };
 
 	$tmpl->param('authors',  \@authors);
 	$tmpl->param('statuses', \@statuses);
@@ -279,10 +265,14 @@ sub edit_item {
 	my $has_topics  = 1 if $self->cfg->{topics}{topic};
 
 	
-	my $cur_author = $item->{author};
-	my $cur_status = $item->{status};
-	my $cur_topic  = $item->{topic}->{id};
-	my $cur_type   = $item->{type};
+	my $cur_author = $item->author;
+	my $cur_status = $item->status;
+	my $cur_topic;
+	my %cur_topics;
+	if (@{ $item->{topics} }) {
+		%cur_topics = map {$_->id => 1} $item->topics;
+	}
+	my $cur_type   = $item->type;
 	
 	# the "+" instructs map to produce a list of hashrefs, see "perldoc -f map"
 	if ($has_authors) {
@@ -297,7 +287,7 @@ sub edit_item {
 		my @topics = map +{ 
 			"cfg_topic", $_->name, 
 			"cfg_topic_id", $_->id, 
-			"selected", $_->id eq $cur_topic ? 1 : 0 
+			"selected", $cur_topics{$_->id} ? 1 : 0 
 		}, $self->cfg->topics->topic;
 		$item->{topics}   = \@topics;
 	}
@@ -334,10 +324,13 @@ sub update_item {
 		'status'    => $self->query->param('status'),
 		'text'      => $self->query->param('text'),
 		'title'     => $self->query->param('title'),
-		'topic'     => $self->query->param('topic') ? $self->query->param('topic') : undef,
 		'type'      => $self->query->param('type'),
 		'o_id'      => $self->query->param('o_id'),
 	};
+
+	if ( $self->query->param('topic') ) {
+		$item->{topics}{topic} = [$self->query->param('topic')];
+	}
 
 	$self->model->save($item);
 

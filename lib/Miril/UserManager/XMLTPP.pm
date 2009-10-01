@@ -46,10 +46,14 @@ sub verification_callback {
 	
 		my $encrypted = $self->encrypt($password);
 
-		return ( 
-			( $encrypted eq $user->{password} ) or ( $password eq $user->{password} )
-			? $username : undef 
-		);
+		if ( 
+			   ( $encrypted eq $user->{password} ) 
+			or ( $password  eq $user->{password} )
+		) {
+			return $username;
+		} else {
+			return;
+		}
 	}
 }
 

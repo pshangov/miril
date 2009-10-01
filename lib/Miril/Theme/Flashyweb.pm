@@ -97,9 +97,9 @@ my $edit = <<EndOfHTML;
 
 					<TMPL_IF NAME="has_topics">
 					<p class="edit">Topic:<br>
-					<select name="topic">
+					<select name="topic" size=3 multiple="multiple">
 					<TMPL_LOOP NAME="topics">
-						<option value='<TMPL_VAR NAME="cfg_topic_id">'<TMPL_IF NAME="selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="cfg_topic"></option>
+						<option value='<TMPL_VAR NAME="cfg_topic_id">'<TMPL_IF NAME="selected"> selected</TMPL_IF>><TMPL_VAR NAME="cfg_topic"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>
@@ -111,7 +111,6 @@ my $edit = <<EndOfHTML;
 					<input type="hidden" name="o_id" value='<TMPL_VAR NAME="id">' />
 
 					<button type="submit" id="x" name="action" value="update">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;
-					<button type="submit" id="x" name="action" value="update_cont">Save and continue editing</button>&nbsp;&nbsp;&nbsp;&nbsp;
 					<button type="submit" id="x" name="action" value="delete">Delete</button>&nbsp;&nbsp;&nbsp;&nbsp;
 					<button type="submit" id="x" name="action" value="view">Cancel</button>
 				</form>
@@ -320,6 +319,7 @@ my $search = <<EndOfHTML;
 				</p>
 				<p class="edit">Type:<br>
 				<select name="type">
+					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="types">
 					<option value='<TMPL_VAR NAME="cfg_m_type">'><TMPL_VAR NAME="cfg_type"></option>
 				</TMPL_LOOP>
@@ -329,6 +329,7 @@ my $search = <<EndOfHTML;
 				<TMPL_IF NAME="has_authors">
 				<p class="edit">Author:<br>
 				<select name="author">
+					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="authors">
 					<option value='<TMPL_VAR NAME="cfg_author">'><TMPL_VAR NAME="cfg_author"></option>
 				</TMPL_LOOP>
@@ -338,6 +339,7 @@ my $search = <<EndOfHTML;
 				
 				<p class="edit">Status:<br>
 				<select name="status">
+					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="statuses">
 					<option value='<TMPL_VAR NAME="cfg_status">'><TMPL_VAR NAME="cfg_status"></option>
 				</TMPL_LOOP>
@@ -347,6 +349,7 @@ my $search = <<EndOfHTML;
 				<TMPL_IF NAME="has_topics">
 				<p class="edit">Topic:<br>
 				<select name="topic">
+					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="topics">
 					<option value='<TMPL_VAR NAME="cfg_topic_id">'><TMPL_VAR NAME="cfg_topic"></option>
 				</TMPL_LOOP>

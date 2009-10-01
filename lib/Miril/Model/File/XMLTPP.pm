@@ -13,6 +13,7 @@ use File::Spec::Functions qw(catfile splitdir);
 use POSIX qw(strftime);
 use Try::Tiny qw(try catch);
 use Miril::Error qw(miril_warn miril_die);
+use Scalar::Util qw(reftype);
 
 sub new {
 	my $class = shift;
@@ -32,8 +33,10 @@ sub new {
 
 	my $self = bless {}, $class;
 	$self->{data_path} = $cfg->data_path;
+	map { $_->{topics}{topic} = [$_->{topics}{topic}] unless ref $_->{topics}{topic} } @items;
 	$self->{items} = \@items;
 	$self->apply_dates;
+	
 
 	my @sorted_items = sort { $a->{published}{epoch} < $b->{published}{epoch} } @{ $self->{items} };
 	$self->{items} = \@sorted_items;
@@ -54,12 +57,21 @@ sub get_item {
 
 	my $match = first {$_->id eq $id} $self->items;
 	if ($match) {
+		
 		$match->{text} = File::Slurp::read_file($match->filename) or miril_die($!);
 
 		my @split = split( '<!-- BREAK -->', $match->{text}, 2);
 		$match->{teaser} = $split[0];
 
-		$match->{topic} = first { $_->{id} eq $match->{topic} } $self->topics;
+		if (reftype $match->{topics}{topic} eq "ARRAY") {
+			my %topics = map {$_ => 1} @{ $match->{topics}{topic} };
+		
+			my @topics = grep { $topics{$_->{id}} } $self->topics;
+			$match->{topics} = \@topics;
+		} else {
+			$match->{topics} = [$match->{topics}{topic}];
+		}
+		
 		
 		my $current_type = first { $_->{id} eq $match->{type} } $self->cfg->types->type;
 		my @dirs = splitdir($current_type->location);
@@ -84,18 +96,15 @@ sub get_items {
 		($params{'title'}            ? $_->title     =~ /$params{'title'}/i         : 1) and
 		($params{'author'}           ? $_->author    eq $params{'author'}           : 1) and
 		($params{'type'}             ? $_->type      eq $params{'type'}             : 1) and
-		($params{'status'}           ? $_->status    eq $params{'status'}           : 1) and
-		($params{'topic'}            ? $_->topic     eq $params{'topic'}            : 1)
-		#($params{'created_before'}   ? $_->created   <  $params{'created_before'}   : 1) and
-		#($params{'created_on'}       ? $_->created   == $params{'created_on'}       : 1) and
-		#($params{'created_after'}    ? $_->created   >  $params{'created_after'}    : 1) and
-		#($params{'updated_before'}   ? $_->updated   <  $params{'updated_before'}   : 1) and
-		#($params{'updated_on'}       ? $_->updated   == $params{'updated_on'}       : 1) and
-		#($params{'updated_after'}    ? $_->updated   >  $params{'updated_after'}    : 1) and
-		#($params{'published_before'} ? $_->published >  $params{'published_before'} : 1) and
-		#$params{'published_on'}     ? $_->published == $params{'published_on'}     : 1) and
-		#($params{'published_after'}  ? $_->published <  $params{'published_after'}  : 1)
+		($params{'status'}           ? $_->status    eq $params{'status'}           : 1)
 	} $self->items;
+
+	if ($params{'topic'}) {
+		foreach my $match (@matches) {
+			my %topics = map {$_ => 1} $match->topics->topic;
+			undef $match unless $topics{ $params{'topic'} };
+		}
+	}
 
 	return map { dao $_ } @matches;
 }
@@ -110,12 +119,13 @@ sub save {
 		# this is an update
 
 		for (@items) {
+		
 			if ($_->id eq $item->o_id) {
 				$_->{id}        = $item->id;
 				$_->{author}    = $item->author;
 				$_->{status}    = $item->status;
 				$_->{title}     = $item->title;
-				$_->{topic}     = $item->topic;
+				$_->{topics}    = $item->topics;
 				last;
 			}
 		}
@@ -133,7 +143,7 @@ sub save {
 			author    => $item->author,
 			status    => $item->status,
 			title     => $item->title,
-			topic     => $item->topic,
+			topics    => { topic => [$item->topics] },
 			type      => $item->type,
 		};
 		
