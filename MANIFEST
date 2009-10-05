@@ -11,6 +11,9 @@ lib/Miril/Filter/Markdown.pm
 lib/Miril/Model/File/XMLTPP.pm
 lib/Miril/Theme/Flashyweb.pm
 lib/Miril/UserManager/XMLTPP.pm
+lib/Miril/View/Abstract.pm
+lib/Miril/View/HTML/Template.pm
+lib/Miril/View/Text/Template.pm
 example/cgi-bin/miril.pl
 example/settings/cache/data.xml
 example/settings/cfg/config.xml

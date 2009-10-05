@@ -1,10 +1,14 @@
 Revision history for Miril
 
+0.004   05/10/2009
+        * Added support for Text::Template
+		* Added support for topics (categories)
+
 0.003   25/09/2009
-        Fixed small bug in Miril::Model::File::XMLTPP.
+        * Fixed small bug in Miril::Model::File::XMLTPP.
 
 0.002   24/09/2009
-        POD fixes.
+        * POD fixes.
 
 0.001   23/09/2009
-        First version, released on an unsuspecting world.
+        * First version, released on an unsuspecting world.

@@ -143,6 +143,10 @@ If you have specified a relative URL in C<http_root> above, use this option to p
 
 A random phrase used for security purposes when encrypting authentication data stored in cookies (required by L<CGI::Applciation::Plugin::Authentication::Cookie>).
 
+=item view
+
+Which view module, or templating system, will be used to render your site. Default is C<HTML::Template>, which will load L<Miril::View::HTML::Template>. You can also set this to C<Text::Template>, and additional templating systems may be added in the future.
+
 =back
 
 =head3 Configuring content types
@@ -284,6 +288,33 @@ Miril allows you to specify the author of each post. The list of authors is spec
 
 Note that any registered user can specify any author name for any post, so this is used only to display post information in the published site rather than to control access. This is part of Miril's design philosophy (trusted team).
 
+=head3 Specifying topics
+
+Miril has basic support for topics, or categories. The list of topics is specified in the confuguration file as follows:
+
+  <xml>
+  ...
+
+	<topics>
+		<topic>
+			<id>flowers</id>
+			<name>Flowers</name>
+		</topic>
+		<topic>
+			<id>animals</id>
+			<name>Fuzzy Animals</name>
+		</topic>
+		<topic>
+			<id>bananas</id>
+			<name>Bananas</name>
+		</topic>
+	</topics>
+
+  ...
+  </xml>
+
+Each post can then be associated with one or more topics.
+
 =head2 Create a users file
 
 You need a file with information about users and passwords in order to run Miril. The file must be named C<usres.xml> and be located in the directory specified by the C<cfg_path> option in the main configuration file. Currently only XML is supported as the configuration file format. The structure is as follows:
@@ -364,6 +395,10 @@ The date when the post was published, in word format (e.g. "Monday, 10 Aug 2009"
 =item item.modified.xxx
 
 Same as above, but refers to the time when the post was last modified.
+
+=item topics
+
+An arreyref of topics associated with this post. Each topic is an object with two properties: C<id> and C<name>.
 
 =back
 
