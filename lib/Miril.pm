@@ -32,8 +32,6 @@ use Time::Format                              qw(time_format);
 use Number::Format                            qw(format_bytes);
 use File::Spec::Functions                     qw(catfile);
 use Data::AsObject                            qw(dao);
-use Data::Dumper                              qw(Dumper);
-use CGI::Cookie;
 use Try::Tiny                                 qw(try catch);
 use Module::Load                              qw(load);
 use Miril::Error                              qw(miril_warn miril_die);
@@ -98,6 +96,15 @@ sub setup {
 		miril_die("Could not load model", $_);
 	};
 	return unless $self->model;
+
+	# load view
+	my $view_name = "Miril::View::" . $self->cfg->view;
+	try {
+		load $view_name;
+		$self->{view} = $view_name->new($self->cfg->tmpl_path);
+	} catch {
+		miril_die("Could not load view", $_);
+	};
 
 	# load filter
 	my $filter_name = "Miril::Filter::" . $self->cfg->filter;
@@ -520,17 +527,21 @@ sub publish {
 			$item->{teaser} = $self->filter->to_xhtml($item->{teaser});
 
 			my $type = first {$_->id eq $item->{type}} $self->cfg->types->type;
+			warn $type->template;
 			
-			my $tmpl = $self->load_user_tmpl($type->template);
-			$tmpl->param('item', $item);
-			$tmpl->param('cfg', $self->cfg);
+			my $output = $self->view->load(
+				name => $type->template, 
+				params => {
+					item => $item,
+					cfg => $self->cfg,
+			});
 
 			my $new_filename = $self->get_target_filename($item->{id}, $item->{type});
 
 			my $fh = IO::File->new($new_filename, "w") 
 				or miril_warn("Cannot open file $new_filename for writing", $!);
 			if ($fh) {
-				$fh->print( $tmpl->output )
+				$fh->print( $output )
 					or miril_warn("Cannot print to file $new_filename", $!);
 				$fh->close;
 			}
@@ -566,16 +577,19 @@ sub publish {
 
 				my @items = $self->model->get_items( %params );
 
-				my $tmpl = $self->load_user_tmpl($list->template);
-				$tmpl->param('items', \@items);
-				$tmpl->param('cfg', $self->cfg);
+				my $output = $self->view->load(
+					name => $list->template,
+					params => {
+						items => \@items,
+						cfg => $self->cfg,
+				});
 
 				my $new_filename = catfile($self->cfg->output_path, $list->location);
 
 				my $fh = IO::File->new($new_filename, "w") 
 					or miril_warn("Cannot open file $new_filename for writing", $!);
 				if ($fh) {
-					$fh->print( $tmpl->output )
+					$fh->print( $output )
 						or miril_warn("Cannot print to file $new_filename", $!);
 					$fh->close;
 				}
@@ -605,6 +619,7 @@ sub errors       { shift->{errors};       }
 sub user_manager { shift->{user_manager}; }
 sub msg_cookie   { shift->{msg_cookie};   }
 sub pager        { shift->{pager};        }
+sub view         { shift->{view};         }
 
 ### AUXILLIARY FUNCTIONS ###
 

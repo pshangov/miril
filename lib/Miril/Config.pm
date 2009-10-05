@@ -17,9 +17,10 @@ sub new {
 	
 	### SUPPLY DEFAULT VALUES ###
 	
-	$cfg->{model}          = 'File::XMLTPP' unless defined $cfg->{model};
-	$cfg->{user_manager}   = 'XMLTPP'       unless defined $cfg->{user_manager};
-	$cfg->{filter}         = 'Markdown'     unless defined $cfg->{filter};
+	$cfg->{model}          = 'File::XMLTPP'   unless defined $cfg->{model};
+	$cfg->{user_manager}   = 'XMLTPP'         unless defined $cfg->{user_manager};
+	$cfg->{filter}         = 'Markdown'       unless defined $cfg->{filter};
+	$cfg->{view}           = 'HTML::Template' unless defined $cfg->{view};
 
 	$cfg->{items_per_page} = 10             unless defined $cfg->{items_per_page};
 
