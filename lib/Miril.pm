@@ -136,42 +136,7 @@ sub setup {
 	);
 
 	$self->authen->protected_runmodes(':all');	
-	
-	#my %cookies = CGI::Cookie->fetch;
-	#my $msg_cookie = $cookies{'miril_msg'};
-
-	#$self->{msg_cookie} = $msg_cookie;
-
-	#if ($msg_cookie) {
-	#	my @messages = map +{ msg => $_ }, $msg_cookie->value;
-	#	$self->{msg} = \@messages
-	#}
-
-	#miril_warn('test error');
-	#$self->msg_add("kaboom");
-	#$self->msg_add("basta");
 }
-
-
-#sub cgiapp_postrun {
-#	my $self = shift;
-#	my $cookie;
-#
-#	$self->msg_cookie 
-#		? $cookie = $self->msg_cookie 
-#		: $cookie = CGI::Cookie->new(
-#			-name => 'miril_msg',
-#			-expires => '+1d',
-#		); 
-#	my $errors = $self->errors;
-#	if ($errors) {
-#		$cookie->value($errors);
-#	} else {
-#		$cookie->expires('-1d');
-#	}
-#
-#	$self->header_add(-cookie=>[$cookie]);
-#}
 
 
 ### RUN MODES ###
@@ -276,6 +241,8 @@ sub edit_item {
 	my $cur_status = $item->status;
 	my $cur_topic;
 	my %cur_topics;
+
+	#FIXME
 	if (@{ $item->{topics} }) {
 		%cur_topics = map {$_->id => 1} $item->topics;
 	}
@@ -318,7 +285,7 @@ sub edit_item {
 	my $tmpl = $self->load_tmpl('edit');
 	$tmpl->param('item', [$item]);
 
-	$self->add_to_latest($item->{id}, $item->{title});
+	$self->add_to_latest($item->id, $item->title);
 
 	return $tmpl->output;
 }
@@ -336,6 +303,7 @@ sub update_item {
 	};
 
 	if ( $self->query->param('topic') ) {
+		# FIXME
 		$item->{topics}{topic} = [$self->query->param('topic')];
 	}
 
@@ -361,7 +329,7 @@ sub view_item {
 
 	my $item = $self->model->get_item($id);
 	if ($item) {
-		$item->{text} = $self->filter->to_xhtml($item->{text});
+		$item->{text} = $self->filter->to_xhtml($item->text);
 
 		my $tmpl = $self->load_tmpl('view');
 		$tmpl->param('item', $item);
@@ -445,7 +413,7 @@ sub view_files {
 	}, @current_files;
 
 	my $tmpl = $self->load_tmpl('files');
-	$tmpl->param('files', [@files_with_data]);
+	$tmpl->param('files', \@files_with_data);
 	return $tmpl->output;
 }
 
@@ -507,26 +475,26 @@ sub publish {
 		my @items = $self->model->get_items;
 
 		foreach my $item (@items) {
-			my $src_modified = $item->{modified_sec};
+			my $src_modified = $item->modified_sec;
 
-			my $target_filename = $self->get_target_filename($item->{id}, $item->{type});
+			my $target_filename = $self->get_target_filename($item->id, $item->type);
 			
 			if (-x $target_filename) {
 				if ( $rebuild or ($src_modified > -M $target_filename) ) {
-					push @to_update, $item->{id};
+					push @to_update, $item->id;
 				}
 			} else {
-				push @to_create, $item->{id};
+				push @to_create, $item->id;
 			}
 		}
 
 		for (@to_create, @to_update) {
 			my $item = $self->model->get_item($_);
 			
-			$item->{text} = $self->filter->to_xhtml($item->{text});
-			$item->{teaser} = $self->filter->to_xhtml($item->{teaser});
+			$item->{text} = $self->filter->to_xhtml($item->text);
+			$item->{teaser} = $self->filter->to_xhtml($item->teaser);
 
-			my $type = first {$_->id eq $item->{type}} $self->cfg->types->type;
+			my $type = first {$_->id eq $item->type} $self->cfg->types->type;
 			warn $type->template;
 			
 			my $output = $self->view->load(
@@ -536,7 +504,7 @@ sub publish {
 					cfg => $self->cfg,
 			});
 
-			my $new_filename = $self->get_target_filename($item->{id}, $item->{type});
+			my $new_filename = $self->get_target_filename($item->id, $item->type);
 
 			my $fh = IO::File->new($new_filename, "w") 
 				or miril_warn("Cannot open file $new_filename for writing", $!);
@@ -644,6 +612,7 @@ sub get_latest {
 	my $self = shift;
 	
 	require XML::TreePP;
+	#FIXME
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['item'] );
 	my $tree;
@@ -651,7 +620,7 @@ sub get_latest {
 	
 	try { 
 		$tree = $tpp->parsefile( $self->cfg->latest_data );
-		@items = dao @{ $tree->{xml}->{item} };
+		@items = dao $tree->{xml}{item};
 	} catch {
 		miril_warn($_);
 	};
@@ -672,17 +641,17 @@ sub add_to_latest {
 	if ( -e $self->cfg->latest_data ) {
 		try { 
 			$tree = $tpp->parsefile( $self->cfg->latest_data );
-			@items = @{ $tree->{xml}->{item} };
+			@items = dao $tree->{xml}{item};
 		} catch {
 			miril_warn($_);
 		};
 	}
 
-	@items = grep { $_->{id} ne $id } @items;
+	@items = grep { $_->id ne $id } @items;
 	unshift @items, { id => $id, title => $title};
 	@items = @items[0 .. 9] if @items > 10;
 
-	$tree->{xml}->{item} = \@items;
+	$tree->{xml}{item} = \@items;
 	
 	try { 
 		$tpp->writefile( $self->cfg->latest_data, $tree );
@@ -696,6 +665,7 @@ sub msg_add {
 	my $msg = shift;
 
 	my @errors;
+	#FIXME
 	@errors = @{ $self->errors } if $self->errors;
 	unshift @errors, $msg;
 	$self->{errors} = \@errors;
