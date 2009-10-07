@@ -85,6 +85,7 @@ sub setup {
 	return unless $cfg;
 
 	$self->{cfg} = $cfg;
+	our $cfg_global = $cfg;
 
 	
 	# load model
@@ -173,16 +174,18 @@ sub search_items {
 	my $self = shift;
 	my $tmpl = $self->load_tmpl('search');
 
+	my $cfg = Miril->config;
+
 	my (@authors, @topics);
 
-	my $has_authors = 1 if $self->cfg->{authors}{author};
-	my $has_topics  = 1 if $self->cfg->{topics}{topic};
+	my $has_authors = 1 if $cfg->{authors}{author};
+	my $has_topics  = 1 if $cfg->{topics}{topic};
 
-	@authors  = map +{ "cfg_author", $_ }, $self->cfg->authors->author if $has_authors;
-	@topics   = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $self->cfg->topics->topic if $has_topics;
+	@authors  = map +{ "cfg_author", $_ }, $cfg->authors->author if $has_authors;
+	@topics   = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $cfg->topics->topic if $has_topics;
 
-	my @statuses = map +{ "cfg_status", $_ }, $self->cfg->workflow->status;
-	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $self->cfg->types->type;
+	my @statuses = map +{ "cfg_status", $_ }, $cfg->workflow->status;
+	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $cfg->types->type;
 
 	$tmpl->param('authors',  \@authors);
 	$tmpl->param('statuses', \@statuses);
@@ -199,22 +202,24 @@ sub create_item {
 	my $self = shift;
 	my $tmpl = $self->load_tmpl('edit');
 
+	my $cfg = Miril->config;
+
 	my $empty_item = {};
 
-	my $has_authors = 1 if $self->cfg->{authors}{author};
-	my $has_topics  = 1 if $self->cfg->{topics}{topic};
+	my $has_authors = 1 if $cfg->{authors}{author};
+	my $has_topics  = 1 if $cfg->{topics}{topic};
 
 	if ($has_authors) {
-		my @authors  = map +{ "cfg_author", $_ }, $self->cfg->authors->author;
+		my @authors  = map +{ "cfg_author", $_ }, $cfg->authors->author;
 		$empty_item->{authors}  = \@authors;
 	}
 	
 	if ($has_topics) {
-		my @topics = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $self->cfg->topics->topic;
+		my @topics = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $cfg->topics->topic;
 		$empty_item->{topics} = \@topics;
 	}
-	my @statuses = map +{ "cfg_status", $_ }, $self->cfg->workflow->status;
-	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $self->cfg->types->type;
+	my @statuses = map +{ "cfg_status", $_ }, $cfg->workflow->status;
+	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $cfg->types->type;
 	
 	$empty_item->{statuses} = \@statuses;
 	$empty_item->{types}    = \@types;
@@ -230,11 +235,13 @@ sub create_item {
 sub edit_item {
 	my $self = shift;
 
+	my $cfg = Miril->config;
+
 	my $id = $self->query->param('id');
 	my $item = $self->model->get_item($id);
 
-	my $has_authors = 1 if $self->cfg->{authors}{author};
-	my $has_topics  = 1 if $self->cfg->{topics}{topic};
+	my $has_authors = 1 if $cfg->{authors}{author};
+	my $has_topics  = 1 if $cfg->{topics}{topic};
 
 	
 	my $cur_author = $item->author;
@@ -253,7 +260,7 @@ sub edit_item {
 		my @authors = map +{ 
 			"cfg_author", $_, 
 			"selected", $_ eq $cur_author ? 1 : 0 
-		}, $self->cfg->authors->author;
+		}, $cfg->authors->author;
 		$item->{authors} = \@authors;
 	}
 	
@@ -262,21 +269,21 @@ sub edit_item {
 			"cfg_topic", $_->name, 
 			"cfg_topic_id", $_->id, 
 			"selected", $cur_topics{$_->id} ? 1 : 0 
-		}, $self->cfg->topics->topic;
+		}, $cfg->topics->topic;
 		$item->{topics}   = \@topics;
 	}
 
 	my @statuses = map +{ 
 		"cfg_status", $_, 
 		"selected", $_ eq $cur_status ? 1 : 0 
-	}, $self->cfg->workflow->status;
+	}, $cfg->workflow->status;
 	$item->{statuses} = \@statuses;
 	
 	my @types = map +{ 
 		"cfg_type", $_->name, 
 		"cfg_m_type", $_->id, 
 		"selected", $_->id eq $cur_type ? 1 : 0 
-	}, $self->cfg->types->type;
+	}, $cfg->types->type;
 	$item->{types}    = \@types;
 	
 	$item->{has_authors} = 1 if $has_authors;
@@ -395,8 +402,10 @@ sub update_user {
 sub view_files {
 	my $self = shift;
 
-	my $files_path = $self->cfg->files_path;
-	my $files_http_dir = $self->cfg->files_http_dir;
+	my $cfg = Miril->config;
+
+	my $files_path = $cfg->files_path;
+	my $files_http_dir = $cfg->files_http_dir;
 	my @files;
 	
 	opendir(my $dir, $files_path) or miril_die($!);
@@ -419,6 +428,8 @@ sub view_files {
 
 sub upload_files {
 	my $self = shift;
+
+	my $cfg = Miril->config;
 	
 	my @filenames = $self->query->param('file');
 	my @fhs = $self->query->upload('file');
@@ -429,7 +440,7 @@ sub upload_files {
 		my $fh = $fhs[$i];
 
 		if ($filename and $fh) {
-			my $new_filename = catfile($self->cfg->files_path, $filename);
+			my $new_filename = catfile($cfg->files_path, $filename);
 			my $new_fh = IO::File->new($new_filename, "w") 
 				or miril_warn("Could not upload file", $!);
 			copy($fh, $new_fh) 
@@ -449,14 +460,16 @@ sub upload {
 }
 
 sub delete_files {
-	my $self = shift;
-	
+	my $self = shift;	
+
+	my $cfg = Miril->config;
+
 	my @filenames = $self->query->param('file');
 
 	try {
 		for (@filenames) {
-			unlink( catfile($self->cfg->files_path, $_) )
-				or miril_warn("Couod not delete file", $!);
+			unlink( catfile($cfg->files_path, $_) )
+				or miril_warn("Could not delete file", $!);
 		}
 	};
 
@@ -465,6 +478,8 @@ sub delete_files {
 
 sub publish {
 	my $self = shift;
+
+	my $cfg = Miril->config;
 	
 	my $do = $self->query->param("do");
 	my $rebuild = $self->query->param("rebuild");
@@ -494,14 +509,14 @@ sub publish {
 			$item->{text} = $self->filter->to_xhtml($item->text);
 			$item->{teaser} = $self->filter->to_xhtml($item->teaser);
 
-			my $type = first {$_->id eq $item->type} $self->cfg->types->type;
+			my $type = first {$_->id eq $item->type} $cfg->types->type;
 			warn $type->template;
 			
 			my $output = $self->view->load(
 				name => $type->template, 
 				params => {
 					item => $item,
-					cfg => $self->cfg,
+					cfg => $cfg,
 			});
 
 			my $new_filename = $self->get_target_filename($item->id, $item->type);
@@ -515,7 +530,7 @@ sub publish {
 			}
 		}
 
-		foreach my $list ($self->cfg->lists->list) {
+		foreach my $list ($cfg->lists->list) {
 			if ( 1 ) {
 
 				my @params = qw(
@@ -549,10 +564,10 @@ sub publish {
 					name => $list->template,
 					params => {
 						items => \@items,
-						cfg => $self->cfg,
+						cfg => $cfg,
 				});
 
-				my $new_filename = catfile($self->cfg->output_path, $list->location);
+				my $new_filename = catfile($cfg->output_path, $list->location);
 
 				my $fh = IO::File->new($new_filename, "w") 
 					or miril_warn("Cannot open file $new_filename for writing", $!);
@@ -593,10 +608,13 @@ sub view         { shift->{view};         }
 
 sub get_target_filename {
 	my $self = shift;
+
+	my $cfg = Miril->config;
+
 	my ($name, $type) = @_;
 
-	my $current_type = first {$_->id eq $type} $self->cfg->types->type;
-	my $target_filename = catfile($self->cfg->output_path, $current_type->location, $name . ".html");
+	my $current_type = first {$_->id eq $type} $cfg->types->type;
+	my $target_filename = catfile($cfg->output_path, $current_type->location, $name . ".html");
 
 	return $target_filename;
 }
@@ -611,6 +629,8 @@ sub get_last_modified_time {
 sub get_latest {
 	my $self = shift;
 	
+	my $cfg = Miril->config;
+
 	require XML::TreePP;
 	#FIXME
     my $tpp = XML::TreePP->new();
@@ -619,8 +639,9 @@ sub get_latest {
 	my @items;
 	
 	try { 
-		$tree = $tpp->parsefile( $self->cfg->latest_data );
-		@items = dao $tree->{xml}{item};
+		$tree = $tpp->parsefile( $cfg->latest_data );
+		# force array
+		@items = dao @{ $tree->{xml}{item} };
 	} catch {
 		miril_warn($_);
 	};
@@ -631,6 +652,9 @@ sub get_latest {
 
 sub add_to_latest {
 	my $self = shift;
+
+	my $cfg = Miril->config;
+
 	my ($id, $title) = @_;
 
 	require XML::TreePP;
@@ -638,10 +662,10 @@ sub add_to_latest {
 	my $tree = {};
 	my @items;
 	
-	if ( -e $self->cfg->latest_data ) {
+	if ( -e $cfg->latest_data ) {
 		try { 
-			$tree = $tpp->parsefile( $self->cfg->latest_data );
-			@items = dao $tree->{xml}{item};
+			$tree = $tpp->parsefile( $cfg->latest_data );
+			@items = @{ $tree->{xml}->{item} };
 		} catch {
 			miril_warn($_);
 		};
@@ -654,7 +678,7 @@ sub add_to_latest {
 	$tree->{xml}{item} = \@items;
 	
 	try { 
-		$tpp->writefile( $self->cfg->latest_data, $tree );
+		$tpp->writefile( $cfg->latest_data, $tree );
 	} catch {
 		miril_warn($_);
 	};
@@ -702,13 +726,15 @@ sub paginate {
 	my $self = shift;
 	my @items = @_;
 	
+	my $cfg = Miril->config;
+
 	return unless @items;
 
-	if (@items > $self->cfg->items_per_page) {
+	if (@items > $cfg->items_per_page) {
 
 		my $page = Data::Page->new;
 		$page->total_entries(scalar @items);
-		$page->entries_per_page($self->cfg->items_per_page);
+		$page->entries_per_page($cfg->items_per_page);
 		$page->current_page($self->query->param('page_no') ? $self->query->param('page_no') : 1);
 		
 		my $pager;
@@ -787,23 +813,8 @@ sub load_tmpl {
 	return $tmpl;
 }
 
-sub load_user_tmpl {
-	my $self = shift;
-	my $tmpl_file = shift;
-	my $tmpl;
-	
-	try {
-		$tmpl = HTML::Template::Pluggable->new( 
-			filename          => catfile( $self->cfg->tmpl_path, $tmpl_file ), 
-			path              => $self->cfg->tmpl_path,
-			die_on_bad_params => 0,
-			global_vars       => 1,
-		);
-	} catch {
-		miril_die($_);
-	};
-	
-	return $tmpl;
+sub config {
+	return $Miril::cfg_global;
 }
 
 1;
