@@ -68,7 +68,9 @@ sub setup {
 	$self->start_mode('list');
 	$self->error_mode('error');
 	
+	# global variable required by Miril::Error
 	$Miril::Error::app = $self;
+
 	# load templates
 	require Miril::Theme::Flashyweb;
 	$self->{tmpl} = Miril::Theme::Flashyweb->new;
@@ -111,21 +113,20 @@ sub setup {
 	my $filter_name = "Miril::Filter::" . $self->cfg->filter;
 	try {
 		load $filter_name;
+		$self->{filter} = $filter_name->new($self->cfg);
 	} catch {
 		miril_die("Could not load filter", $_);
 	};
-	my $filter = $filter_name->new($self->cfg);
-	$self->{filter} = $filter;
+	
 
 	# configure user management
 	my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
 	try {
 		load $user_manager_name;
+		$self->{user_manager} = $user_manager_name->new($self->cfg);
 	} catch {
 		miril_die("Could not load user manager", $_);
 	};
-	my $user_manager = $user_manager_name->new($self->cfg);
-	$self->{user_manager} = $user_manager;
 
 	# configure authentication
 	$self->authen->config( 
@@ -145,7 +146,10 @@ sub setup {
 sub error {
 	my $self = shift;
 	my $err_msg = shift;
-	warn $err_msg;
+
+	unless ($err_msg =~ /miril_processed_error/) {
+		Miril::Error::process_error("Unspecified error", $err_msg) ;
+	}
 
 	my $tmpl = $self->load_tmpl('error');
 	return $tmpl->output;
@@ -155,11 +159,11 @@ sub list_items {
 	my $self = shift;
 
 	my @items = $self->model->get_items(
-		author            => ( $self->query->param('author') or undef ),
-		title             => ( $self->query->param('title')  or undef ),
-		type              => ( $self->query->param('type')   or undef ),
-		status            => ( $self->query->param('status') or undef ),
-		topic             => ( $self->query->param('topic') ? \($self->query->param('topic')) : undef ),
+		author => ( $self->query->param('author') or undef ),
+		title  => ( $self->query->param('title')  or undef ),
+		type   => ( $self->query->param('type')   or undef ),
+		status => ( $self->query->param('status') or undef ),
+		topic  => ( $self->query->param('topic') ? \($self->query->param('topic')) : undef ),
 	);
 
 	my @current_items = $self->paginate(@items);
@@ -408,7 +412,7 @@ sub view_files {
 	my $files_http_dir = $cfg->files_http_dir;
 	my @files;
 	
-	opendir(my $dir, $files_path) or miril_die($!);
+	opendir(my $dir, $files_path) or miril_die("Cannot open files directory", $!);
 	@files = grep { -f catfile($files_path, $_) } readdir($dir);
 	closedir $dir;
 
