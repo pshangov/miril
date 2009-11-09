@@ -29,6 +29,13 @@ sub new {
 	$cfg->{users_data}     = catfile($cfg->{cfg_path}, 'users.xml');
 
 	$cfg->{workflow}{status} = [qw(draft published)];
+	$cfg->{statuses} = [qw(draft published)];
+
+	### SIMPLIFY THE HASHREF ###
+	
+	$cfg->{authors} = $cfg->{authors}{author};
+	$cfg->{topics}  = $cfg->{topics}{topic};
+	$cfg->{types}   = $cfg->{types}{type};
 
 	return dao $cfg;
 }

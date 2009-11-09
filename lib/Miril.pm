@@ -36,6 +36,8 @@ use Try::Tiny                                 qw(try catch);
 use Module::Load                              qw(load);
 use Miril::Error                              qw(miril_warn miril_die);
 use Data::Page                                qw();
+use XML::TreePP                               qw();
+use POSIX                                     qw(strftime);
 
 sub setup {
 	my $self = shift;
@@ -119,7 +121,7 @@ sub setup {
 	};
 	
 
-	# configure user management
+	# load user manager
 	my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
 	try {
 		load $user_manager_name;
@@ -157,13 +159,14 @@ sub error {
 
 sub list_items {
 	my $self = shift;
+	my $q = $self->query;
 
 	my @items = $self->model->get_items(
-		author => ( $self->query->param('author') or undef ),
-		title  => ( $self->query->param('title')  or undef ),
-		type   => ( $self->query->param('type')   or undef ),
-		status => ( $self->query->param('status') or undef ),
-		topic  => ( $self->query->param('topic') ? \($self->query->param('topic')) : undef ),
+		author => ( $q->param('author') or undef ),
+		title  => ( $q->param('title' ) or undef ),
+		type   => ( $q->param('type'  ) or undef ),
+		status => ( $q->param('status') or undef ),
+		topic  => ( $q->param('topic' ) ? \($q->param('topic')) : undef ),
 	);
 
 	my @current_items = $self->paginate(@items);
@@ -176,62 +179,33 @@ sub list_items {
 
 sub search_items {
 	my $self = shift;
-	my $tmpl = $self->load_tmpl('search');
 
 	my $cfg = Miril->config;
 
-	my (@authors, @topics);
+	my $tmpl = $self->load_tmpl('search');
 
-	my $has_authors = 1 if $cfg->{authors}{author};
-	my $has_topics  = 1 if $cfg->{topics}{topic};
-
-	@authors  = map +{ "cfg_author", $_ }, $cfg->authors->author if $has_authors;
-	@topics   = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $cfg->topics->topic if $has_topics;
-
-	my @statuses = map +{ "cfg_status", $_ }, $cfg->workflow->status;
-	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $cfg->types->type;
-
-	$tmpl->param('authors',  \@authors);
-	$tmpl->param('statuses', \@statuses);
-	$tmpl->param('types',    \@types);
-	$tmpl->param('topics',   \@topics);
-
-	$tmpl->param('has_authors', 1) if $has_authors;
-	$tmpl->param('has_topics', 1) if $has_topics;
+	$tmpl->param('statuses', $self->prepare_statuses );
+	$tmpl->param('types',    $self->prepare_types    );
+	$tmpl->param('topics',   $self->prepare_topics   ) if $cfg->topics;
+	$tmpl->param('authors',  $self->prepare_authors  ) if $cfg->authors;
 
 	return $tmpl->output;
 }
 
 sub create_item {
 	my $self = shift;
-	my $tmpl = $self->load_tmpl('edit');
 
 	my $cfg = Miril->config;
 
-	my $empty_item = {};
+	my $empty_item;
 
-	my $has_authors = 1 if $cfg->{authors}{author};
-	my $has_topics  = 1 if $cfg->{topics}{topic};
+	$empty_item->{statuses} = $self->prepare_statuses;
+	$empty_item->{types}    = $self->prepare_types;
+	$empty_item->{authors}  = $self->prepare_authors if $cfg->authors;
+	$empty_item->{topics}   = $self->prepare_topics  if $cfg->topics;
 
-	if ($has_authors) {
-		my @authors  = map +{ "cfg_author", $_ }, $cfg->authors->author;
-		$empty_item->{authors}  = \@authors;
-	}
-	
-	if ($has_topics) {
-		my @topics = map +{ "cfg_topic", $_->name, "cfg_topic_id", $_->id }, $cfg->topics->topic;
-		$empty_item->{topics} = \@topics;
-	}
-	my @statuses = map +{ "cfg_status", $_ }, $cfg->workflow->status;
-	my @types    = map +{ "cfg_type",  $_->name, "cfg_m_type",   $_->id }, $cfg->types->type;
-	
-	$empty_item->{statuses} = \@statuses;
-	$empty_item->{types}    = \@types;
-
-	$empty_item->{has_authors} = 1 if $has_authors;
-	$empty_item->{has_topics}  = 1 if $has_topics;
-	
-	$tmpl->param('item', [$empty_item]);
+	my $tmpl = $self->load_tmpl('edit');
+	$tmpl->param('item', $empty_item);
 	
 	return $tmpl->output;
 }
@@ -243,58 +217,21 @@ sub edit_item {
 
 	my $id = $self->query->param('id');
 	my $item = $self->model->get_item($id);
-
-	my $has_authors = 1 if $cfg->{authors}{author};
-	my $has_topics  = 1 if $cfg->{topics}{topic};
-
 	
-	my $cur_author = $item->author;
-	my $cur_status = $item->status;
-	my $cur_topic;
 	my %cur_topics;
 
 	#FIXME
 	if (@{ $item->{topics} }) {
 		%cur_topics = map {$_->id => 1} $item->topics;
 	}
-	my $cur_type   = $item->type;
 	
-	# the "+" instructs map to produce a list of hashrefs, see "perldoc -f map"
-	if ($has_authors) {
-		my @authors = map +{ 
-			"cfg_author", $_, 
-			"selected", $_ eq $cur_author ? 1 : 0 
-		}, $cfg->authors->author;
-		$item->{authors} = \@authors;
-	}
+	$item->{authors}  = $self->prepare_authors($item->author) if $cfg->authors;
+	$item->{topics}   = $self->prepare_topics(%cur_topics)    if $cfg->topics;
+	$item->{statuses} = $self->prepare_statuses($item->status);
+	$item->{types}    = $self->prepare_types($item->type);
 	
-	if ($has_topics) {
-		my @topics = map +{ 
-			"cfg_topic", $_->name, 
-			"cfg_topic_id", $_->id, 
-			"selected", $cur_topics{$_->id} ? 1 : 0 
-		}, $cfg->topics->topic;
-		$item->{topics}   = \@topics;
-	}
-
-	my @statuses = map +{ 
-		"cfg_status", $_, 
-		"selected", $_ eq $cur_status ? 1 : 0 
-	}, $cfg->workflow->status;
-	$item->{statuses} = \@statuses;
-	
-	my @types = map +{ 
-		"cfg_type", $_->name, 
-		"cfg_m_type", $_->id, 
-		"selected", $_->id eq $cur_type ? 1 : 0 
-	}, $cfg->types->type;
-	$item->{types}    = \@types;
-	
-	$item->{has_authors} = 1 if $has_authors;
-	$item->{has_topics}  = 1 if $has_topics;
-
 	my $tmpl = $self->load_tmpl('edit');
-	$tmpl->param('item', [$item]);
+	$tmpl->param('item', $item);
 
 	$self->add_to_latest($item->id, $item->title);
 
@@ -303,20 +240,19 @@ sub edit_item {
 
 sub update_item {
 	my $self = shift;
+	my $q = $self->query;
+
 	my $item = {
-		'id'        => $self->query->param('id'),
-		'author'    => $self->query->param('author') ? $self->query->param('author') : undef,
-		'status'    => $self->query->param('status'),
-		'text'      => $self->query->param('text'),
-		'title'     => $self->query->param('title'),
-		'type'      => $self->query->param('type'),
-		'o_id'      => $self->query->param('o_id'),
+		'id'        => $q->param('id'),
+		'author'    => $q->param('author'),
+		'status'    => $q->param('status'),
+		'text'      => $q->param('text'),
+		'title'     => $q->param('title'),
+		'type'      => $q->param('type'),
+		'o_id'      => $q->param('o_id'),
 	};
 
-	if ( $self->query->param('topic') ) {
-		# FIXME
-		$item->{topics}{topic} = [$self->query->param('topic')];
-	}
+	$item->{topics} = [$self->query->param('topic')] if $q->param('topic');
 
 	$self->model->save($item);
 
@@ -422,7 +358,7 @@ sub view_files {
 		name     => $_, 
 		href     => "$files_http_dir/$_", 
 		size     => format_bytes( -s catfile($files_path, $_) ), 
-		modified => time_format( 'yyyy/mm/dd hh:mm', $self->get_last_modified_time( catfile($files_path, $_) ) ), 
+		modified => strftime( "%d/%m/%Y %H:%M", localtime( $self->get_last_modified_time(catfile($files_path, $_)) ) ), 
 	}, @current_files;
 
 	my $tmpl = $self->load_tmpl('files');
@@ -661,9 +597,9 @@ sub add_to_latest {
 
 	my ($id, $title) = @_;
 
-	require XML::TreePP;
     my $tpp = XML::TreePP->new();
-	my $tree = {};
+	$tpp->set( force_array => ['item'] );
+	my $tree;
 	my @items;
 	
 	if ( -e $cfg->latest_data ) {
@@ -675,7 +611,7 @@ sub add_to_latest {
 		};
 	}
 
-	@items = grep { $_->id ne $id } @items;
+	@items = grep { $_->{id} ne $id } @items;
 	unshift @items, { id => $id, title => $title};
 	@items = @items[0 .. 9] if @items > 10;
 
@@ -819,6 +755,39 @@ sub load_tmpl {
 
 sub config {
 	return $Miril::cfg_global;
+}
+
+sub prepare_authors {
+	my ($self, $selected) = @_;
+	my $cfg = Miril->config;
+	my @authors;
+	if ($selected) {
+		@authors = map +{ name => $_, id => $_ , selected => $_ eq $selected }, $cfg->authors;
+	} else {
+		@authors = map +{ name => $_, id => $_  }, $cfg->authors;
+	}
+	return \@authors;
+}
+
+sub prepare_statuses {
+	my ($self, $selected) = @_;
+	my $cfg = Miril->config;
+	my @statuses = map +{ name => $_, id => $_, selected => $_ eq $selected }, $cfg->statuses;
+	return \@statuses;
+}
+
+sub prepare_topics {
+	my ($self, %selected) = @_;
+	my $cfg = Miril->config;
+	my @topics   = map +{ name => $_->name, id => $_->id, selected => $selected{$_->id} }, $cfg->topics;
+	return \@topics;
+}
+
+sub prepare_types {
+	my ($self, $selected) = @_;
+	my $cfg = Miril->config;
+	my @types = map +{ name => $_->name, id => $_->id, selected => $_->id eq $selected }, $cfg->types;
+	return \@types;
 }
 
 1;

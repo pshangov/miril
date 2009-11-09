@@ -39,8 +39,6 @@ sub process_error {
 		miril_msg => $miril_msg,
 		perl_msg  => $perl_msg,
 	};
-
-	warn "Processing eror message: MIRIL says '$miril_msg', PERL says '$perl_msg'."
 }
 
 1;

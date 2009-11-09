@@ -3,21 +3,23 @@ package Miril::Model::File::XMLTPP;
 use strict;
 use warnings;
 
-use List::Util qw(first);
+use List::Util              qw(first);
 use IO::File;
 use File::stat; 
 use XML::TreePP;
-use File::Slurp qw();
-use Data::AsObject qw(dao);
-use File::Spec::Functions qw(catfile splitdir);
-use POSIX qw(strftime);
-use Try::Tiny qw(try catch);
-use Miril::Error qw(miril_warn miril_die);
-use Scalar::Util qw(reftype);
+use File::Slurp             qw();
+use Data::AsObject          qw(dao);
+use File::Spec::Functions   qw(catfile splitdir);
+use POSIX                   qw(strftime);
+use Try::Tiny               qw(try catch);
+use Miril::Error            qw(miril_warn miril_die);
+use Scalar::Util            qw(reftype);
+use Time::Local             qw(timelocal);
+use Miril;
 
 sub new {
 	my $class = shift;
-	my $cfg = shift;
+	my $cfg = Miril->config;
 
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['item'] );
@@ -26,18 +28,21 @@ sub new {
 	
 	if (-e $cfg->xml_data) {
 		$tree = $tpp->parsefile( $cfg->xml_data ) or miril_die($!);
-		@items = map { dao $_ } @{ $tree->{xml}{item} };
+		@items = dao @{ $tree->{xml}{item} };
 	} else {
+		# miril is run for the first time
 		$tree = {};
 	}
 
 	my $self = bless {}, $class;
 	$self->{data_path} = $cfg->data_path;
+	
+	# some posts have one topic only, make sure we still have an arrayref
 	map { $_->{topics}{topic} = [$_->{topics}{topic}] unless ref $_->{topics}{topic} } @items;
+	
+	# FIXME
 	$self->{items} = \@items;
 	$self->apply_dates;
-	
-
 	my @sorted_items = sort { $a->{published}{epoch} < $b->{published}{epoch} } @{ $self->{items} };
 	$self->{items} = \@sorted_items;
 
@@ -45,15 +50,14 @@ sub new {
 	$self->{tpp} = $tpp;
 	$self->{xml_file} = $cfg->xml_data;
 
-	$self->{topics} = $cfg->{topics}{topic};
-	$self->{cfg} = $cfg;
-
 	return $self;
 }
 
 sub get_item {
 	my $self  = shift;
 	my $id = shift;
+
+	my $cfg = Miril->config;
 
 	my $match = first {$_->id eq $id} $self->items;
 	if ($match) {
@@ -63,25 +67,27 @@ sub get_item {
 		my @split = split( '<!-- BREAK -->', $match->{text}, 2);
 		$match->{teaser} = $split[0];
 
-		if (reftype $match->{topics}{topic} eq "ARRAY") {
-			my %topics = map {$_ => 1} @{ $match->{topics}{topic} };
+		# make sure topics are not empty xml elements
+		my @topic_names = grep {$_} @{ $match->{topics}{topic} };
 		
-			my @topics = grep { $topics{$_->{id}} } $self->topics;
+		# convert topic id's to topic objects
+		if ( @topic_names ) {
+			my %topics_lookup = map {$_ => 1} @topic_names;
+			my @topics = grep { $topics_lookup{$_->{id}} } $cfg->topics;
 			$match->{topics} = \@topics;
 		} else {
-			$match->{topics} = [$match->{topics}{topic}];
+			$match->{topics} = [];
 		}
 		
-		
-		my $current_type = first { $_->{id} eq $match->{type} } $self->cfg->types->type;
+		# apply some more information
+		my $current_type = first { $_->{id} eq $match->{type} } $cfg->types;
 		my @dirs = splitdir($current_type->location);
 		my $file_to_http_dir = join "/", @dirs;
-		$match->{url} = $self->cfg->http_dir . "/" . $file_to_http_dir . $match->{id} . ".html";
-		$match->{full_url} = $self->cfg->domain . $match->{url};
-		$match->{domain} = $self->cfg->domain;
+		$match->{url} = $cfg->http_dir . "/" . $file_to_http_dir . $match->{id} . ".html";
+		$match->{full_url} = $cfg->domain . $match->{url};
+		$match->{domain} = $cfg->domain;
 
-		my $item = dao $match;
-		return $item;
+		return dao $match;
 
 	} else {
 		return;
@@ -106,7 +112,7 @@ sub get_items {
 		}
 	}
 
-	return map { dao $_ } @matches;
+	return dao @matches;
 }
 
 sub save {
@@ -119,13 +125,12 @@ sub save {
 		# this is an update
 
 		for (@items) {
-		
 			if ($_->id eq $item->o_id) {
-				$_->{id}        = $item->id;
-				$_->{author}    = $item->author;
-				$_->{status}    = $item->status;
-				$_->{title}     = $item->title;
-				$_->{topics}    = $item->topics;
+				$_->{id}            = $item->id;
+				$_->{author}        = $item->author;
+				$_->{status}        = $item->status;
+				$_->{title}         = $item->title;
+				$_->{topics}{topic} = $item->topics;
 				last;
 			}
 		}
@@ -154,7 +159,6 @@ sub save {
 	my $new_tree = $self->tree;
 	$new_tree->{xml}->{item} = \@items;
 	require Data::Dumper;
-	#warn Data::Dumper::Dumper($new_tree);
 	$self->{tree} = $new_tree;
 	$self->tpp->writefile($self->xml_file, $new_tree) 
 		or miril_die("Cannot update metadata file", $!);
@@ -197,30 +201,28 @@ sub apply_dates {
 	my $self = shift;
 	my @items = $self->items;
 
-	my @mon_abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
-	my @week_abbr = qw( Monday Tuesday Wednesday Thursday Friday Saturday Sunday );
+	my $tz = get_time_zone();
 
 	map {
 		my $filename = File::Spec->catfile($self->data_path . '/' . $_->{id});
 		my $stat = stat($filename);
 		$_->{filename} = $filename;
 		
-		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($stat->mtime);
-		$_->{modified}->{epoch} = $stat->mtime;
-		$_->{modified}->{'print'} = $week_abbr[$wday-1] . ", $mday " . $mon_abbr[$mon] . " " . ($year+1900);
-		$_->{modified}->{num} = sprintf("%d.%02d.%02d", $year+1900, $mon+1, $mday);
-		$_->{modified}->{slash} = sprintf("%d/%02d/%02d %02d:%02d", $year+1900, $mon+1, $mday, $hour, $min);
+		my @mtime = localtime($stat->mtime);
+		
+		$_->{modified}{epoch} = $stat->mtime;
+		$_->{modified}{print} = strftime("%A, %d %b %Y",          @mtime);
+		$_->{modified}{num}   = strftime("%Y.%m.%d",              @mtime);
+		$_->{modified}{slash} = strftime("%d/%m/%Y %H:%M",        @mtime);
 
 		# ISO8601
-		my $tz = strftime("%z", localtime($stat->mtime));
-		$tz =~ s/(\d{2})(\d{2})/$1:$2/;
- 		$_->{modified}->{iso} = strftime("%Y-%m-%dT%H:%M:%S", localtime($stat->mtime)) . $tz;	
+ 		$_->{modified}{iso}   = strftime("%Y-%m-%dT%H:%M:%S$tz",  @mtime);
 
 		if ( $_->status eq 'published' and !$_->{published} ) {
-			$_->{published}->{'print'} = $_->{modified}->{'print'};
-			$_->{published}->{num}     = $_->{modified}->{num};
-			$_->{published}->{epoch}   = $_->{modified}->{epoch};
-			$_->{published}->{iso}     = $_->{modified}->{iso};
+			$_->{published}{print} = $_->{modified}{print};
+			$_->{published}{num}   = $_->{modified}{num};
+			$_->{published}{epoch} = $_->{modified}{epoch};
+			$_->{published}{iso}   = $_->{modified}{iso};
 		} elsif ( $_->status eq 'draft' and $_->{published} ) {
 			delete $_->{published};
 		} else {
@@ -230,12 +232,22 @@ sub apply_dates {
 	$self->{items} = \@items;
 }
 
-sub items         { @{ shift->{items} };    }
-sub topics        { $_[0]->{topics} ? @{ shift->{topics} } : undef;   }
-sub data_path     { shift->{data_path}; }
-sub tree          { shift->{tree};          }
-sub tpp           { shift->{tpp};           }
-sub cfg           { shift->{cfg};           }
-sub xml_file      { shift->{xml_file};      }
+# the ISO8601 standard requires timezone information in a [+-]\d{2}:\d{2} format;
+# under linux POSIX:strftime provides this value as %z, but it is not portable
+# so we have to calculate it ourselves
+# credit: John W. Krahn, http://www.nntp.perl.org/group/perl.beginners/2003/01/msg39201.html
+sub get_time_zone {
+	my $local = time;
+	my $gm = timelocal( gmtime $local );
+	my $sign = qw( + + - )[ $local <=> $gm ];
+	my $calc = sprintf "%s%02d:%02d", $sign, (gmtime abs( $local - $gm ))[2,1];	
+	return $calc;
+}
+
+sub items         { @{ shift->{items} }; }
+sub data_path     { shift->{data_path};  }
+sub tree          { shift->{tree};       }
+sub tpp           { shift->{tpp};        }
+sub xml_file      { shift->{xml_file};   }
 
 1;

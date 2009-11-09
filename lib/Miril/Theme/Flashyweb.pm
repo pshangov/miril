@@ -56,32 +56,31 @@ my $edit = <<EndOfHTML;
 
 <TMPL_VAR NAME="header">
 
-	<TMPL_LOOP NAME="item">
 	<!-- start content -->
 	<div id="content">
 		<div class="post">
-			<h2 class="title"><TMPL_IF NAME="selected"><TMPL_VAR NAME="title"><TMPL_ELSE>New Article</TMPL_IF></h2>
+			<h2 class="title"><TMPL_IF NAME="item.title"><TMPL_VAR NAME="item.title"><TMPL_ELSE>New Article</TMPL_IF></h2>
 			<div class="edit">
 				<form method="POST">
 					<p class="edit">Title:<br>
-					<input type="text" name="title" class="textbox" value='<TMPL_VAR NAME="title">' /></p>
+					<input type="text" name="title" class="textbox" value='<TMPL_VAR NAME="item.title">' /></p>
 
 					<p class="edit">ID:<br>
-					<input type="text" name="id" class="textbox" value='<TMPL_VAR NAME="id">' /></p>
+					<input type="text" name="id" class="textbox" value='<TMPL_VAR NAME="item.id">' /></p>
 					
 					<p class="edit">Type:<br>
 					<select name="type">
-					<TMPL_LOOP NAME="types">
-						<option value='<TMPL_VAR NAME="cfg_m_type">'<TMPL_IF NAME="selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="cfg_type"></option>
+					<TMPL_LOOP NAME="item.types">
+						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>
 
-					<TMPL_IF NAME="has_authors">
+					<TMPL_IF NAME="item.authors">
 					<p class="edit">Author:<br>
 					<select name="author">
-					<TMPL_LOOP NAME="authors">
-						<option value='<TMPL_VAR NAME="cfg_author">'><TMPL_VAR NAME="cfg_author"></option>
+					<TMPL_LOOP NAME="item.authors">
+						<option value='<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>
@@ -89,26 +88,26 @@ my $edit = <<EndOfHTML;
 
 					<p class="edit">Status:<br>
 					<select name="status">
-					<TMPL_LOOP NAME="statuses">
-						<option value='<TMPL_VAR NAME="cfg_status">'<TMPL_IF NAME="selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="cfg_status"></option>
+					<TMPL_LOOP NAME="item.statuses">
+						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>
 
-					<TMPL_IF NAME="has_topics">
+					<TMPL_IF NAME="item.topics">
 					<p class="edit">Topic:<br>
 					<select name="topic" size=3 multiple="multiple">
-					<TMPL_LOOP NAME="topics">
-						<option value='<TMPL_VAR NAME="cfg_topic_id">'<TMPL_IF NAME="selected"> selected</TMPL_IF>><TMPL_VAR NAME="cfg_topic"></option>
+					<TMPL_LOOP NAME="item.topics">
+						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>
 					</TMPL_IF>
 
 					<p class="edit" name="text">Text:<br>
-					<textarea name="text"><TMPL_VAR NAME="text"></textarea></p>
+					<textarea name="text"><TMPL_VAR NAME="item.text"></textarea></p>
 
-					<input type="hidden" name="o_id" value='<TMPL_VAR NAME="id">' />
+					<input type="hidden" name="o_id" value='<TMPL_VAR NAME="item.id">' />
 
 					<button type="submit" id="x" name="action" value="update">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;
 					<button type="submit" id="x" name="action" value="delete">Delete</button>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -118,7 +117,6 @@ my $edit = <<EndOfHTML;
 		</div>
 	</div>
 	<!-- end content -->
-	</TMPL_LOOP>
 
 
 <TMPL_VAR NAME="footer">
@@ -321,17 +319,17 @@ my $search = <<EndOfHTML;
 				<select name="type">
 					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="types">
-					<option value='<TMPL_VAR NAME="cfg_m_type">'><TMPL_VAR NAME="cfg_type"></option>
+					<option value='<TMPL_VAR NAME="id">'><TMPL_VAR NAME="name"></option>
 				</TMPL_LOOP>
 				</select>
 				</p>
 
-				<TMPL_IF NAME="has_authors">
+				<TMPL_IF NAME="authors">
 				<p class="edit">Author:<br>
 				<select name="author">
 					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="authors">
-					<option value='<TMPL_VAR NAME="cfg_author">'><TMPL_VAR NAME="cfg_author"></option>
+					<option value='<TMPL_VAR NAME="id">'><TMPL_VAR NAME="name"></option>
 				</TMPL_LOOP>
 				</select>
 				</p>
@@ -341,17 +339,17 @@ my $search = <<EndOfHTML;
 				<select name="status">
 					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="statuses">
-					<option value='<TMPL_VAR NAME="cfg_status">'><TMPL_VAR NAME="cfg_status"></option>
+					<option value='<TMPL_VAR NAME="id">'><TMPL_VAR NAME="name"></option>
 				</TMPL_LOOP>
 				</select>
 				</p>
 
-				<TMPL_IF NAME="has_topics">
+				<TMPL_IF NAME="topics">
 				<p class="edit">Topic:<br>
 				<select name="topic">
 					<option value=''>--Any--</option>
 				<TMPL_LOOP NAME="topics">
-					<option value='<TMPL_VAR NAME="cfg_topic_id">'><TMPL_VAR NAME="cfg_topic"></option>
+					<option value='<TMPL_VAR NAME="id">'><TMPL_VAR NAME="name"></option>
 				</TMPL_LOOP>
 				</select>
 				</p>
