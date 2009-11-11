@@ -28,7 +28,6 @@ use Cwd                                       qw(cwd);
 use File::Copy                                qw(copy);
 use List::Util                                qw(first);
 use Scalar::Util                              qw(reftype);
-use Time::Format                              qw(time_format);
 use Number::Format                            qw(format_bytes);
 use File::Spec::Functions                     qw(catfile);
 use Data::AsObject                            qw(dao);
@@ -48,26 +47,23 @@ sub setup {
 
     $self->mode_param('action');
     $self->run_modes(
-    	'list'         => 'list_items',
-        'edit'         => 'edit_item',
-        'create'       => 'create_item',
-        'delete'       => 'delete_item',
-        'view'         => 'view_item',
-        'update'       => 'update_item',
+    	'list'         => 'posts_list',
+        'edit'         => 'posts_edit',
+        'create'       => 'posts_create',
+        'delete'       => 'posts_delete',
+        'view'         => 'posts_view',
+        'update'       => 'posts_update',
+		'publish'      => 'posts_publish',
+		'files'        => 'files_list',
+		'upload'       => 'files_upload',
+		'delete_files' => 'files_delete',
+		'search'       => 'search',
 		'login'        => 'login',
 		'logout'       => 'logout',
 		'account'      => 'account',
-		'update_user'  => 'update_user',
-		'files'        => 'view_files',
-		'upload_files' => 'upload_files',
-		'upload'       => 'upload',
-		'delete_files' => 'delete_files',
-		'publish'      => 'publish',
-		'quick_open'   => 'quick_open',
-		'search'       => 'search_items',
 	);
 
-	$self->start_mode('list');
+	$self->start_mode('posts_list');
 	$self->error_mode('error');
 	
 	# global variable required by Miril::Error
@@ -157,7 +153,7 @@ sub error {
 	return $tmpl->output;
 }
 
-sub list_items {
+sub posts_list {
 	my $self = shift;
 	my $q = $self->query;
 
@@ -177,7 +173,7 @@ sub list_items {
 
 }
 
-sub search_items {
+sub search {
 	my $self = shift;
 
 	my $cfg = Miril->config;
@@ -192,7 +188,7 @@ sub search_items {
 	return $tmpl->output;
 }
 
-sub create_item {
+sub posts_create {
 	my $self = shift;
 
 	my $cfg = Miril->config;
@@ -210,7 +206,7 @@ sub create_item {
 	return $tmpl->output;
 }
 
-sub edit_item {
+sub posts_edit {
 	my $self = shift;
 
 	my $cfg = Miril->config;
@@ -238,41 +234,41 @@ sub edit_item {
 	return $tmpl->output;
 }
 
-sub update_item {
+sub posts_update {
 	my $self = shift;
 	my $q = $self->query;
 
 	my $item = {
-		'id'        => $q->param('id'),
-		'author'    => $q->param('author'),
-		'status'    => $q->param('status'),
-		'text'      => $q->param('text'),
-		'title'     => $q->param('title'),
-		'type'      => $q->param('type'),
-		'o_id'      => $q->param('o_id'),
+		'id'     => $q->param('id'),
+		'author' => $q->param('author'),
+		'status' => $q->param('status'),
+		'text'   => $q->param('text'),
+		'title'  => $q->param('title'),
+		'type'   => $q->param('type'),
+		'old_id' => $q->param('old_id'),
 	};
 
-	$item->{topics} = [$self->query->param('topic')] if $q->param('topic');
+	$item->{topics} = [$q->param('topic')] if $q->param('topic');
 
 	$self->model->save($item);
 
 	return $self->redirect("?action=view&id=" . $item->{id});
 }
 
-sub delete_item {
+sub posts_delete {
 	my $self = shift;
 
-	my $id = $self->query->param('o_id');
+	my $id = $self->query->param('old_id');
 	$self->model->delete($id);
 
 	return $self->redirect("?action=list");
 }
 
-sub view_item {
+sub posts_view {
 	my $self = shift;
 	
-	 
-	my $id = $self->query->param('o_id') ? $self->query->param('o_id') : $self->query->param('id');
+	my $q = $self->query;
+	my $id = $q->param('old_id') ? $q->param('old_id') : $q->param('id');
 
 	my $item = $self->model->get_item($id);
 	if ($item) {
@@ -303,43 +299,48 @@ sub logout {
 
 sub account {
 	my $self = shift;
+	my $q = $self->query;
 
-	my $username = $self->authen->username;
-	my $user = $self->user_manager->get_user($username);
-
-	my $tmpl = $self->load_tmpl('account');
-	$tmpl->param('user', [$user]);
-	return $tmpl->output;
-}
-
-sub update_user {
-	my $self = shift;
+	if (   $q->param('name')
+		or $q->param('email')
+		or $q->param('new_password') 
+	) {
 	
-	my $username        = $self->query->param('username');
-	my $name            = $self->query->param('name');
-	my $email           = $self->query->param('email');
-	my $new_password    = $self->query->param('new_password');
-	my $retype_password = $self->query->param('new_password_2');
-	my $password        = $self->query->param('password');
+		my $username        = $q->param('username');
+		my $name            = $q->param('name');
+		my $email           = $q->param('email');
+		my $new_password    = $q->param('new_password');
+		my $retype_password = $q->param('retype_password');
+		my $password        = $q->param('password');
 
-	my $user = $self->user_manager->get_user($username);
-	my $encrypted = $self->user_manager->encrypt($password);
+		my $user = $self->user_manager->get_user($username);
+		my $encrypted = $self->user_manager->encrypt($password);
 
-	if ( $name and $email and ($encrypted eq $user->{password}) ) {
-		$user->{name} = $name;
-		$user->{email} = $email;
-		if ( $new_password and ($new_password eq $retype_password) ) {
-			$user->{password} = $self->user_manager->encrypt($new_password);
+		if ( $name and $email and ($encrypted eq $user->{password}) ) {
+			$user->{name} = $name;
+			$user->{email} = $email;
+			if ( $new_password and ($new_password eq $retype_password) ) {
+				$user->{password} = $self->user_manager->encrypt($new_password);
+			}
+			$self->user_manager->set_user($user);
+
+			return $self->redirect("?"); 
 		}
-		$self->user_manager->set_user($user);
 
-		return $self->redirect("?"); 
-	}
+		return $self->redirect("?action=account");
 
-	return $self->redirect("?action=account");
+	} else {
+	
+		my $username = $self->authen->username;
+		my $user = $self->user_manager->get_user($username);
+
+		my $tmpl = $self->load_tmpl('account');
+		$tmpl->param('user', [$user]);
+		return $tmpl->output;
+	} 
 }
 
-sub view_files {
+sub files_list {
 	my $self = shift;
 
 	my $cfg = Miril->config;
@@ -366,45 +367,47 @@ sub view_files {
 	return $tmpl->output;
 }
 
-sub upload_files {
+sub files_upload {
 	my $self = shift;
-
+	my $q = $self->query;
 	my $cfg = Miril->config;
+
+	if ( $q->param('file') or $q->upload('file') ) {
 	
-	my @filenames = $self->query->param('file');
-	my @fhs = $self->query->upload('file');
+		my @filenames = $q->param('file');
+		my @fhs = $q->upload('file');
 
-	for ( my $i = 0; $i < @fhs; $i++) {
+		for ( my $i = 0; $i < @fhs; $i++) {
 
-		my $filename = $filenames[$i];
-		my $fh = $fhs[$i];
+			my $filename = $filenames[$i];
+			my $fh = $fhs[$i];
 
-		if ($filename and $fh) {
-			my $new_filename = catfile($cfg->files_path, $filename);
-			my $new_fh = IO::File->new($new_filename, "w") 
-				or miril_warn("Could not upload file", $!);
-			copy($fh, $new_fh) 
-				or miril_warn("Could not upload file", $!);
-			$new_fh->close;
+			if ($filename and $fh) {
+				my $new_filename = catfile($cfg->files_path, $filename);
+				my $new_fh = IO::File->new($new_filename, "w") 
+					or miril_warn("Could not upload file", $!);
+				copy($fh, $new_fh) 
+					or miril_warn("Could not upload file", $!);
+				$new_fh->close;
+			}
 		}
+
+		return $self->redirect("?action=files");
+
+	} else {
+		
+		my $tmpl = $self->load_tmpl('upload');
+		return $tmpl->output;
+
 	}
-
-	return $self->redirect("?action=files");
 }
 
-sub upload {
-	my $self = shift;
-	
-	my $tmpl = $self->load_tmpl('upload');
-	return $tmpl->output;
-}
-
-sub delete_files {
+sub files_delete {
 	my $self = shift;	
-
 	my $cfg = Miril->config;
+	my $q = $self->query;
 
-	my @filenames = $self->query->param('file');
+	my @filenames = $q->param('file');
 
 	try {
 		for (@filenames) {
@@ -416,7 +419,7 @@ sub delete_files {
 	return $self->redirect("?action=files");
 }
 
-sub publish {
+sub posts_publish {
 	my $self = shift;
 
 	my $cfg = Miril->config;
