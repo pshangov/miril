@@ -85,6 +85,7 @@ sub get_item {
 		}
 		
 		# apply some more information
+		warn $match->{type};
 		my $current_type = first { $_->{id} eq $match->{type} } $cfg->types;
 		my @dirs = splitdir($current_type->location);
 		my $file_to_http_dir = join "/", @dirs;
@@ -123,7 +124,7 @@ sub get_items {
 sub save {
 	my $self = shift;
 	my $item = dao shift;
-
+	
 	my $miril = $self->miril;
 	my @items = $self->items;
 
@@ -164,7 +165,6 @@ sub save {
 	# update the xml file
 	my $new_tree = $self->tree;
 	$new_tree->{xml}->{item} = \@items;
-	require Data::Dumper;
 	$self->{tree} = $new_tree;
 	$self->tpp->writefile($self->xml_file, $new_tree) 
 		or $miril->process_error("Cannot update metadata file", $!, 'fatal');

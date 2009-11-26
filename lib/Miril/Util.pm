@@ -35,7 +35,7 @@ sub get_target_filename {
 
 	my ($name, $type) = @_;
 
-	my $current_type = first {$_->id eq $type} $cfg->types->type;
+	my $current_type = first {$_->id eq $type} $cfg->types;
 	my $target_filename = catfile($cfg->output_path, $current_type->location, $name . ".html");
 
 	return $target_filename;

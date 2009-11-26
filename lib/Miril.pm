@@ -9,11 +9,11 @@ Miril - A Static Content Management System
 
 =head1 VERSION
 
-Version 0.006
+Version 0.007
 
 =cut
 
-our $VERSION = '0.006';
+our $VERSION = '0.007';
 $VERSION = eval $VERSION;
 
 use base ("CGI::Application");
@@ -111,7 +111,7 @@ sub setup {
 	my $view_name = "Miril::View::" . $self->cfg->view;
 	try {
 		load $view_name;
-		$self->{view} = $view_name->new($self->cfg->tmpl_path);
+		$self->{view} = $view_name->new($self);
 	} catch {
 		$self->process_error("Could not load view", $_, 'fatal');
 	};
@@ -237,12 +237,12 @@ sub posts_update {
 
 	my $item = {
 		'id'     => $q->param('id'),
-		'author' => $q->param('author'),
-		'status' => $q->param('status'),
-		'text'   => $q->param('text'),
-		'title'  => $q->param('title'),
-		'type'   => $q->param('type'),
-		'old_id' => $q->param('old_id'),
+		'author' => ( $q->param('author') or undef ),
+		'status' => ( $q->param('status') or undef ),
+		'text'   => ( $q->param('text')   or undef ),
+		'title'  => ( $q->param('title')  or undef ),
+		'type'   => ( $q->param('type')   or undef ),
+		'old_id' => ( $q->param('old_id') or undef ),
 	};
 
 	$item->{topics} = [$q->param('topic')] if $q->param('topic');
@@ -449,7 +449,7 @@ sub posts_publish {
 			$item->{text} = $self->filter->to_xhtml($item->text);
 			$item->{teaser} = $self->filter->to_xhtml($item->teaser);
 
-			my $type = first {$_->id eq $item->type} $cfg->types->type;
+			my $type = first {$_->id eq $item->type} $cfg->types;
 			warn $type->template;
 			
 			my $output = $self->view->load(

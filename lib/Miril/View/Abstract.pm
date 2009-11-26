@@ -6,7 +6,7 @@ use warnings;
 sub new {
 	my $class = shift;
 	my $miril = shift;
-	my $tmpl_path = shift;
+	my $tmpl_path = $miril->cfg->tmpl_path;
 
 	my $self = bless {}, $class;
 
