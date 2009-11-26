@@ -12,14 +12,15 @@ use Data::AsObject          qw(dao);
 use File::Spec::Functions   qw(catfile splitdir);
 use POSIX                   qw(strftime);
 use Try::Tiny               qw(try catch);
-use Miril::Error            qw(miril_warn miril_die);
 use Scalar::Util            qw(reftype);
 use Time::Local             qw(timelocal);
 use Miril;
 
 sub new {
 	my $class = shift;
-	my $cfg = Miril->config;
+	my $miril = shift;
+
+	my $cfg = $miril->cfg;
 
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['item'] );
@@ -27,7 +28,8 @@ sub new {
     my ($tree, @items);
 	
 	if (-e $cfg->xml_data) {
-		$tree = $tpp->parsefile( $cfg->xml_data ) or miril_die($!);
+		$tree = $tpp->parsefile( $cfg->xml_data ) 
+			or $miril->process_error("Could not read metadata file", $!, 'fatal');
 		@items = dao @{ $tree->{xml}{item} };
 	} else {
 		# miril is run for the first time
@@ -36,6 +38,7 @@ sub new {
 
 	my $self = bless {}, $class;
 	$self->{data_path} = $cfg->data_path;
+	$self->{miril} = $miril;
 	
 	# some posts have one topic only, make sure we still have an arrayref
 	map { $_->{topics}{topic} = [$_->{topics}{topic}] unless ref $_->{topics}{topic} } @items;
@@ -57,12 +60,14 @@ sub get_item {
 	my $self  = shift;
 	my $id = shift;
 
-	my $cfg = Miril->config;
+	my $miril = $self->miril;
+	my $cfg = $miril->cfg;
 
 	my $match = first {$_->id eq $id} $self->items;
 	if ($match) {
 		
-		$match->{text} = File::Slurp::read_file($match->filename) or miril_die($!);
+		$match->{text} = File::Slurp::read_file($match->filename) 
+			or $miril->process_error("Could not read data file", $!, 'fatal');
 
 		my @split = split( '<!-- BREAK -->', $match->{text}, 2);
 		$match->{teaser} = $split[0];
@@ -119,13 +124,14 @@ sub save {
 	my $self = shift;
 	my $item = dao shift;
 
+	my $miril = $self->miril;
 	my @items = $self->items;
 
-	if ($item->o_id) {
+	if ($item->old_id) {
 		# this is an update
 
 		for (@items) {
-			if ($_->id eq $item->o_id) {
+			if ($_->id eq $item->old_id) {
 				$_->{id}            = $item->id;
 				$_->{author}        = $item->author;
 				$_->{status}        = $item->status;
@@ -136,9 +142,9 @@ sub save {
 		}
 		
 		# delete the old file if we have changed the id
-		if ($item->o_id ne $item->id) {
-			unlink($self->data_path . '/' . $item->o_id) 
-				or miril_warn("Cannot delete old version of renamed item", $!);
+		if ($item->old_id ne $item->id) {
+			unlink($self->data_path . '/' . $item->old_id) 
+				or $miril->process_error("Cannot delete old version of renamed item", $!);
 		}	
 
 	} else {
@@ -161,13 +167,13 @@ sub save {
 	require Data::Dumper;
 	$self->{tree} = $new_tree;
 	$self->tpp->writefile($self->xml_file, $new_tree) 
-		or miril_die("Cannot update metadata file", $!);
+		or $miril->process_error("Cannot update metadata file", $!, 'fatal');
 
 	# update the data file
 	my $fh = IO::File->new( File::Spec->catfile($self->data_path, $item->id), "w")
-		or miril_die("Cannot update data file", $!);
+		or $miril->process_error("Cannot update data file", $!, 'fatal');
 	$fh->print($item->text)
-		or miril_die("Cannot update data file", $!);;
+		or $miril->process_error("Cannot update data file", $!, 'fatal');
 	$fh->close;
 }
 
@@ -175,6 +181,7 @@ sub delete {
 	my $self = shift;
 	my $id = shift;
 
+	my $miril = $self->miril;
 	my @items = $self->items;
 	
 	my $i = -1;
@@ -191,10 +198,10 @@ sub delete {
 	$new_tree->{xml}->{item} = \@items;
 	$self->{tree} = $new_tree;
 	$self->tpp->writefile($self->xml_file, $new_tree) 
-		or miril_die("Cannot update metadata file after deletion", $!);
+		or $miril->process_error("Cannot update metadata file after deletion", $!, 'fatal');
 
 	unlink( File::Spec->catfile($self->data_path, $id) )
-		or miril_die("Cannot delete data file", $!);
+		or $miril->process_error("Cannot delete data file", $!, 'fatal');
 }
 
 sub apply_dates {
@@ -249,5 +256,6 @@ sub data_path     { shift->{data_path};  }
 sub tree          { shift->{tree};       }
 sub tpp           { shift->{tpp};        }
 sub xml_file      { shift->{xml_file};   }
+sub miril         { shift->{miril};      }
 
 1;

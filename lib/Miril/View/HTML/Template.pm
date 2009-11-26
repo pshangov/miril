@@ -9,7 +9,6 @@ use HTML::Template::Pluggable;
 use HTML::Template::Plugin::Dot;
 use File::Spec::Functions qw(catfile);
 use Try::Tiny qw(try catch);
-use Miril::Error qw(miril_warn miril_die);
 
 sub load {
 	my $self = shift;
@@ -24,7 +23,7 @@ sub load {
 			global_vars       => 1,
 		);
 	} catch {
-		miril_die($_);
+		$self->miril->process_error("Could not open template file", $_, 'fatal');
 	};
 
 	$tmpl->param( %{ $options{params} } );

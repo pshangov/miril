@@ -1,0 +1,10 @@
+^_build
+^Build$
+^Build\.bat
+^blib
+~$
+\.bak$
+\.swp
+^MANIFEST\.SKIP$
+.git
+

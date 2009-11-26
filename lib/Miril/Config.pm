@@ -22,7 +22,7 @@ sub new {
 	$cfg->{filter}         = 'Markdown'       unless defined $cfg->{filter};
 	$cfg->{view}           = 'HTML::Template' unless defined $cfg->{view};
 
-	$cfg->{items_per_page} = 10             unless defined $cfg->{items_per_page};
+	$cfg->{items_per_page} = 10               unless defined $cfg->{items_per_page};
 
 	$cfg->{xml_data}       = catfile($cfg->{cache_path}, 'data.xml');
 	$cfg->{latest_data}    = catfile($cfg->{cache_path}, 'latest.xml');

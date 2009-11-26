@@ -9,11 +9,11 @@ Miril - A Static Content Management System
 
 =head1 VERSION
 
-Version 0.004
+Version 0.006
 
 =cut
 
-our $VERSION = '0.004';
+our $VERSION = '0.006';
 $VERSION = eval $VERSION;
 
 use base ("CGI::Application");
@@ -33,10 +33,23 @@ use File::Spec::Functions                     qw(catfile);
 use Data::AsObject                            qw(dao);
 use Try::Tiny                                 qw(try catch);
 use Module::Load                              qw(load);
-use Miril::Error                              qw(miril_warn miril_die);
 use Data::Page                                qw();
 use XML::TreePP                               qw();
 use POSIX                                     qw(strftime);
+use Miril::Error                              qw(process_error error_stack error);
+use Miril::Util                               qw(
+	get_target_filename
+	get_last_modified_time
+	get_latest
+	add_to_latest
+	generate_paged_url
+	paginate
+	load_tmpl
+	prepare_authors
+	prepare_statuses
+	prepare_topics
+	prepare_types
+);
 
 sub setup {
 	my $self = shift;
@@ -63,12 +76,9 @@ sub setup {
 		'account'      => 'account',
 	);
 
-	$self->start_mode('posts_list');
+	$self->start_mode('list');
 	$self->error_mode('error');
 	
-	# global variable required by Miril::Error
-	$Miril::Error::app = $self;
-
 	# load templates
 	require Miril::Theme::Flashyweb;
 	$self->{tmpl} = Miril::Theme::Flashyweb->new;
@@ -80,21 +90,20 @@ sub setup {
 	try {
 		$cfg = Miril::Config->new($config_filename);
 	} catch {
-		miril_die("Could not open configuration file", $_);
+		$self->process_error("Could not open configuration file", $_, 'fatal');
 	};
 	return unless $cfg;
 
 	$self->{cfg} = $cfg;
-	our $cfg_global = $cfg;
 
 	
 	# load model
 	my $model_name = "Miril::Model::" . $self->cfg->model;
 	try {
 		load $model_name;
-		$self->{model} = $model_name->new($self->cfg);
+		$self->{model} = $model_name->new($self);
 	} catch {
-		miril_die("Could not load model", $_);
+		$self->process_error("Could not load model", $_, 'fatal');
 	};
 	return unless $self->model;
 
@@ -104,7 +113,7 @@ sub setup {
 		load $view_name;
 		$self->{view} = $view_name->new($self->cfg->tmpl_path);
 	} catch {
-		miril_die("Could not load view", $_);
+		$self->process_error("Could not load view", $_, 'fatal');
 	};
 
 	# load filter
@@ -113,7 +122,7 @@ sub setup {
 		load $filter_name;
 		$self->{filter} = $filter_name->new($self->cfg);
 	} catch {
-		miril_die("Could not load filter", $_);
+		$self->process_error("Could not load filter", $_, 'fatal');
 	};
 	
 
@@ -121,9 +130,9 @@ sub setup {
 	my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
 	try {
 		load $user_manager_name;
-		$self->{user_manager} = $user_manager_name->new($self->cfg);
+		$self->{user_manager} = $user_manager_name->new($self);
 	} catch {
-		miril_die("Could not load user manager", $_);
+		$self->process_error("Could not load user manager", $_, 'fatal');
 	};
 
 	# configure authentication
@@ -140,18 +149,6 @@ sub setup {
 
 
 ### RUN MODES ###
-
-sub error {
-	my $self = shift;
-	my $err_msg = shift;
-
-	unless ($err_msg =~ /miril_processed_error/) {
-		Miril::Error::process_error("Unspecified error", $err_msg) ;
-	}
-
-	my $tmpl = $self->load_tmpl('error');
-	return $tmpl->output;
-}
 
 sub posts_list {
 	my $self = shift;
@@ -176,7 +173,7 @@ sub posts_list {
 sub search {
 	my $self = shift;
 
-	my $cfg = Miril->config;
+	my $cfg = $self->cfg;
 
 	my $tmpl = $self->load_tmpl('search');
 
@@ -191,7 +188,7 @@ sub search {
 sub posts_create {
 	my $self = shift;
 
-	my $cfg = Miril->config;
+	my $cfg = $self->cfg;
 
 	my $empty_item;
 
@@ -209,7 +206,7 @@ sub posts_create {
 sub posts_edit {
 	my $self = shift;
 
-	my $cfg = Miril->config;
+	my $cfg = $self->cfg;
 
 	my $id = $self->query->param('id');
 	my $item = $self->model->get_item($id);
@@ -335,7 +332,7 @@ sub account {
 		my $user = $self->user_manager->get_user($username);
 
 		my $tmpl = $self->load_tmpl('account');
-		$tmpl->param('user', [$user]);
+		$tmpl->param('user', $user);
 		return $tmpl->output;
 	} 
 }
@@ -343,13 +340,13 @@ sub account {
 sub files_list {
 	my $self = shift;
 
-	my $cfg = Miril->config;
+	my $cfg = $self->cfg;
 
 	my $files_path = $cfg->files_path;
 	my $files_http_dir = $cfg->files_http_dir;
 	my @files;
 	
-	opendir(my $dir, $files_path) or miril_die("Cannot open files directory", $!);
+	opendir(my $dir, $files_path) or $self->process_error("Cannot open files directory", $!, 'fatal');
 	@files = grep { -f catfile($files_path, $_) } readdir($dir);
 	closedir $dir;
 
@@ -370,7 +367,7 @@ sub files_list {
 sub files_upload {
 	my $self = shift;
 	my $q = $self->query;
-	my $cfg = Miril->config;
+	my $cfg = $self->cfg;
 
 	if ( $q->param('file') or $q->upload('file') ) {
 	
@@ -385,9 +382,9 @@ sub files_upload {
 			if ($filename and $fh) {
 				my $new_filename = catfile($cfg->files_path, $filename);
 				my $new_fh = IO::File->new($new_filename, "w") 
-					or miril_warn("Could not upload file", $!);
+					or $self->process_error("Could not upload file", $!);
 				copy($fh, $new_fh) 
-					or miril_warn("Could not upload file", $!);
+					or $self->process_error("Could not upload file", $!);
 				$new_fh->close;
 			}
 		}
@@ -404,7 +401,7 @@ sub files_upload {
 
 sub files_delete {
 	my $self = shift;	
-	my $cfg = Miril->config;
+	my $cfg = $self->cfg;
 	my $q = $self->query;
 
 	my @filenames = $q->param('file');
@@ -412,7 +409,7 @@ sub files_delete {
 	try {
 		for (@filenames) {
 			unlink( catfile($cfg->files_path, $_) )
-				or miril_warn("Could not delete file", $!);
+				or $self->process_error("Could not delete file", $!);
 		}
 	};
 
@@ -422,7 +419,7 @@ sub files_delete {
 sub posts_publish {
 	my $self = shift;
 
-	my $cfg = Miril->config;
+	my $cfg = $self->cfg;
 	
 	my $do = $self->query->param("do");
 	my $rebuild = $self->query->param("rebuild");
@@ -465,62 +462,60 @@ sub posts_publish {
 			my $new_filename = $self->get_target_filename($item->id, $item->type);
 
 			my $fh = IO::File->new($new_filename, "w") 
-				or miril_warn("Cannot open file $new_filename for writing", $!);
+				or $self->process_error("Cannot open file $new_filename for writing", $!);
 			if ($fh) {
 				$fh->print( $output )
-					or miril_warn("Cannot print to file $new_filename", $!);
+					or $self->process_error("Cannot print to file $new_filename", $!);
 				$fh->close;
 			}
 		}
 
 		foreach my $list ($cfg->lists->list) {
-			if ( 1 ) {
 
-				my @params = qw(
-					author
-					type
-					status
-					topic
-					created_before
-					created_on
-					created_after
-					updated_before
-					updated_on
-					updated_after
-					published_before
-					published_on
-					published_after
-					last
-				);
+			my @params = qw(
+				author
+				type
+				status
+				topic
+				created_before
+				created_on
+				created_after
+				updated_before
+				updated_on
+				updated_after
+				published_before
+				published_on
+				published_after
+				last
+			);
 
-				my %params;
+			my %params;
 
-				foreach my $param (@params) {
-					if ( exists $list->match->{$param} ) {
-						$params{$param} = $list->match->{$param};
-					}
+			foreach my $param (@params) {
+				if ( exists $list->match->{$param} ) {
+					$params{$param} = $list->match->{$param};
 				}
-
-				my @items = $self->model->get_items( %params );
-
-				my $output = $self->view->load(
-					name => $list->template,
-					params => {
-						items => \@items,
-						cfg => $cfg,
-				});
-
-				my $new_filename = catfile($cfg->output_path, $list->location);
-
-				my $fh = IO::File->new($new_filename, "w") 
-					or miril_warn("Cannot open file $new_filename for writing", $!);
-				if ($fh) {
-					$fh->print( $output )
-						or miril_warn("Cannot print to file $new_filename", $!);
-					$fh->close;
-				}
-
 			}
+
+			my @items = $self->model->get_items( %params );
+
+			my $output = $self->view->load(
+				name => $list->template,
+				params => {
+					items => \@items,
+					cfg => $cfg,
+			});
+
+			my $new_filename = catfile($cfg->output_path, $list->location);
+
+			my $fh = IO::File->new($new_filename, "w") 
+				or $self->process_error("Cannot open file $new_filename for writing", $!);
+			if ($fh) {
+				$fh->print( $output )
+					or $self->process_error("Cannot print to file $new_filename", $!);
+				$fh->close;
+			}
+
 		}
 		return $self->redirect("?action=list");
 		
@@ -528,11 +523,6 @@ sub posts_publish {
 		my $tmpl = $self->load_tmpl('publish');
 		return $tmpl->output;
 	}
-}
-
-sub msg {
-	my $self = shift;
-	$self->{msg} ? return $self->{msg} : return [];
 }
 
 ### ACCESSORS ###
@@ -543,258 +533,15 @@ sub cfg          { shift->{cfg};          }
 sub tmpl         { shift->{tmpl};         }
 sub errors       { shift->{errors};       }
 sub user_manager { shift->{user_manager}; }
-sub msg_cookie   { shift->{msg_cookie};   }
 sub pager        { shift->{pager};        }
 sub view         { shift->{view};         }
 
-### AUXILLIARY FUNCTIONS ###
-
-sub get_target_filename {
-	my $self = shift;
-
-	my $cfg = Miril->config;
-
-	my ($name, $type) = @_;
-
-	my $current_type = first {$_->id eq $type} $cfg->types->type;
-	my $target_filename = catfile($cfg->output_path, $current_type->location, $name . ".html");
-
-	return $target_filename;
-}
-
-sub get_last_modified_time {
-	my $self = shift;
-	my $filename = shift;
-
-	return time() - ( (-M $filename) * 60 * 60 * 24 );
-}
-
-sub get_latest {
-	my $self = shift;
-	
-	my $cfg = Miril->config;
-
-	require XML::TreePP;
-	#FIXME
-    my $tpp = XML::TreePP->new();
-	$tpp->set( force_array => ['item'] );
-	my $tree;
-	my @items;
-	
-	try { 
-		$tree = $tpp->parsefile( $cfg->latest_data );
-		# force array
-		@items = dao @{ $tree->{xml}{item} };
-	} catch {
-		miril_warn($_);
-	};
-	
-
-	return \@items;
-}
-
-sub add_to_latest {
-	my $self = shift;
-
-	my $cfg = Miril->config;
-
-	my ($id, $title) = @_;
-
-    my $tpp = XML::TreePP->new();
-	$tpp->set( force_array => ['item'] );
-	my $tree;
-	my @items;
-	
-	if ( -e $cfg->latest_data ) {
-		try { 
-			$tree = $tpp->parsefile( $cfg->latest_data );
-			@items = @{ $tree->{xml}->{item} };
-		} catch {
-			miril_warn($_);
-		};
-	}
-
-	@items = grep { $_->{id} ne $id } @items;
-	unshift @items, { id => $id, title => $title};
-	@items = @items[0 .. 9] if @items > 10;
-
-	$tree->{xml}{item} = \@items;
-	
-	try { 
-		$tpp->writefile( $cfg->latest_data, $tree );
-	} catch {
-		miril_warn($_);
-	};
-}
-
-sub msg_add {
-	my $self = shift;
-	my $msg = shift;
-
-	my @errors;
-	#FIXME
-	@errors = @{ $self->errors } if $self->errors;
-	unshift @errors, $msg;
-	$self->{errors} = \@errors;
-}
-
-sub generate_paged_url {
-	my $self = shift;
-	my $page_no = shift;
-
-	my $q = $self->query;
-
-	my $paged_url = '?action=' . $q->param('action');
-
-	if (
-		$q->param('title')  or
-		$q->param('author') or
-		$q->param('type')   or
-		$q->param('status') or
-		$q->param('topic')
-	) {
-		$paged_url .=   '&title='  . $q->param('title')
-		              . '&author=' . $q->param('author') 
-		              . '&type='   . $q->param('type') 
-		              . '&status=' . $q->param('status')
-		              . '&topic='  . $q->param('topic');
-	}
-
-	$paged_url .= "&page_no=$page_no";
-
-	return $paged_url;
-}
-
-sub paginate {
-	my $self = shift;
-	my @items = @_;
-	
-	my $cfg = Miril->config;
-
-	return unless @items;
-
-	if (@items > $cfg->items_per_page) {
-
-		my $page = Data::Page->new;
-		$page->total_entries(scalar @items);
-		$page->entries_per_page($cfg->items_per_page);
-		$page->current_page($self->query->param('page_no') ? $self->query->param('page_no') : 1);
-		
-		my $pager;
-		
-		if ($page->current_page > 1) {
-			$pager->{first}    = $self->generate_paged_url($page->first_page);
-			$pager->{previous} = $self->generate_paged_url($page->previous_page);
-		}
-
-		warn $page->first_page;
-
-		if ($page->current_page < $page->last_page) {
-			$pager->{'last'} = $self->generate_paged_url($page->last_page);
-			$pager->{'next'} = $self->generate_paged_url($page->next_page);
-		}
-
-		$self->{pager} = $pager;
-		return $page->splice(\@items);
-
-	} else {
-		return @items;
-	}
-}
-
-sub load_tmpl {
-	my $self = shift;
-	my $name = shift;
-	my %options = @_;
-
-	my $text = $self->tmpl->get($name);
-	
-	# get css
-	my $css_text = $self->tmpl->get('css');
-	my $css = HTML::Template::Pluggable->new( scalarref => \$css_text, die_on_bad_params => 0 );
-
-	# get header
-	my $header_text = $self->tmpl->get('header');
-	my $header = HTML::Template::Pluggable->new( scalarref => \$header_text, die_on_bad_params => 0 );
-	$header->param('authenticated', $self->authen->is_authenticated ? 1 : 0);
-	$header->param('css', $css->output);
-	my @error_stack = Miril::Error::error_stack();
-	$header->param('has_error', 1 ) if @error_stack;
-	$header->param('error', [@error_stack] );
-
-	# get sidebar
-	my $sidebar_text = $self->tmpl->get('sidebar');
-	my $sidebar = HTML::Template::Pluggable->new( scalarref => \$sidebar_text, die_on_bad_params => 0 );
-	$sidebar->param('latest', $self->get_latest);
-
-	# get footer
-	my $footer_text = $self->tmpl->get('footer');
-	my $footer = HTML::Template::Pluggable->new( scalarref => \$footer_text, die_on_bad_params => 0 );
-	$footer->param('authenticated', $self->authen->is_authenticated ? 1 : 0);
-	$footer->param('sidebar', $sidebar->output);
-	
-	my $tmpl = HTML::Template::Pluggable->new( scalarref => \$text, die_on_bad_params => 0 );
-	$tmpl->param('authenticated', $self->authen->is_authenticated ? 1 : 0);
-	$tmpl->param('header' => $header->output, 'footer' => $footer->output );
-
-	if ($self->pager) {
-
-		my $pager_text = $self->tmpl->get('pager');
-		my $pager = HTML::Template::Pluggable->new( scalarref => \$pager_text, die_on_bad_params => 0 );
-		$pager->param('first', $self->pager->{first});
-		$pager->param('last', $self->pager->{last});
-		$pager->param('previous', $self->pager->{previous});
-		$pager->param('next', $self->pager->{next});
-
-		warn $pager->output;
-		
-		$tmpl->param('pager' => $pager->output );
-	}
-
-	
-
-	return $tmpl;
-}
-
-sub config {
-	return $Miril::cfg_global;
-}
-
-sub prepare_authors {
-	my ($self, $selected) = @_;
-	my $cfg = Miril->config;
-	my @authors;
-	if ($selected) {
-		@authors = map +{ name => $_, id => $_ , selected => $_ eq $selected }, $cfg->authors;
-	} else {
-		@authors = map +{ name => $_, id => $_  }, $cfg->authors;
-	}
-	return \@authors;
-}
-
-sub prepare_statuses {
-	my ($self, $selected) = @_;
-	my $cfg = Miril->config;
-	my @statuses = map +{ name => $_, id => $_, selected => $_ eq $selected }, $cfg->statuses;
-	return \@statuses;
-}
-
-sub prepare_topics {
-	my ($self, %selected) = @_;
-	my $cfg = Miril->config;
-	my @topics   = map +{ name => $_->name, id => $_->id, selected => $selected{$_->id} }, $cfg->topics;
-	return \@topics;
-}
-
-sub prepare_types {
-	my ($self, $selected) = @_;
-	my $cfg = Miril->config;
-	my @types = map +{ name => $_->name, id => $_->id, selected => $_->id eq $selected }, $cfg->types;
-	return \@types;
-}
 
 1;
 
+=head1 WARNING
+
+This is alfa-quality software, use with great care!
 
 =head1 DESCRPTION
 

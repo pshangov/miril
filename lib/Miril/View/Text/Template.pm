@@ -8,7 +8,6 @@ use base 'Miril::View::Abstract';
 use Text::Template;
 use File::Spec::Functions qw(catfile);
 use Try::Tiny qw(try catch);
-use Miril::Error qw(miril_warn miril_die);
 
 sub load {
 	my $self = shift;
@@ -19,7 +18,7 @@ sub load {
 	try {
 		$tmpl = Text::Template->new( TYPE => 'FILE', SOURCE => catfile($self->tmpl_path, $options{name}) );
 	} catch {
-		miril_die($_);
+		$self->miril->process_error("Could not open template file", $_, 'fatal');
 	};
 
 	return $tmpl->fill_in( HASH => $options{params} );
