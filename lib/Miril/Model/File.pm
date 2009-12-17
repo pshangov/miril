@@ -100,8 +100,69 @@ sub get_posts {
 }
 
 sub save {
-	my $post = shift;
+	my $self = shift;
+	my $post = dao shift;
 
+	my $miril = $self->miril;
+	my $cfg = $miril->cfg;
+	
+	my $miril = $self->miril;
+	my @items = $self->items;
+
+	if ($item->old_id) {
+		# this is an update
+
+		for (@items) {
+			if ($_->id eq $item->old_id) {
+				$_->{id}            = $item->id;
+				$_->{author}        = $item->author;
+				$_->{status}        = $item->status;
+				$_->{title}         = $item->title;
+				$_->{topics}{topic} = $item->topics;
+				last;
+			}
+		}
+		
+		# delete the old file if we have changed the id
+		if ($item->old_id ne $item->id) {
+			unlink($self->data_path . '/' . $item->old_id) 
+				or $miril->process_error("Cannot delete old version of renamed item", $!);
+		}	
+
+	} else {
+		# this is a new item
+		my $new_item = dao {
+			id        => $item->id,
+			author    => $item->author,
+			status    => $item->status,
+			title     => $item->title,
+			topics    => { topic => [$item->topics] },
+			type      => $item->type,
+		};
+		
+		push @items, $new_item;
+	}
+	
+	# update the cache file
+	my $new_tree = $self->tree;
+	$new_tree->{xml}->{item} = \@items;
+	$self->{tree} = $new_tree;
+	$self->tpp->writefile($self->xml_file, $new_tree) 
+		or $miril->process_error("Cannot update cache file", $!, 'fatal');
+	
+	# update the data file
+	my $content;
+
+	$content .= "$_: " . $post->{$_} . "\n"  for qw(published title type format author);
+	$content .= "topics: " . join(" ", $post->topics) . "\n";
+	$content .= "<!-- END META -->\n";
+	$content .= $post->text;
+
+	my $fh = IO::File->new( File::Spec->catfile($self->data_path, $item->id), "w")
+		or $miril->process_error("Cannot update data file", $!, 'fatal');
+	$fh->print($content)
+		or $miril->process_error("Cannot update data file", $!, 'fatal');
+	$fh->close;
 }
 
 sub parse_meta {
