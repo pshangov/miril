@@ -1,7 +1,18 @@
 package Miril::Model::File;
 
+use Data::AsObject qw(dao);
+use File::Slurp;
+use XML::TreePP;
+use Try::Tiny qw(try catch);
+use IO::File;
+use File::Spec;
+
 # constructor
-sub new {}
+sub new {
+	my $self = bless {}, shift;
+	$self->{miril} = shift;
+	return $self;
+}
 
 sub get_post {
 	my $self  = shift;
@@ -10,7 +21,7 @@ sub get_post {
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 
-	my $filename = filename_from_id($id);
+	my $filename = File::Spec->catfile($self->data_path, $id);
 	my $post_file = File::Slurp::read_file($filename) 
 		or $miril->process_error("Could not read data file", $!, 'fatal');
 
@@ -45,7 +56,7 @@ sub get_posts {
 	if (-e $cfg->cache) {
 		$tree = $tpp->parsefile( $cfg->cache_data ) 
 			or $miril->process_error("Could not read cache file", $!, 'fatal');
-		@posts = dao @{ $tree->{xml}{post} };
+		@posts = dao( @{ $tree->{xml}{post} } );
 	} else {
 		# miril is run for the first time
 		$tree = {};
@@ -72,7 +83,7 @@ sub get_posts {
 	}
 
 	# check for entries missing from the cache
-	my $data_dir = opendir($cfg->data_dir);
+	opendir(my $data_dir, $cfg->data_dir);
 	while ( my $id = readdir($data_dir) ) {
 		unless ( first {$_ eq $id} @post_ids ) {
 			my $post;
@@ -186,3 +197,7 @@ sub parse_meta {
 
 	return %meta;
 }
+
+sub miril { shift->{miril} }
+
+1;

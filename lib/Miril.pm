@@ -144,7 +144,8 @@ sub setup {
 		STORE          => [ 'Cookie', SECRET => $cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
 	);
 
-	$self->authen->protected_runmodes(':all');	
+	#$self->authen->protected_runmodes(':all');	
+	$self->authen->protected_runmodes();	
 }
 
 
@@ -154,7 +155,7 @@ sub posts_list {
 	my $self = shift;
 	my $q = $self->query;
 
-	my @items = $self->model->get_items(
+	my @items = $self->model->get_posts(
 		author => ( $q->param('author') or undef ),
 		title  => ( $q->param('title' ) or undef ),
 		type   => ( $q->param('type'  ) or undef ),
@@ -209,7 +210,7 @@ sub posts_edit {
 	my $cfg = $self->cfg;
 
 	my $id = $self->query->param('id');
-	my $item = $self->model->get_item($id);
+	my $item = $self->model->get_post($id);
 	
 	my %cur_topics;
 
@@ -267,7 +268,7 @@ sub posts_view {
 	my $q = $self->query;
 	my $id = $q->param('old_id') ? $q->param('old_id') : $q->param('id');
 
-	my $item = $self->model->get_item($id);
+	my $item = $self->model->get_post($id);
 	if ($item) {
 		$item->{text} = $self->filter->to_xhtml($item->text);
 
@@ -427,7 +428,7 @@ sub posts_publish {
 	if ($do) {
 		my (@to_create, @to_update);
 
-		my @items = $self->model->get_items;
+		my @items = $self->model->get_posts;
 
 		foreach my $item (@items) {
 			my $src_modified = $item->modified_sec;
@@ -444,7 +445,7 @@ sub posts_publish {
 		}
 
 		for (@to_create, @to_update) {
-			my $item = $self->model->get_item($_);
+			my $item = $self->model->get_post($_);
 			
 			$item->{text} = $self->filter->to_xhtml($item->text);
 			$item->{teaser} = $self->filter->to_xhtml($item->teaser);
@@ -497,7 +498,7 @@ sub posts_publish {
 				}
 			}
 
-			my @items = $self->model->get_items( %params );
+			my @items = $self->model->get_posts( %params );
 
 			my $output = $self->view->load(
 				name => $list->template,

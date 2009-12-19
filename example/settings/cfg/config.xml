@@ -1,10 +1,12 @@
 <xml>
 
 	<!-- PATHS - CHANGE TO MATCH YOUR SETUP -->
-	<data_path>C:\Dev\miril_example\data</data_path>
-	<tmpl_path>C:\Dev\miril_example\tmpl</tmpl_path>
-	<cache_path>C:\Dev\miril_example\cache</cache_path>
-	<cfg_path>C:\Dev\miril_example\cfg</cfg_path>
+	<data_path>../settings/data</data_path>
+	<tmpl_path>../settings/tmpl</tmpl_path>
+	<cache_path>../settings/cache</cache_path>
+	<cfg_path>../settings/cfg</cfg_path>
+
+	<model>File</model>
 
 	<output_path>../htdocs/miril</output_path>
 	<files_path>../htdocs/miril/files</files_path>
