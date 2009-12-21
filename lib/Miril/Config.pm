@@ -25,8 +25,9 @@ sub new {
 	$cfg->{items_per_page} = 10               unless defined $cfg->{items_per_page};
 
 	$cfg->{xml_data}       = catfile($cfg->{cache_path}, 'data.xml');
+	$cfg->{cache_data}     = catfile($cfg->{cache_path}, 'cache.xml');
 	$cfg->{latest_data}    = catfile($cfg->{cache_path}, 'latest.xml');
-	$cfg->{users_data}     = catfile($cfg->{cfg_path}, 'users.xml');
+	$cfg->{users_data}     = catfile($cfg->{cfg_path},   'users.xml');
 
 	$cfg->{workflow}{status} = [qw(draft published)];
 	$cfg->{statuses} = [qw(draft published)];

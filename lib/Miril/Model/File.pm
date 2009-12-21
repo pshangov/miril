@@ -6,6 +6,7 @@ use XML::TreePP;
 use Try::Tiny qw(try catch);
 use IO::File;
 use File::Spec;
+use List::Util qw(first);
 
 # constructor
 sub new {
@@ -21,7 +22,7 @@ sub get_post {
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 
-	my $filename = File::Spec->catfile($self->data_path, $id);
+	my $filename = File::Spec->catfile($cfg->data_path, $id);
 	my $post_file = File::Slurp::read_file($filename) 
 		or $miril->process_error("Could not read data file", $!, 'fatal');
 
@@ -32,13 +33,13 @@ sub get_post {
 
 	my $post = \%meta;
 	
-	$post->{id} = $id;
-	$post->{body} = $body;
-	$post->{teaser} = $teaser;
-	$post->{path} = $filename;
+	$post->{id}       = $id;
+	$post->{text}     = $body;
+	$post->{teaser}   = $teaser;
+	$post->{path}     = $filename;
 	$post->{modified} = -M $filename;
 
-	return $post;
+	return dao $post;
 }
 
 sub get_posts {
@@ -50,10 +51,11 @@ sub get_posts {
 	my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['post'] );
 	$tpp->set( indent => 2 );
+	$self->{tpp} = $tpp;
     
 	my ($tree, @posts, $dirty);
 	
-	if (-e $cfg->cache) {
+	if (-e $cfg->cache_data) {
 		$tree = $tpp->parsefile( $cfg->cache_data ) 
 			or $miril->process_error("Could not read cache file", $!, 'fatal');
 		@posts = dao( @{ $tree->{xml}{post} } );
@@ -83,15 +85,16 @@ sub get_posts {
 	}
 
 	# check for entries missing from the cache
-	opendir(my $data_dir, $cfg->data_dir);
+	opendir(my $data_dir, $cfg->data_path);
 	while ( my $id = readdir($data_dir) ) {
+		next if -d $id;
 		unless ( first {$_ eq $id} @post_ids ) {
 			my $post;
 			my $new_post = $self->get_post($id);
 			for (qw(id published title type format author topics)) {
 				$post->{$_} = $new_post->{$_};
 			}
-			my $path = $miril->get_path_from_id($id);
+			my $path = File::Spec->catfile($cfg->data_path, $id);
 			$post->{path} = $path;
 			$post->{modified} = -M $path;
 			push @posts, $post;
@@ -103,7 +106,7 @@ sub get_posts {
 	if ($dirty) {
 		my $new_tree = $tree;
 		$new_tree->{xml}->{post} = \@posts;
-		$self->tpp->writefile($self->cache_data, $new_tree) 
+		$self->tpp->writefile($cfg->cache_data, $new_tree) 
 			or $miril->process_error("Cannot update cache file", $!);
 	}
 
@@ -182,7 +185,7 @@ sub parse_meta {
 	my %meta;
 	
 	foreach my $line (@lines) {
-		if ($line =~ /^(published|title|type|format|author):\s+(.+)/) {
+		if ($line =~ /^(published|title|type|format|author|status):\s+(.+)/) {
 			my $name = $1;
 			my $value = $2;
 			$value  =~ s/\s+$//;
@@ -199,5 +202,6 @@ sub parse_meta {
 }
 
 sub miril { shift->{miril} }
+sub tpp   { shift->{tpp}   }
 
 1;
