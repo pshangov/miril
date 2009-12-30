@@ -210,6 +210,7 @@ sub posts_edit {
 	my $cfg = $self->cfg;
 
 	my $id = $self->query->param('id');
+	# check if $item is defined
 	my $item = $self->model->get_post($id);
 	
 	my %cur_topics;
@@ -451,7 +452,6 @@ sub posts_publish {
 			$item->{teaser} = $self->filter->to_xhtml($item->teaser);
 
 			my $type = first {$_->id eq $item->type} $cfg->types;
-			warn $type->template;
 			
 			my $output = $self->view->load(
 				name => $type->template, 

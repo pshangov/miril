@@ -1,5 +1,8 @@
 package Miril::Model::File;
 
+use strict;
+use warnings;
+
 use Data::AsObject qw(dao);
 use File::Slurp;
 use XML::TreePP;
@@ -31,8 +34,18 @@ sub get_post {
     
 	my %meta = parse_meta($meta);
 
+	# convert topic id's to topic objects
+	my @topic_names = @{ $meta{topics} };
+
+	if ( @topic_names ) {
+		my %topics_lookup = map {$_ => 1} @topic_names;
+		my @topic_objects = grep { $topics_lookup{$_->{id}} } $cfg->topics;
+		$meta{topics} = \@topic_objects;
+	}
+
+
 	my $post = \%meta;
-	
+
 	$post->{id}       = $id;
 	$post->{text}     = $body;
 	$post->{teaser}   = $teaser;
@@ -63,11 +76,13 @@ sub get_posts {
 		# miril is run for the first time
 		$tree = {};
 	}
+
 	my @post_ids;
 
 	# for each post, check if the data in the cache is older than the data in the filesystem
 	foreach my $post (@posts) {
 		if ( -e $post->path ) {
+			push @post_ids, $post->id;
 			my $modified = -M $post->path;
 			if ( $modified > $post->modified ) {
 				my $updated_post = $self->get_post($post->id);
@@ -75,7 +90,6 @@ sub get_posts {
 					$post->{$_} = $updated_post->{$_};
 				}
 				$post->{modified} = $modified;
-				push @post_ids, $post->id;
 				$dirty++;
 			}
 		} else {
@@ -83,7 +97,7 @@ sub get_posts {
 			$dirty++;
 		}
 	}
-
+	
 	# check for entries missing from the cache
 	opendir(my $data_dir, $cfg->data_path);
 	while ( my $id = readdir($data_dir) ) {
@@ -120,48 +134,48 @@ sub save {
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 	
-	my $miril = $self->miril;
-	my @items = $self->items;
+	my @posts = $self->get_posts;
 
-	if ($item->old_id) {
+	if ($post->old_id) {
 		# this is an update
 
-		for (@items) {
-			if ($_->id eq $item->old_id) {
-				$_->{id}            = $item->id;
-				$_->{author}        = $item->author;
-				$_->{status}        = $item->status;
-				$_->{title}         = $item->title;
-				$_->{topics}{topic} = $item->topics;
+		for (@posts) {
+			if ($_->id eq $post->old_id) {
+				$_->{id}            = $post->id;
+				$_->{author}        = $post->author;
+				$_->{status}        = $post->status;
+				$_->{title}         = $post->title;
+				$_->{topics}        = $post->topics;
 				last;
 			}
 		}
 		
 		# delete the old file if we have changed the id
-		if ($item->old_id ne $item->id) {
-			unlink($self->data_path . '/' . $item->old_id) 
-				or $miril->process_error("Cannot delete old version of renamed item", $!);
+		if ($post->old_id ne $post->id) {
+			unlink($self->data_path . '/' . $post->old_id) 
+				or $miril->process_error("Cannot delete old version of renamed post", $!);
 		}	
 
 	} else {
-		# this is a new item
+		# this is a new post
 		my $new_item = dao {
-			id        => $item->id,
-			author    => $item->author,
-			status    => $item->status,
-			title     => $item->title,
-			topics    => { topic => [$item->topics] },
-			type      => $item->type,
+			id        => $post->id,
+			author    => $post->author,
+			status    => $post->status,
+			title     => $post->title,
+			topics    => { topic => [$post->topics] },
+			type      => $post->type,
 		};
 		
-		push @items, $new_item;
+		push @posts, $new_item;
 	}
 	
 	# update the cache file
-	my $new_tree = $self->tree;
-	$new_tree->{xml}->{item} = \@items;
+
+	my $new_tree = {};
+	$new_tree->{xml}->{post} = \@posts;
 	$self->{tree} = $new_tree;
-	$self->tpp->writefile($self->xml_file, $new_tree) 
+	$self->tpp->writefile($cfg->cache_data, $new_tree) 
 		or $miril->process_error("Cannot update cache file", $!, 'fatal');
 	
 	# update the data file
@@ -172,7 +186,7 @@ sub save {
 	$content .= "<!-- END META -->\n";
 	$content .= $post->text;
 
-	my $fh = IO::File->new( File::Spec->catfile($self->data_path, $item->id), "w")
+	my $fh = IO::File->new( File::Spec->catfile($cfg->data_path, $post->id), "w")
 		or $miril->process_error("Cannot update data file", $!, 'fatal');
 	$fh->print($content)
 		or $miril->process_error("Cannot update data file", $!, 'fatal');
@@ -197,11 +211,14 @@ sub parse_meta {
 			$meta{topics} = \@values;
 		}
 	}
+	
+	$meta{topics} = [] unless defined $meta{topics};
 
 	return %meta;
 }
 
 sub miril { shift->{miril} }
 sub tpp   { shift->{tpp}   }
+sub tree  { shift->{tree}  }
 
 1;
