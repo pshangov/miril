@@ -10,6 +10,7 @@ use Try::Tiny qw(try catch);
 use IO::File;
 use File::Spec;
 use List::Util qw(first);
+use Miril::DateTime;
 
 # constructor
 sub new {
@@ -50,7 +51,7 @@ sub get_post {
 	$post->{text}     = $body;
 	$post->{teaser}   = $teaser;
 	$post->{path}     = $filename;
-	$post->{modified} = -M $filename;
+	$post->{modified} = Miril::DateTime->new(-M $filename);
 
 	return dao $post;
 }
@@ -83,13 +84,13 @@ sub get_posts {
 	foreach my $post (@posts) {
 		if ( -e $post->path ) {
 			push @post_ids, $post->id;
-			my $modified = -M $post->path;
+			my $modified = time - ( (-M $post->path) * 86400 );
 			if ( $modified > $post->modified ) {
 				my $updated_post = $self->get_post($post->id);
 				for (qw(id published title type format author topics)) {
 					$post->{$_} = $updated_post->{$_};
 				}
-				$post->{modified} = $modified;
+				$post->{modified} = Miril::DateTime->new($modified);
 				$dirty++;
 			}
 		} else {

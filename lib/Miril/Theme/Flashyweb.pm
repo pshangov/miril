@@ -285,7 +285,7 @@ my $list = <<EndOfHTML;
 			<h3><span class="dingbat">&#8226;</span><a href='?action=view&id=<TMPL_VAR NAME="id">'><TMPL_VAR NAME="title"></a></h3>
 			<p class="item-desc">
 				<b>Status:</b> <TMPL_VAR NAME="status">,&nbsp; 
-				<b>Modified:</b> <TMPL_VAR NAME="modified.slash">
+				<b>Modified:</b> <TMPL_VAR NAME="modified.strftime('%d/%m/%Y %H:%M')">
 			</p>
 		</TMPL_LOOP>
 
