@@ -33,7 +33,7 @@ sub get_post {
 	my ($meta, $body) = split( '<!-- END META -->', $post_file, 2);
 	my ($teaser)      = split( '<!-- END TEASER -->', $body, 2);
     
-	my %meta = parse_meta($meta);
+	my %meta = _parse_meta($meta);
 
 	# convert topic id's to topic objects
 	my @topic_names = @{ $meta{topics} };
@@ -144,9 +144,10 @@ sub save {
 			if ($_->id eq $post->old_id) {
 				$_->{id}            = $post->id;
 				$_->{author}        = $post->author;
-				$_->{status}        = $post->status;
 				$_->{title}         = $post->title;
 				$_->{topics}        = $post->topics;
+				$_->{published}     = _set_publish_date($_->{published}, $post->status);
+				$_->{status}        = $post->status;
 				last;
 			}
 		}
@@ -162,10 +163,11 @@ sub save {
 		my $new_item = dao {
 			id        => $post->id,
 			author    => $post->author,
-			status    => $post->status,
 			title     => $post->title,
-			topics    => { topic => [$post->topics] },
 			type      => $post->type,
+			topics    => { topic => [$post->topics] },
+			published => _set_publish_date(undef, $post->status),
+			status    => $post->status,
 		};
 		
 		push @posts, $new_item;
@@ -194,7 +196,7 @@ sub save {
 	$fh->close;
 }
 
-sub parse_meta {
+sub _parse_meta {
 	my $meta = shift;
 	my @lines = split /\n/, $meta;
 	my %meta;
@@ -216,6 +218,14 @@ sub parse_meta {
 	$meta{topics} = [] unless defined $meta{topics};
 
 	return %meta;
+}
+
+sub _set_publish_date {
+	my ($old_date, $new_status) = @_;
+	my $new_date = time2iso(time);
+	
+	return unless $new_status eq 'published';
+	return($old_date ? $old_date : $new_date);
 }
 
 sub miril { shift->{miril} }
