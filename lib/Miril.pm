@@ -128,12 +128,16 @@ sub setup {
 
 	# load user manager
 	my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
-	try {
-		load $user_manager_name;
-		$self->{user_manager} = $user_manager_name->new($self);
-	} catch {
-		$self->process_error("Could not load user manager", $_, 'fatal');
-	};
+	
+	use Miril::UserManager::XMLTPP;
+	$self->{user_manager} = Miril::UserManager::XMLTPP->new($self);
+
+	#try {
+	#	load $user_manager_name;
+	#	$self->{user_manager} = $user_manager_name->new($self);
+	#} catch {
+	#	$self->process_error("Could not load user manager", $_, 'fatal');
+	#};
 
 	# configure authentication
 	$self->authen->config( 
@@ -144,8 +148,8 @@ sub setup {
 		STORE          => [ 'Cookie', SECRET => $cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
 	);
 
-	#$self->authen->protected_runmodes(':all');	
-	$self->authen->protected_runmodes();	
+	$self->authen->protected_runmodes(':all');	
+	#$self->authen->protected_runmodes();	
 }
 
 

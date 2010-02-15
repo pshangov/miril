@@ -189,6 +189,7 @@ sub load_tmpl {
 
 	# get sidebar
 	my $sidebar_text = $self->tmpl->get('sidebar');
+	warn $sidebar_text;
 	my $sidebar = HTML::Template::Pluggable->new( scalarref => \$sidebar_text, die_on_bad_params => 0 );
 	$sidebar->param('latest', $self->get_latest);
 
