@@ -24,7 +24,6 @@ sub new {
 	$tpp->set( force_array => ['user'] );
     my $tree;
 
-	warn "STARTING!";
 	try {
 		$tree = $tpp->parsefile( $cfg->users_data );
 	} catch {

@@ -3,7 +3,10 @@
 use strict;
 use warnings;
 
-use Miril;
+use CGI::Application::Miril;
 
-my $app = Miril->new( PARAMS => { cfg_file => '../miril_example/cfg/config.xml' } );
+my $app = CGI::Application::Miril->new( PARAMS => 
+	{ cfg_file => '../miril_example/cfg/config.xml' } 
+);
+
 $app->run

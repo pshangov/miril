@@ -1,15 +1,15 @@
 <xml>
 
 	<!-- PATHS - CHANGE TO MATCH YOUR SETUP -->
-	<data_path>../settings/data</data_path>
-	<tmpl_path>../settings/tmpl</tmpl_path>
-	<cache_path>../settings/cache</cache_path>
-	<cfg_path>../settings/cfg</cfg_path>
+	<data_path>example/settings/data</data_path>
+	<tmpl_path>example/settings/tmpl</tmpl_path>
+	<cache_path>example/settings/cache</cache_path>
+	<cfg_path>example/settings/cfg</cfg_path>
 
 	<model>File</model>
 
-	<output_path>../htdocs/miril</output_path>
-	<files_path>../htdocs/miril/files</files_path>
+	<output_path>example/htdocs/miril</output_path>
+	<files_path>example/htdocs/miril/files</files_path>
 
 	<!-- URL CONSTRUCTION -->
 	<http_dir>/miril</http_dir>

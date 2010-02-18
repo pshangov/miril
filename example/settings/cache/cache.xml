@@ -3,10 +3,9 @@
   <post>
     <author>J. R. R. Tolkien</author>
     <format />  <id>aenean_eu_lorem</id>
-    <modified><![CDATA[1262187371]]></modified>
-    <path>..\settings\data\aenean_eu_lorem</path>
-    <published />  <status>draft</status>
-    <title>Aenean Eu Lorem</title>
+    <modified><![CDATA[1262185990]]></modified>
+    <path>example\settings\data\aenean_eu_lorem</path>
+    <published />  <title>Aenean Eu Lorem</title>
     <topics>
       <id>flowers</id>
       <name>Flowers</name>
@@ -19,17 +18,16 @@
   </post>
   <post><author>J. R. R. Tolkien</author>
   <format /><id>contacts</id>
-  <modified><![CDATA[1262879954]]></modified>
-  <path>..\settings\data\contacts</path>
-  <published /><status>published</status>
-  <title>Contacts</title>
+  <modified><![CDATA[1262878573]]></modified>
+  <path>example\settings\data\contacts</path>
+  <published /><title>Contacts</title>
   <type>page</type>
   </post>
   <post><author></author>
   <format>markdown</format>
   <id>index</id>
-  <modified><![CDATA[1261404852]]></modified>
-  <path>..\settings\data\index</path>
+  <modified><![CDATA[1261403471]]></modified>
+  <path>example\settings\data\index</path>
   <published>1253630481</published>
   <title>Start Page</title>
   <type>page</type>
@@ -37,8 +35,8 @@
   <post><author></author>
   <format>markdown</format>
   <id>lorem_ipsum_dolor</id>
-  <modified><![CDATA[1261404859]]></modified>
-  <path>..\settings\data\lorem_ipsum_dolor</path>
+  <modified><![CDATA[1261403478]]></modified>
+  <path>example\settings\data\lorem_ipsum_dolor</path>
   <published>1253632123</published>
   <title>Lorem Ipsum Dolor</title>
   <type>news</type>

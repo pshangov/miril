@@ -7,23 +7,44 @@ use autodie;
 use Try::Tiny;
 use Exception::Class;
 
+use base 'CGI::Application';
+
+use CGI::Application::Plugin::Authentication;
+use CGI::Application::Plugin::Redirect;
+use CGI::Application::Plugin::Forward;
+
+use Miril;
+use Miril::Util qw(
+	get_target_filename
+	get_last_modified_time
+	get_latest
+	add_to_latest
+	generate_paged_url
+	paginate
+	load_tmpl
+	prepare_authors
+	prepare_statuses
+	prepare_topics
+	prepare_types
+);
+use Miril::Error qw(error_stack);
+
 ### ACCESSORS ###
 
 use Object::Tiny qw(
-	model
-	filter
-	cfg
 	tmpl
-	errors
 	user_manager
 	pager
-	view
+	miril
 );
 
 ### SETUP ###
 
 sub setup {
 	my $self = shift;
+
+	#use Data::Dumper;
+	#warn Data::Dumper::Dumper(\%ENV);
 	
 	# setup runmodes
 
@@ -46,22 +67,22 @@ sub setup {
 	);
 
 	$self->start_mode('list');
-	$self->error_mode('error');
+	#$self->error_mode('error');
 
 	# setup miril
 	
 	my $config_filename = $self->param('cfg_file');
 	$config_filename = 'miril.config' unless $config_filename;
-	my $miril = Miril->new($config_filename);
+	$self->{miril}= Miril->new($config_filename);
 	
 	require Miril::Theme::Flashyweb;
 	$self->{tmpl} = Miril::Theme::Flashyweb->new;
 
 	# load user manager
-	my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
+	# my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
 
 	use Miril::UserManager::XMLTPP;
-	$self->{user_manager} = Miril::UserManager::XMLTPP->new($self);
+	$self->{user_manager} = Miril::UserManager::XMLTPP->new($self->miril);
 
 	#try {
 	#	load $user_manager_name;
@@ -76,7 +97,7 @@ sub setup {
 		LOGIN_RUNMODE  => 'login',
 		LOGOUT_RUNMODE => 'logout',
 		CREDENTIALS    => [ 'authen_username', 'authen_password' ],
-		STORE          => [ 'Cookie', SECRET => $cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
+		STORE          => [ 'Cookie', SECRET => $self->miril->cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
 	);
 
 	$self->authen->protected_runmodes(':all');	
@@ -89,7 +110,7 @@ sub posts_list {
 	my $self = shift;
 	my $q = $self->query;
 
-	my @items = $self->model->get_posts(
+	my @items = $self->miril->store->get_posts(
 		author => ( $q->param('author') or undef ),
 		title  => ( $q->param('title' ) or undef ),
 		type   => ( $q->param('type'  ) or undef ),
@@ -108,7 +129,7 @@ sub posts_list {
 sub search {
 	my $self = shift;
 
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	my $tmpl = $self->load_tmpl('search');
 
@@ -123,7 +144,7 @@ sub search {
 sub posts_create {
 	my $self = shift;
 
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	my $empty_item;
 
@@ -141,11 +162,11 @@ sub posts_create {
 sub posts_edit {
 	my $self = shift;
 
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	my $id = $self->query->param('id');
 	# check if $item is defined
-	my $item = $self->model->get_post($id);
+	my $item = $self->miril->store->get_post($id);
 	
 	my %cur_topics;
 
@@ -184,7 +205,7 @@ sub posts_update {
 	# SHOULD NOT BE HERE
 	$item->{topics} = [$q->param('topic')] if $q->param('topic');
 
-	$self->model->save($item);
+	$self->miril->store->save($item);
 
 	return $self->redirect("?action=view&id=" . $item->{id});
 }
@@ -193,7 +214,7 @@ sub posts_delete {
 	my $self = shift;
 
 	my $id = $self->query->param('old_id');
-	$self->model->delete($id);
+	$self->miril->store->delete($id);
 
 	return $self->redirect("?action=list");
 }
@@ -204,9 +225,9 @@ sub posts_view {
 	my $q = $self->query;
 	my $id = $q->param('old_id') ? $q->param('old_id') : $q->param('id');
 
-	my $item = $self->model->get_post($id);
+	my $item = $self->miril->store->get_post($id);
 	if ($item) {
-		$item->{text} = $self->filter->to_xhtml($item->text);
+		$item->{text} = $self->miril->filter->to_xhtml($item->text);
 
 		my $tmpl = $self->load_tmpl('view');
 		$tmpl->param('item', $item);
@@ -277,7 +298,7 @@ sub account {
 sub files_list {
 	my $self = shift;
 
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	my $files_path = $cfg->files_path;
 	my $files_http_dir = $cfg->files_http_dir;
@@ -304,7 +325,7 @@ sub files_list {
 sub files_upload {
 	my $self = shift;
 	my $q = $self->query;
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	if ( $q->param('file') or $q->upload('file') ) {
 	
@@ -338,7 +359,7 @@ sub files_upload {
 
 sub files_delete {
 	my $self = shift;	
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 	my $q = $self->query;
 
 	my @filenames = $q->param('file');
@@ -356,7 +377,7 @@ sub files_delete {
 sub posts_publish {
 	my $self = shift;
 
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 	
 	my $do = $self->query->param("do");
 	my $rebuild = $self->query->param("rebuild");
@@ -370,5 +391,9 @@ sub posts_publish {
 	}
 }
 
+sub process_error {
+	shift;
+	carp(@_);
+}
 
 1;

@@ -1,12 +1,13 @@
 use CGI::Application::PSGI;
-use Miril;
+use CGI::Application::Miril;
 
 my $app = sub {
     my $env = shift;
-    my $app = Miril->new(
+    my $miril = CGI::Application::Miril->new(
 		QUERY => CGI::PSGI->new($env),
-		PARAMS => { miril_dir => '../settings/cfg/config.xml' },
+		PARAMS => { cfg_file => 'example/settings/cfg/config.xml' },
 	);
-    CGI::Application::PSGI->run($app);
+	$ENV{HTTP_COOKIE} = $env->{HTTP_COOKIE};
+	CGI::Application::PSGI->run($miril);
 };
 

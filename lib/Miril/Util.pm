@@ -31,7 +31,7 @@ our @EXPORT_OK = qw(
 sub get_target_filename {
 	my $self = shift;
 
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	my ($name, $type) = @_;
 
@@ -51,7 +51,7 @@ sub get_last_modified_time {
 sub get_latest {
 	my $self = shift;
 	
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['item'] );
@@ -72,7 +72,7 @@ sub get_latest {
 
 sub add_to_latest {
 	my $self = shift;
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	my ($id, $title) = @_;
 
@@ -134,7 +134,7 @@ sub paginate {
 	my $self = shift;
 	my @items = @_;
 	
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	return unless @items;
 
@@ -151,8 +151,6 @@ sub paginate {
 			$pager->{first}    = $self->generate_paged_url($page->first_page);
 			$pager->{previous} = $self->generate_paged_url($page->previous_page);
 		}
-
-		warn $page->first_page;
 
 		if ($page->current_page < $page->last_page) {
 			$pager->{'last'} = $self->generate_paged_url($page->last_page);
@@ -189,7 +187,6 @@ sub load_tmpl {
 
 	# get sidebar
 	my $sidebar_text = $self->tmpl->get('sidebar');
-	warn $sidebar_text;
 	my $sidebar = HTML::Template::Pluggable->new( scalarref => \$sidebar_text, die_on_bad_params => 0 );
 	$sidebar->param('latest', $self->get_latest);
 
@@ -212,7 +209,6 @@ sub load_tmpl {
 		$pager->param('previous', $self->pager->{previous});
 		$pager->param('next', $self->pager->{next});
 
-		warn $pager->output;
 		
 		$tmpl->param('pager' => $pager->output );
 	}
@@ -224,7 +220,7 @@ sub load_tmpl {
 
 sub prepare_authors {
 	my ($self, $selected) = @_;
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 	my @authors;
 	if ($selected) {
 		@authors = map +{ name => $_, id => $_ , selected => $_ eq $selected }, $cfg->authors;
@@ -236,21 +232,21 @@ sub prepare_authors {
 
 sub prepare_statuses {
 	my ($self, $selected) = @_;
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 	my @statuses = map +{ name => $_, id => $_, selected => $_ eq $selected }, $cfg->statuses;
 	return \@statuses;
 }
 
 sub prepare_topics {
 	my ($self, %selected) = @_;
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 	my @topics   = map +{ name => $_->name, id => $_->id, selected => $selected{$_->id} }, $cfg->topics;
 	return \@topics;
 }
 
 sub prepare_types {
 	my ($self, $selected) = @_;
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 	my @types = map +{ name => $_->name, id => $_->id, selected => $_->id eq $selected }, $cfg->types;
 	return \@types;
 }

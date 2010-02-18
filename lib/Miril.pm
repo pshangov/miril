@@ -3,15 +3,10 @@ package Miril;
 use warnings;
 use strict;
 
-=head1 NAME
+use Carp;
 
-Miril - A Static Content Management System
-
-=head1 VERSION
-
-Version 0.007
-
-=cut
+use Try::Tiny;
+use Module::Load;
 
 our $VERSION = '0.007';
 $VERSION = eval $VERSION;
@@ -23,6 +18,7 @@ use Object::Tiny qw(
 	tmpl
 	cfg
 	util
+	filter
 );
 
 sub new {
@@ -44,15 +40,16 @@ sub new {
 	$self->{cfg} = $cfg;
 
 	
-	# load model
-	my $model_name = "Miril::Model::" . $self->cfg->model;
+	# load store
+	my $store_name = "Miril::Model::" . $self->cfg->model;
 	try {
-		load $model_name;
-		$self->store( $model_name->new($self) );
+		load $store_name;
+		my $store = $store_name->new($self);
+		$self->{store} = $store;
 	} catch {
-		$self->process_error("Could not load model", $_, 'fatal');
+		$self->process_error("Could not load store", $_, 'fatal');
 	};
-	return unless $self->model;
+	return unless $self->store;
 
 	# load view
 	my $view_name = "Miril::View::" . $self->cfg->view;
@@ -172,7 +169,20 @@ sub publish {
 	}
 }
 
+sub process_error {
+	shift;
+	carp(@_);
+}
+
 1;
+
+=head1 NAME
+
+Miril - A Static Content Management System
+
+=head1 VERSION
+
+Version 0.007
 
 =head1 WARNING
 
