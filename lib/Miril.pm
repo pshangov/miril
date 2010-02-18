@@ -3,13 +3,18 @@ package Miril;
 use warnings;
 use strict;
 
-use Carp;
-
+use autodie;
 use Try::Tiny;
+use Exception::Class;
+
+use Carp;
 use Module::Load;
 
+use Miril::Warning;
+use Miril::Exception;
+use Miril::Config;
+
 our $VERSION = '0.007';
-$VERSION = eval $VERSION;
 
 ### ACCESSORS ###
 
@@ -19,16 +24,19 @@ use Object::Tiny qw(
 	cfg
 	util
 	filter
+	warnings
 );
+
+### CONSTRUCTOR ###
 
 sub new {
 	my $class = shift;
 	my $self = bless {}, $class;
 	my $config_filename = shift;
+
+	Miril::Exception->throw;
 	
 	# load configuration
-	require Miril::Config;
-
 	my $cfg;
 	try {
 		$cfg = Miril::Config->new($config_filename);
@@ -172,6 +180,19 @@ sub publish {
 sub process_error {
 	shift;
 	carp(@_);
+}
+
+sub push_warning {
+	my $self = shift;
+	my ($miril_msg, $perl_msg) = @_;
+
+	my $warnings_stack = $self->warnings;
+	my $warning = Miril::Warning->new(
+		miril_msg => $miril_msg,
+		perl_msg  => $perl_msg,
+	);
+
+	push @$warnings_stack, $warning;
 }
 
 1;
