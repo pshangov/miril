@@ -1,5 +1,5 @@
 package Miril::Exception;
 
-use base 'Exception::Class::Base';
+use Exception::Class ( 'Miril::Exception' => { fields => 'errorvar' } );
 
 1;

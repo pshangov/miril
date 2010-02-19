@@ -22,7 +22,6 @@ use Object::Tiny qw(
 	store
 	tmpl
 	cfg
-	util
 	filter
 	warnings
 );
@@ -34,51 +33,61 @@ sub new {
 	my $self = bless {}, $class;
 	my $config_filename = shift;
 
-	Miril::Exception->throw;
 	
 	# load configuration
-	my $cfg;
 	try {
-		$cfg = Miril::Config->new($config_filename);
+		my $cfg = Miril::Config->new($config_filename);
+		$self->{cfg} = $cfg;
 	} catch {
-		$self->process_error("Could not open configuration file", $_, 'fatal');
+		Miril::Exception->throw( 
+			errorvar => $_,
+			message  => 'Could not open configuration file',
+		);
 	};
-	return unless $cfg;
+	return unless $self->cfg;
 
-	$self->{cfg} = $cfg;
-
-	
 	# load store
-	my $store_name = "Miril::Model::" . $self->cfg->model;
 	try {
+		my $store_name = "Miril::Model::" . $self->cfg->model;
 		load $store_name;
 		my $store = $store_name->new($self);
 		$self->{store} = $store;
 	} catch {
-		$self->process_error("Could not load store", $_, 'fatal');
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not load store',
+		);
 	};
 	return unless $self->store;
 
 	# load view
-	my $view_name = "Miril::View::" . $self->cfg->view;
 	try {
+		my $view_name = "Miril::View::" . $self->cfg->view;
 		load $view_name;
 		$self->{view} = $view_name->new($self);
 	} catch {
-		$self->process_error("Could not load view", $_, 'fatal');
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not load view',
+		);
 	};
 
 	# load filter
-	my $filter_name = "Miril::Filter::" . $self->cfg->filter;
 	try {
+		my $filter_name = "Miril::Filter::" . $self->cfg->filter;
 		load $filter_name;
 		$self->{filter} = $filter_name->new($self->cfg);
 	} catch {
-		$self->process_error("Could not load filter", $_, 'fatal');
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not load filter',
+		);
 	};
 	
 	return $self;
 }
+
+### PUBLIC METHODS ###
 
 sub publish {
 	my $miril = shift;
@@ -91,7 +100,7 @@ sub publish {
 	foreach my $post (@posts) {
 		my $src_modified = $post->modified_sec;
 
-		my $target_filename = $miril->util->get_target_filename($post->id, $post->type);
+		my $target_filename = $miril->_get_target_filename($post->id, $post->type);
 		
 		if (-x $target_filename) {
 			if ( $rebuild or ($src_modified > -M $target_filename) ) {
@@ -117,15 +126,8 @@ sub publish {
 				cfg => $miril->cfg,
 		});
 
-		my $new_filename = $miril->util->get_target_filename($post->id, $post->type);
-
-		my $fh = IO::File->new($new_filename, "w") 
-			or $miril->process_error("Cannot open file $new_filename for writing", $!);
-		if ($fh) {
-			$fh->print( $output )
-				or $miril->process_error("Cannot print to file $new_filename", $!);
-			$fh->close;
-		}
+		my $new_filename = $miril->_get_target_filename($post->id, $post->type);
+		$self->_file_write($new_filename, $output);
 	}
 
 	foreach my $list ($miril->cfg->lists->list) {
@@ -155,7 +157,7 @@ sub publish {
 			}
 		}
 
-		my @items = $miril->store->get_posts( %params );
+		my @items = $miril->store->get_posts(%params);
 
 		my $output = $miril->tmpl->load(
 			name => $list->template,
@@ -165,15 +167,7 @@ sub publish {
 		});
 
 		my $new_filename = catfile($miril->cfg->output_path, $list->location);
-
-		my $fh = IO::File->new($new_filename, "w") 
-			or $miril->process_error("Cannot open file $new_filename for writing", $!);
-		if ($fh) {
-			$fh->print( $output )
-				or $miril->process_error("Cannot print to file $new_filename", $!);
-			$fh->close;
-		}
-
+		$self->_file_write($new_filename, $output);
 	}
 }
 
@@ -193,6 +187,35 @@ sub push_warning {
 	);
 
 	push @$warnings_stack, $warning;
+}
+
+### PRIVATE METHODS ###
+
+sub _file_write {
+	my ($self, $filename, $data) = @_;
+	try {
+		my $fh = IO::File->new($filename, "w");
+		$fh->print($data);
+		$fh->close;
+	} catch {
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not save information',
+		);
+	}
+}
+
+sub _get_target_filename {
+	my $self = shift;
+
+	my $cfg = $self->miril->cfg;
+
+	my ($name, $type) = @_;
+
+	my $current_type = first {$_->id eq $type} $cfg->types;
+	my $target_filename = catfile($cfg->output_path, $current_type->location, $name . ".html");
+
+	return $target_filename;
 }
 
 1;

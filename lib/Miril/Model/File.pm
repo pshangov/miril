@@ -12,12 +12,19 @@ use File::Spec;
 use List::Util qw(first);
 use Miril::DateTime;
 
-# constructor
+### ACCESSORS ###
+
+use Object::Tiny qw(miril tpp tree);
+
+### CONSTRUCTOR ###
+
 sub new {
 	my $self = bless {}, shift;
 	$self->{miril} = shift;
 	return $self;
 }
+
+### PUBLIC METHODS ###
 
 sub get_post {
 	my $self  = shift;
@@ -196,6 +203,63 @@ sub save {
 	$fh->close;
 }
 
+sub get_latest {
+	my $self = shift;
+	
+	my $cfg = $self->cfg;
+
+    my $tpp = XML::TreePP->new();
+	$tpp->set( force_array => ['item'] );
+	my $tree;
+	my @items;
+	
+	try { 
+		$tree = $tpp->parsefile( $cfg->latest_data );
+		# force array
+		@items = dao @{ $tree->{xml}{item} };
+	} catch {
+		$self->process_error($_);
+	};
+	
+
+	return \@items;
+}
+
+sub add_to_latest {
+	my $self = shift;
+	my $cfg = $self->cfg;
+
+	my ($id, $title) = @_;
+
+    my $tpp = XML::TreePP->new();
+	$tpp->set( force_array => ['item'] );
+	my $tree;
+	my @items;
+	
+	if ( -e $cfg->latest_data ) {
+		try { 
+			$tree = $tpp->parsefile( $cfg->latest_data );
+			@items = @{ $tree->{xml}->{item} };
+		} catch {
+			$self->process_error($_);
+		};
+	}
+
+	@items = grep { $_->{id} ne $id } @items;
+	unshift @items, { id => $id, title => $title};
+	@items = @items[0 .. 9] if @items > 10;
+
+	$tree->{xml}{item} = \@items;
+	
+	try { 
+		$tpp->writefile( $cfg->latest_data, $tree );
+	} catch {
+		$self->process_error("Failed to include in latest used", $_);
+	};
+}
+
+### PRIVATE METHODS ###
+
 sub _parse_meta {
 	my $meta = shift;
 	my @lines = split /\n/, $meta;
@@ -227,9 +291,5 @@ sub _set_publish_date {
 	return unless $new_status eq 'published';
 	return($old_date ? $old_date : $new_date);
 }
-
-sub miril { shift->{miril} }
-sub tpp   { shift->{tpp}   }
-sub tree  { shift->{tree}  }
 
 1;

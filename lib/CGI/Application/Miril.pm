@@ -14,27 +14,14 @@ use CGI::Application::Plugin::Redirect;
 use CGI::Application::Plugin::Forward;
 
 use Miril;
-use Miril::Util qw(
-	get_target_filename
-	get_last_modified_time
-	get_latest
-	add_to_latest
-	generate_paged_url
-	paginate
-	load_tmpl
-	prepare_authors
-	prepare_statuses
-	prepare_topics
-	prepare_types
-);
-use Miril::Error qw(error_stack);
+use Miril::Exception;
+use Miril::Theme::Flashyweb;
 
 ### ACCESSORS ###
 
 use Object::Tiny qw(
-	tmpl
+	view
 	user_manager
-	pager
 	miril
 );
 
@@ -67,31 +54,25 @@ sub setup {
 	);
 
 	$self->start_mode('list');
-	#$self->error_mode('error');
+	$self->error_mode('error');
 
 	# setup miril
-	
 	my $config_filename = $self->param('cfg_file');
 	$config_filename = 'miril.config' unless $config_filename;
 	$self->{miril}= Miril->new($config_filename);
 	
-	require Miril::Theme::Flashyweb;
-	$self->{tmpl} = Miril::Theme::Flashyweb->new;
-
-	# load user manager
-	# my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
-
-	use Miril::UserManager::XMLTPP;
-	$self->{user_manager} = Miril::UserManager::XMLTPP->new($self->miril);
-
-	#try {
-	#	load $user_manager_name;
-	#	$self->{user_manager} = $user_manager_name->new($self);
-	#} catch {
-	#	$self->process_error("Could not load user manager", $_, 'fatal');
-	#};
-
 	# configure authentication
+	try {
+		my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
+		load $user_manager_name;
+		$self->{user_manager} = $user_manager_name->new($self);
+	} catch {
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not load user manager',
+		);
+	} 
+
 	$self->authen->config( 
 		DRIVER         => [ 'Generic', $self->user_manager->verification_callback ],
 		LOGIN_RUNMODE  => 'login',
@@ -100,11 +81,26 @@ sub setup {
 		STORE          => [ 'Cookie', SECRET => $self->miril->cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
 	);
 
-	$self->authen->protected_runmodes(':all');	
-	#$self->authen->protected_runmodes();
+	$self->authen->protected_runmodes(':all');
+
+	# load view
+	$self->{view} = Miril::View->new(
+		theme            => Miril::Theme::Flashyweb->new,
+		is_authenticated => $self->authen->is_authenticated,
+		latest           => $self->miril->store->get_latest,
+	);
 }
 
 ### RUN MODES ###
+
+sub error {
+	my ($self, $e) = @_;
+	die $e->errorvar;
+
+	my $tmpl = $miril->view->load('error');
+	$tmpl->param('error', $e);
+	return $tmpl->output;
+}
 
 sub posts_list {
 	my $self = shift;
@@ -120,7 +116,7 @@ sub posts_list {
 
 	my @current_items = $self->paginate(@items);
 	
-	my $tmpl = $self->load_tmpl('list');
+	my $tmpl = $self->view->load('list');
 	$tmpl->param('items', \@current_items);
 	return $tmpl->output;
 
@@ -131,7 +127,7 @@ sub search {
 
 	my $cfg = $self->miril->cfg;
 
-	my $tmpl = $self->load_tmpl('search');
+	my $tmpl = $self->view->load('search');
 
 	$tmpl->param('statuses', $self->prepare_statuses );
 	$tmpl->param('types',    $self->prepare_types    );
@@ -153,7 +149,7 @@ sub posts_create {
 	$empty_item->{authors}  = $self->prepare_authors if $cfg->authors;
 	$empty_item->{topics}   = $self->prepare_topics  if $cfg->topics;
 
-	my $tmpl = $self->load_tmpl('edit');
+	my $tmpl = $self->view->load('edit');
 	$tmpl->param('item', $empty_item);
 	
 	return $tmpl->output;
@@ -180,10 +176,10 @@ sub posts_edit {
 	$item->{statuses} = $self->prepare_statuses($item->status);
 	$item->{types}    = $self->prepare_types($item->type);
 	
-	my $tmpl = $self->load_tmpl('edit');
+	my $tmpl = $self->view->load('edit');
 	$tmpl->param('item', $item);
 
-	$self->add_to_latest($item->id, $item->title);
+	$self->miril->store->add_to_latest($item->id, $item->title);
 
 	return $tmpl->output;
 }
@@ -229,7 +225,7 @@ sub posts_view {
 	if ($item) {
 		$item->{text} = $self->miril->filter->to_xhtml($item->text);
 
-		my $tmpl = $self->load_tmpl('view');
+		my $tmpl = $self->view->load('view');
 		$tmpl->param('item', $item);
 		return $tmpl->output;
 	} else {
@@ -240,7 +236,7 @@ sub posts_view {
 sub login {
 	my $self = shift;
 	
-	my $tmpl = $self->load_tmpl('login');
+	my $tmpl = $self->view->load('login');
 	return $tmpl->output;
 }
 
@@ -289,7 +285,7 @@ sub account {
 		my $username = $self->authen->username;
 		my $user = $self->user_manager->get_user($username);
 
-		my $tmpl = $self->load_tmpl('account');
+		my $tmpl = $self->view->load('account');
 		$tmpl->param('user', $user);
 		return $tmpl->output;
 	} 
@@ -304,9 +300,16 @@ sub files_list {
 	my $files_http_dir = $cfg->files_http_dir;
 	my @files;
 	
-	opendir(my $dir, $files_path) or $self->process_error("Cannot open files directory", $!, 'fatal');
-	@files = grep { -f catfile($files_path, $_) } readdir($dir);
-	closedir $dir;
+	try {
+		opendir(my $dir, $files_path);
+		@files = grep { -f catfile($files_path, $_) } readdir($dir);
+		closedir $dir;
+	} catch {
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not read files directory',
+		);
+	};
 
 	my @current_files = $self->paginate(@files);
 
@@ -317,7 +320,7 @@ sub files_list {
 		modified => strftime( "%d/%m/%Y %H:%M", localtime( $self->get_last_modified_time(catfile($files_path, $_)) ) ), 
 	}, @current_files;
 
-	my $tmpl = $self->load_tmpl('files');
+	my $tmpl = $self->view->load('files');
 	$tmpl->param('files', \@files_with_data);
 	return $tmpl->output;
 }
@@ -339,21 +342,24 @@ sub files_upload {
 
 			if ($filename and $fh) {
 				my $new_filename = catfile($cfg->files_path, $filename);
-				my $new_fh = IO::File->new($new_filename, "w") 
-					or $self->process_error("Could not upload file", $!);
-				copy($fh, $new_fh) 
-					or $self->process_error("Could not upload file", $!);
-				$new_fh->close;
+				try {
+					my $new_fh = IO::File->new($new_filename, "w");
+					copy($fh, $new_fh);
+					$new_fh->close;
+				} catch {
+					Miril::Exception->throw(
+						errorvar => $_,
+						message  => 'Could not upload file',
+					);
+				}
 			}
 		}
 
 		return $self->redirect("?action=files");
 
 	} else {
-		
-		my $tmpl = $self->load_tmpl('upload');
+		my $tmpl = $self->view->load('upload');
 		return $tmpl->output;
-
 	}
 }
 
@@ -366,8 +372,14 @@ sub files_delete {
 
 	try {
 		for (@filenames) {
-			unlink( catfile($cfg->files_path, $_) )
-				or $self->process_error("Could not delete file", $!);
+			try { 
+				unlink( catfile($cfg->files_path, $_) ) 
+			} catch {
+				Miril::Exception->throw(
+					errorvar => $_,
+					message  => 'Could not delete file',
+				);
+			};
 		}
 	};
 
@@ -386,14 +398,113 @@ sub posts_publish {
 		$self->publish($rebuild);
 		return $self->redirect("?action=list");
 	} else {
-		my $tmpl = $self->load_tmpl('publish');
+		my $tmpl = $self->view->load('publish');
 		return $tmpl->output;
 	}
 }
 
-sub process_error {
-	shift;
-	carp(@_);
+### PRIVATE METHODS ###
+
+sub _prepare_authors {
+	my ($self, $selected) = @_;
+	my $cfg = $self->miril->cfg;
+	my @authors;
+	if ($selected) {
+		@authors = map +{ name => $_, id => $_ , selected => $_ eq $selected }, $cfg->authors;
+	} else {
+		@authors = map +{ name => $_, id => $_  }, $cfg->authors;
+	}
+	return \@authors;
+}
+
+sub _prepare_statuses {
+	my ($self, $selected) = @_;
+	my $cfg = $self->miril->cfg;
+	my @statuses = map +{ name => $_, id => $_, selected => $_ eq $selected }, $cfg->statuses;
+	return \@statuses;
+}
+
+sub _prepare_topics {
+	my ($self, %selected) = @_;
+	my $cfg = $self->miril->cfg;
+	my @topics   = map +{ name => $_->name, id => $_->id, selected => $selected{$_->id} }, $cfg->topics;
+	return \@topics;
+}
+
+sub _prepare_types {
+	my ($self, $selected) = @_;
+	my $cfg = $self->miril->cfg;
+	my @types = map +{ name => $_->name, id => $_->id, selected => $_->id eq $selected }, $cfg->types;
+	return \@types;
+}
+
+sub _paginate {
+	my $self = shift;
+	my @items = @_;
+	
+	my $cfg = $self->miril->cfg;
+
+	return unless @items;
+
+	if (@items > $cfg->items_per_page) {
+
+		my $page = Data::Page->new;
+		$page->total_entries(scalar @items);
+		$page->entries_per_page($cfg->items_per_page);
+		$page->current_page($self->query->param('page_no') ? $self->query->param('page_no') : 1);
+		
+		my $pager;
+		
+		if ($page->current_page > 1) {
+			$pager->{first}    = $self->generate_paged_url($page->first_page);
+			$pager->{previous} = $self->generate_paged_url($page->previous_page);
+		}
+
+		if ($page->current_page < $page->last_page) {
+			$pager->{'last'} = $self->generate_paged_url($page->last_page);
+			$pager->{'next'} = $self->generate_paged_url($page->next_page);
+		}
+
+		$self->view->{pager} = $pager;
+		return $page->splice(\@items);
+
+	} else {
+		return @items;
+	}
+}
+
+sub _generate_paged_url {
+	my $self = shift;
+	my $page_no = shift;
+
+	my $q = $self->query;
+
+	my $paged_url = '?action=' . $q->param('action');
+
+	if (
+		$q->param('title')  or
+		$q->param('author') or
+		$q->param('type')   or
+		$q->param('status') or
+		$q->param('topic')
+	) {
+		$paged_url .=   '&title='  . $q->param('title')
+		              . '&author=' . $q->param('author') 
+		              . '&type='   . $q->param('type') 
+		              . '&status=' . $q->param('status')
+		              . '&topic='  . $q->param('topic');
+	}
+
+	$paged_url .= "&page_no=$page_no";
+
+	return $paged_url;
+}
+
+sub _get_last_modified_time {
+	my $self = shift;
+	my $filename = shift;
+
+	return time() - ( (-M $filename) * 60 * 60 * 24 );
 }
 
 1;
