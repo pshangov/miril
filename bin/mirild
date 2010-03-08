@@ -1,20 +1,9 @@
 #!perl
 
-use CGI::Application::PSGI;
-use CGI::Application::Miril;
 use Plack::Runner;
-
-my $app = sub {
-    my $env = shift;
-    my $miril = CGI::Application::Miril->new(
-		QUERY => CGI::PSGI->new($env),
-		PARAMS => { cfg_file => 'example/settings/cfg/config.xml' },
-	);
-	$ENV{HTTP_COOKIE} = $env->{HTTP_COOKIE};
-	CGI::Application::PSGI->run($miril);
-};
+use App::PSGI::Miril;
 
 my $runner = Plack::Runner->new;
 $runner->parse_options(@ARGV);
-$runner->run($app);
+$runner->run(App::PSGI::Miril->app);
 
