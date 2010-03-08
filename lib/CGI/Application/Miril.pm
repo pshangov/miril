@@ -12,10 +12,13 @@ use base 'CGI::Application';
 use CGI::Application::Plugin::Authentication;
 use CGI::Application::Plugin::Redirect;
 use CGI::Application::Plugin::Forward;
+use Module::Load;
+use File::Spec::Functions qw(catfile);
 
 use Miril;
 use Miril::Exception;
 use Miril::Theme::Flashyweb;
+use Miril::View;
 
 ### ACCESSORS ###
 
@@ -63,15 +66,15 @@ sub setup {
 	
 	# configure authentication
 	try {
-		my $user_manager_name = "Miril::UserManager::" . $self->cfg->user_manager;
+		my $user_manager_name = "Miril::UserManager::" . $self->miril->cfg->user_manager;
 		load $user_manager_name;
-		$self->{user_manager} = $user_manager_name->new($self);
+		$self->{user_manager} = $user_manager_name->new($self->miril);
 	} catch {
 		Miril::Exception->throw(
 			errorvar => $_,
 			message  => 'Could not load user manager',
 		);
-	} 
+	};
 
 	$self->authen->config( 
 		DRIVER         => [ 'Generic', $self->user_manager->verification_callback ],
@@ -95,9 +98,9 @@ sub setup {
 
 sub error {
 	my ($self, $e) = @_;
-	die $e->errorvar;
+	ref $e ? die $e->errorvar : die $e;
 
-	my $tmpl = $miril->view->load('error');
+	my $tmpl = $self->miril->view->load('error');
 	$tmpl->param('error', $e);
 	return $tmpl->output;
 }
@@ -114,7 +117,7 @@ sub posts_list {
 		topic  => ( $q->param('topic' ) ? \($q->param('topic')) : undef ),
 	);
 
-	my @current_items = $self->paginate(@items);
+	my @current_items = $self->_paginate(@items);
 	
 	my $tmpl = $self->view->load('list');
 	$tmpl->param('items', \@current_items);
@@ -129,10 +132,10 @@ sub search {
 
 	my $tmpl = $self->view->load('search');
 
-	$tmpl->param('statuses', $self->prepare_statuses );
-	$tmpl->param('types',    $self->prepare_types    );
-	$tmpl->param('topics',   $self->prepare_topics   ) if $cfg->topics;
-	$tmpl->param('authors',  $self->prepare_authors  ) if $cfg->authors;
+	$tmpl->param('statuses', $self->_prepare_statuses );
+	$tmpl->param('types',    $self->_prepare_types    );
+	$tmpl->param('topics',   $self->_prepare_topics   ) if $cfg->topics;
+	$tmpl->param('authors',  $self->_prepare_authors  ) if $cfg->authors;
 
 	return $tmpl->output;
 }
@@ -144,10 +147,10 @@ sub posts_create {
 
 	my $empty_item;
 
-	$empty_item->{statuses} = $self->prepare_statuses;
-	$empty_item->{types}    = $self->prepare_types;
-	$empty_item->{authors}  = $self->prepare_authors if $cfg->authors;
-	$empty_item->{topics}   = $self->prepare_topics  if $cfg->topics;
+	$empty_item->{statuses} = $self->_prepare_statuses;
+	$empty_item->{types}    = $self->_prepare_types;
+	$empty_item->{authors}  = $self->_prepare_authors if $cfg->authors;
+	$empty_item->{topics}   = $self->_prepare_topics  if $cfg->topics;
 
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('item', $empty_item);
@@ -171,10 +174,10 @@ sub posts_edit {
 		%cur_topics = map {$_->id => 1} $item->topics;
 	}
 	
-	$item->{authors}  = $self->prepare_authors($item->author) if $cfg->authors;
-	$item->{topics}   = $self->prepare_topics(%cur_topics)    if $cfg->topics;
-	$item->{statuses} = $self->prepare_statuses($item->status);
-	$item->{types}    = $self->prepare_types($item->type);
+	$item->{authors}  = $self->_prepare_authors($item->author) if $cfg->authors;
+	$item->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->topics;
+	$item->{statuses} = $self->_prepare_statuses($item->status);
+	$item->{types}    = $self->_prepare_types($item->type);
 	
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('item', $item);
@@ -311,13 +314,13 @@ sub files_list {
 		);
 	};
 
-	my @current_files = $self->paginate(@files);
+	my @current_files = $self->_paginate(@files);
 
 	my @files_with_data = map +{ 
 		name     => $_, 
 		href     => "$files_http_dir/$_", 
 		size     => format_bytes( -s catfile($files_path, $_) ), 
-		modified => strftime( "%d/%m/%Y %H:%M", localtime( $self->get_last_modified_time(catfile($files_path, $_)) ) ), 
+		modified => strftime( "%d/%m/%Y %H:%M", localtime( $self->_get_last_modified_time(catfile($files_path, $_)) ) ), 
 	}, @current_files;
 
 	my $tmpl = $self->view->load('files');
@@ -456,13 +459,13 @@ sub _paginate {
 		my $pager;
 		
 		if ($page->current_page > 1) {
-			$pager->{first}    = $self->generate_paged_url($page->first_page);
-			$pager->{previous} = $self->generate_paged_url($page->previous_page);
+			$pager->{first}    = $self->_generate_paged_url($page->first_page);
+			$pager->{previous} = $self->_generate_paged_url($page->previous_page);
 		}
 
 		if ($page->current_page < $page->last_page) {
-			$pager->{'last'} = $self->generate_paged_url($page->last_page);
-			$pager->{'next'} = $self->generate_paged_url($page->next_page);
+			$pager->{'last'} = $self->_generate_paged_url($page->last_page);
+			$pager->{'next'} = $self->_generate_paged_url($page->next_page);
 		}
 
 		$self->view->{pager} = $pager;

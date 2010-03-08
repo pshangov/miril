@@ -3,6 +3,9 @@ package Time::ISO::Simple;
 use strict;
 use warnings;
 
+use Time::Local qw(timelocal);
+use POSIX qw(strftime);
+
 use base 'Exporter';
 
 our @EXPORT_OK = qw(time2iso iso2time);
@@ -52,7 +55,7 @@ sub time2iso {
 
 	# iso
 	my @time = localtime $time;
-	my $iso = str	ftime("%Y-%m-%dT%H:%M:%S$tz", @time);
+	my $iso = strftime("%Y-%m-%dT%H:%M:%S$tz", @time);
 
 	return $iso;
 }

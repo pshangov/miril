@@ -127,7 +127,7 @@ sub publish {
 		});
 
 		my $new_filename = $miril->_get_target_filename($post->id, $post->type);
-		$self->_file_write($new_filename, $output);
+		$miril->_file_write($new_filename, $output);
 	}
 
 	foreach my $list ($miril->cfg->lists->list) {
@@ -167,7 +167,7 @@ sub publish {
 		});
 
 		my $new_filename = catfile($miril->cfg->output_path, $list->location);
-		$self->_file_write($new_filename, $output);
+		$miril->_file_write($new_filename, $output);
 	}
 }
 

@@ -8,7 +8,15 @@ use HTML::Template::Plugin::Dot;
 
 ### ACCESSORS ###
 
-use Object::Tiny qw(theme pager is_authenticated);
+use Object::Tiny qw(theme pager is_authenticated latest);
+
+### CONSTRUCTOR ###
+
+sub new {
+	my $class = shift;
+	return bless { @_ }, $class;
+}
+
 
 ### PUBLIC METHODS ###
 
@@ -35,7 +43,7 @@ sub load {
 	# get sidebar
 	my $sidebar_text = $self->theme->get('sidebar');
 	my $sidebar = HTML::Template::Pluggable->new( scalarref => \$sidebar_text, die_on_bad_params => 0 );
-	$sidebar->param('latest', $self->get_latest);
+	$sidebar->param('latest', $self->latest);
 
 	# get footer
 	my $footer_text = $self->theme->get('footer');

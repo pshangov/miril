@@ -11,6 +11,7 @@ use IO::File;
 use File::Spec;
 use List::Util qw(first);
 use Miril::DateTime;
+use Time::ISO::Simple qw(time2iso iso2time);
 
 ### ACCESSORS ###
 
@@ -206,7 +207,7 @@ sub save {
 sub get_latest {
 	my $self = shift;
 	
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['item'] );
@@ -227,7 +228,7 @@ sub get_latest {
 
 sub add_to_latest {
 	my $self = shift;
-	my $cfg = $self->cfg;
+	my $cfg = $self->miril->cfg;
 
 	my ($id, $title) = @_;
 
