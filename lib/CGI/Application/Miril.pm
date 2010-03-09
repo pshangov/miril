@@ -19,6 +19,7 @@ use Miril;
 use Miril::Exception;
 use Miril::Theme::Flashyweb;
 use Miril::View;
+use Miril::InputValidator;
 
 ### ACCESSORS ###
 
@@ -26,6 +27,7 @@ use Object::Tiny qw(
 	view
 	user_manager
 	miril
+	validator
 );
 
 ### SETUP ###
@@ -92,6 +94,8 @@ sub setup {
 		is_authenticated => $self->authen->is_authenticated,
 		latest           => $self->miril->store->get_latest,
 	);
+
+	$self->{validator} = Miril::InputValidator->new;
 }
 
 ### RUN MODES ###
