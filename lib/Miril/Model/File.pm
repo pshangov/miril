@@ -162,7 +162,7 @@ sub save {
 		
 		# delete the old file if we have changed the id
 		if ($post->old_id ne $post->id) {
-			unlink($self->data_path . '/' . $post->old_id) 
+			unlink($cfg->data_path . '/' . $post->old_id) 
 				or $miril->process_error("Cannot delete old version of renamed post", $!);
 		}	
 

@@ -3,6 +3,9 @@ package Miril::InputValidator;
 use strict;
 use warnings;
 
+use List::Util qw(first);
+use Hash::AsObject;
+
 ### ACCESSORS ###
 
 use Object::Tiny qw(validator_rx);
@@ -13,13 +16,13 @@ sub new {
 	my $class = shift;
 	my $self = bless {}, $class;
 
-	$self=>{validator_rx} = {
+	$self->{validator_rx} = {
 		line_text 		=> qr/.*/,
 		paragraph_text 	=> qr/.*/m,
-		text_id 		=> qr/\w{1,256}/,
+		text_id 		=> qr/^\w{1,256}$/,
 		datetime 		=> qr/.*/,
-		integer 		=> qr/\d{1,8}/,
-	}
+		integer 		=> qr/^\d{1,8}$/,
+	};
 
 	return $self;
 }
@@ -30,27 +33,39 @@ sub validate {
 	my ($self, $schema, %data) = @_;
 	my %invalid_fields;
 
-	foreach my $key (keys %$schema) {
-		my ($type, $required) = split /\s/, $schema->{$key};
-		die "Unknown option '$required'" if $required and $required !~ /^(required)|(optional)$/;
 
+
+	foreach my $key (keys %$schema) {
+		my ($type, @other) = split /\s/, $schema->{$key};
+		
+		my $required = 1 if first { $_ eq 'required'} @other;
+		my $list = 1 if first { $_ eq 'list'} @other;
+
+		my @remaining = grep { $_ ne 'required' and $_ ne 'list' } @other;
+
+		if (@remaining) {
+			my $plural = 's' if @remaining > 1;
+			my @remaining = map {"'$_'"} @remaining;
+			die "Invalid option$plural " . join ',', @remaining . " supplied to validate";
+		}
+		
 		if ( $data{$key} ) {
-			push @items_to_check, ref $data{$key} ? @{ $data{$key} } : $data{$key};
+			push my @items_to_check, $list ? split("\0", $data{$key}) : $data{$key};
 			foreach my $item_to_check (@items_to_check) {
 				$invalid_fields{$key}++ unless $self->_validate_type($type, $data{$key});
 			}
 		} else {
-			die "Required parameter '$key' missing" if $required eq 'required';
+			die "Required parameter '$key' missing" if $required;
 		}
-
-		return keys %invalid_fields;
 	}
+	keys %invalid_fields ? return Hash::AsObject->new(%invalid_fields) : return;
 }
 
 ### PRIVATE METHODS ###
 
 sub _validate_type {
 	my ($self, $type, $string) = @_;
+	warn "VALIDATE: $type - $string " . $self->validator_rx->{$type};
 	die "Illegal datatype $type" unless $self->validator_rx->{$type};
 	return unless $string =~ $self->validator_rx->{$type};
 }

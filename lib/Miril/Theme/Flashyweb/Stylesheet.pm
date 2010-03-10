@@ -518,6 +518,10 @@ div.dingbat {
 	width: 1.5em;
 }
 
+.invalid {
+	outline: red solid medium;
+}
+
 
 EndOfHTML
 

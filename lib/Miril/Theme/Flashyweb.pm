@@ -62,13 +62,13 @@ my $edit = <<EndOfHTML;
 			<div class="edit">
 				<form method="POST">
 					<p class="edit">Title:<br>
-					<input type="text" name="title" class="textbox" value='<TMPL_VAR NAME="item.title">' /></p>
+					<input type="text" name="title" class="textbox <TMPL_IF NAME="invalid.title"> invalid</TMPL_IF>" value='<TMPL_VAR NAME="item.title">' /></p>
 
 					<p class="edit">ID:<br>
-					<input type="text" name="id" class="textbox" value='<TMPL_VAR NAME="item.id">' /></p>
+					<input type="text" name="id" class="textbox<TMPL_IF NAME="invalid.id"> invalid</TMPL_IF>" value='<TMPL_VAR NAME="item.id">' /></p>
 					
 					<p class="edit">Type:<br>
-					<select name="type">
+					<select name="type"<TMPL_IF NAME="invalid.type"> class="invalid"</TMPL_IF>>
 					<TMPL_LOOP NAME="item.types">
 						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
@@ -77,7 +77,7 @@ my $edit = <<EndOfHTML;
 
 					<TMPL_IF NAME="item.authors">
 					<p class="edit">Author:<br>
-					<select name="author">
+					<select name="author"<TMPL_IF NAME="invalid.author"> class="invalid"</TMPL_IF>>
 					<TMPL_LOOP NAME="item.authors">
 						<option value='<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
@@ -86,7 +86,7 @@ my $edit = <<EndOfHTML;
 					</TMPL_IF>
 
 					<p class="edit">Status:<br>
-					<select name="status">
+					<select name="status" <TMPL_IF NAME="invalid.status"> class="invalid"</TMPL_IF>>
 					<TMPL_LOOP NAME="item.statuses">
 						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
@@ -95,7 +95,7 @@ my $edit = <<EndOfHTML;
 
 					<TMPL_IF NAME="item.topics">
 					<p class="edit">Topic:<br>
-					<select name="topic" size=3 multiple="multiple">
+					<select name="topic" size=3 multiple="multiple"<TMPL_IF NAME="invalid.topic"> class="invalid"</TMPL_IF>>
 					<TMPL_LOOP NAME="item.topics">
 						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
@@ -104,7 +104,7 @@ my $edit = <<EndOfHTML;
 					</TMPL_IF>
 
 					<p class="edit" name="text">Text:<br>
-					<textarea name="text"><TMPL_VAR NAME="item.text"></textarea></p>
+					<textarea name="text"<TMPL_IF NAME="invalid.text"> class="invalid"</TMPL_IF>><TMPL_VAR NAME="item.text"></textarea></p>
 
 					<input type="hidden" name="old_id" value='<TMPL_VAR NAME="item.id">' />
 

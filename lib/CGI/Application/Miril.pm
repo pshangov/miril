@@ -163,11 +163,12 @@ sub posts_create {
 }
 
 sub posts_edit {
-	my $self = shift;
+	my ($self, $invalid_id) = @_;
 
 	my $cfg = $self->miril->cfg;
 
-	my $id = $self->query->param('id');
+	my $id = $invalid_id ? $invalid_id : $self->query->param('id');
+	
 	# check if $item is defined
 	my $item = $self->miril->store->get_post($id);
 	
@@ -185,6 +186,7 @@ sub posts_edit {
 	
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('item', $item);
+	$tmpl->param('invalid', $self->param('invalid'));
 
 	$self->miril->store->add_to_latest($item->id, $item->title);
 
@@ -194,6 +196,22 @@ sub posts_edit {
 sub posts_update {
 	my $self = shift;
 	my $q = $self->query;
+
+	my $invalid = $self->validator->validate({
+		id      => 'text_id required',
+		author  => 'line_text',
+		status  => 'text_id',
+		text    => 'paragraph_text',
+		title   => 'line_text required',
+		type    => 'text_id required',
+		old_id  => 'text_id',
+	}, $q->Vars);
+	
+	if ($invalid) {
+		$self->param('invalid', $invalid);
+		warn join ',', keys %$invalid;
+		return $self->forward('edit', $q->param('old_id'));
+	}
 
 	my $item = {
 		'id'     => $q->param('id'),
