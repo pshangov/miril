@@ -14,6 +14,7 @@ use CGI::Application::Plugin::Redirect;
 use CGI::Application::Plugin::Forward;
 use Module::Load;
 use File::Spec::Functions qw(catfile);
+use Data::AsObject qw(dao);
 
 use Miril;
 use Miril::Exception;
@@ -166,23 +167,40 @@ sub posts_edit {
 	my ($self, $invalid_id) = @_;
 
 	my $cfg = $self->miril->cfg;
+	my $q = $self->query;
+	my $item;
 
-	my $id = $invalid_id ? $invalid_id : $self->query->param('id');
+	if ($invalid_id) {
+		my %cur_topics;
+		if ($q->param('topic')) {
+			%cur_topics = map {$_ => 1} $q->param('topic');
+		}
+		$item = dao {
+			id       => $q->param('id'),
+			old_id   => $q->param('old_id'),
+			text     => $q->param('text'),
+			title    => $q->param('title'),
+			authors  => $self->_prepare_authors($q->param('author')),
+			topics   => $self->_prepare_topics(%cur_topics),
+			statuses => $self->_prepare_statuses($q->param('status')),
+			types    => $self->_prepare_types($q->param('type')),
+		};
+	} else {
+		#TODO check if $item is defined
+		$item = $self->miril->store->get_post($q->param('id'));
 	
-	# check if $item is defined
-	my $item = $self->miril->store->get_post($id);
-	
-	my %cur_topics;
+		my %cur_topics;
 
-	#FIXME
-	if (@{ $item->{topics} }) {
-		%cur_topics = map {$_->id => 1} $item->topics;
+		#FIXME
+		if (@{ $item->{topics} }) {
+			%cur_topics = map {$_->id => 1} $item->topics;
+		}
+	
+		$item->{authors}  = $self->_prepare_authors($item->author) if $cfg->authors;
+		$item->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->topics;
+		$item->{statuses} = $self->_prepare_statuses($item->status);
+		$item->{types}    = $self->_prepare_types($item->type);
 	}
-	
-	$item->{authors}  = $self->_prepare_authors($item->author) if $cfg->authors;
-	$item->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->topics;
-	$item->{statuses} = $self->_prepare_statuses($item->status);
-	$item->{types}    = $self->_prepare_types($item->type);
 	
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('item', $item);

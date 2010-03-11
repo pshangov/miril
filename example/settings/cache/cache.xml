@@ -3,7 +3,7 @@
   <post>
     <author>J. R. R. Tolkien</author>
     <format />  <id>aenean_eu_lorem</id>
-    <modified><![CDATA[1268246798]]></modified>
+    <modified><![CDATA[1268301999]]></modified>
     <path>example\settings\data\aenean_eu_lorem</path>
     <published />  <status>draft</status>
     <title>Aenean Eu Lorem</title>
@@ -15,31 +15,34 @@
       <id>animals</id>
       <name>Fuzzy Animals</name>
     </topics>
-    <type>news sdfsd fsdf</type>
+    <type>news</type>
   </post>
-  <post><author>J. R. R. Tolkien</author>
-  <format /><id>contacts</id>
-  <modified><![CDATA[1262879286]]></modified>
-  <path>example\settings\data\contacts</path>
-  <published /><title>Contacts</title>
-  <type>page</type>
+  <post>
+    <author>J. R. R. Tolkien</author>
+    <format />  <id>contacts</id>
+    <modified>1262879286</modified>
+    <path>example\settings\data\contacts</path>
+    <published />  <title>Contacts</title>
+    <type>page</type>
   </post>
-  <post><author></author>
-  <format>markdown</format>
-  <id>index</id>
-  <modified><![CDATA[1261404184]]></modified>
-  <path>example\settings\data\index</path>
-  <published>1253630481</published>
-  <title>Start Page</title>
-  <type>page</type>
+  <post>
+    <author></author>
+    <format>markdown</format>
+    <id>index</id>
+    <modified>1261404184</modified>
+    <path>example\settings\data\index</path>
+    <published>1253630481</published>
+    <title>Start Page</title>
+    <type>page</type>
   </post>
-  <post><author></author>
-  <format>markdown</format>
-  <id>lorem_ipsum_dolor</id>
-  <modified><![CDATA[1261404191]]></modified>
-  <path>example\settings\data\lorem_ipsum_dolor</path>
-  <published>1253632123</published>
-  <title>Lorem Ipsum Dolor</title>
-  <type>news</type>
+  <post>
+    <author></author>
+    <format>markdown</format>
+    <id>lorem_ipsum_dolor</id>
+    <modified>1261404191</modified>
+    <path>example\settings\data\lorem_ipsum_dolor</path>
+    <published>1253632123</published>
+    <title>Lorem Ipsum Dolor</title>
+    <type>news</type>
   </post>
 </xml>
