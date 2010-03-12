@@ -97,16 +97,30 @@ sub setup {
 	);
 
 	$self->{validator} = Miril::InputValidator->new;
+
+	$self->miril->push_warning("Test warning");
 }
 
 ### RUN MODES ###
 
 sub error {
 	my ($self, $e) = @_;
-	ref $e ? die $e->errorvar : die $e;
 
-	my $tmpl = $self->miril->view->load('error');
-	$tmpl->param('error', $e);
+	my @error_stack = map {$_->message} @{ $self->miril->warnings };
+
+	if ($e->isa('Miril::Exception')) {
+		push @error_stack, $e->message;
+		warn $e->errorvar;
+	} elsif ($e->isa('autodie::exception')) {
+		push @error_stack, "Unspecified error";
+		warn $e;
+	} else {
+		push @error_stack, "Unspecified error";
+		warn $e;
+	}
+
+	$self->view->{error_stack} = \@error_stack;
+	my $tmpl = $self->view->load('error');
 	return $tmpl->output;
 }
 

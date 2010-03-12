@@ -182,8 +182,8 @@ sub push_warning {
 
 	my $warnings_stack = $self->warnings;
 	my $warning = Miril::Warning->new(
-		miril_msg => $miril_msg,
-		perl_msg  => $perl_msg,
+		message  => $miril_msg,
+		errorvar => $perl_msg,
 	);
 
 	push @$warnings_stack, $warning;

@@ -8,7 +8,7 @@ use HTML::Template::Plugin::Dot;
 
 ### ACCESSORS ###
 
-use Object::Tiny qw(theme pager is_authenticated latest);
+use Object::Tiny qw(theme pager is_authenticated latest error_stack);
 
 ### CONSTRUCTOR ###
 
@@ -36,9 +36,10 @@ sub load {
 	my $header = HTML::Template::Pluggable->new( scalarref => \$header_text, die_on_bad_params => 0 );
 	$header->param('authenticated', $self->is_authenticated ? 1 : 0);
 	$header->param('css', $css->output);
-	#my @error_stack = $self->error_stack;
-	#$header->param('has_error', 1 ) if @error_stack;
-	#$header->param('error', \@error_stack );
+	if ($self->error_stack) {
+		$header->param('has_error', 1 );
+		$header->param('error', $self->error_stack );
+	}
 
 	# get sidebar
 	my $sidebar_text = $self->theme->get('sidebar');
