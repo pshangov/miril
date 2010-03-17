@@ -178,15 +178,17 @@ sub process_error {
 
 sub push_warning {
 	my $self = shift;
-	my ($miril_msg, $perl_msg) = @_;
+	my %params = @_;
 
-	my $warnings_stack = $self->warnings;
 	my $warning = Miril::Warning->new(
-		message  => $miril_msg,
-		errorvar => $perl_msg,
+		message  => $params{'message'},
+		errorvar => $params{'errorvar'},
 	);
 
+	my $warnings_stack = $self->warnings;
 	push @$warnings_stack, $warning;
+	$self->{warnings} = $warnings_stack;
+
 }
 
 ### PRIVATE METHODS ###

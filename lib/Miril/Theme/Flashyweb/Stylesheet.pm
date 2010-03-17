@@ -522,6 +522,14 @@ div.dingbat {
 	outline: red solid medium;
 }
 
+li.warning {
+	color: #8BCB2F;
+}
+
+li.fatal {
+	color: #FF0000;
+}
+
 
 EndOfHTML
 

@@ -8,7 +8,7 @@ use HTML::Template::Plugin::Dot;
 
 ### ACCESSORS ###
 
-use Object::Tiny qw(theme pager is_authenticated latest error_stack);
+use Object::Tiny qw(theme pager is_authenticated fatal miril);
 
 ### CONSTRUCTOR ###
 
@@ -36,15 +36,17 @@ sub load {
 	my $header = HTML::Template::Pluggable->new( scalarref => \$header_text, die_on_bad_params => 0 );
 	$header->param('authenticated', $self->is_authenticated ? 1 : 0);
 	$header->param('css', $css->output);
-	if ($self->error_stack) {
+
+	if ($self->miril->warnings or $self->fatal) {
 		$header->param('has_error', 1 );
-		$header->param('error', $self->error_stack );
+		$header->param('warnings', $self->miril->warnings );
+		$header->param('fatals', [$self->fatal] );
 	}
 
 	# get sidebar
 	my $sidebar_text = $self->theme->get('sidebar');
 	my $sidebar = HTML::Template::Pluggable->new( scalarref => \$sidebar_text, die_on_bad_params => 0 );
-	$sidebar->param('latest', $self->latest);
+	$sidebar->param('latest', $self->miril->store->get_latest);
 
 	# get footer
 	my $footer_text = $self->theme->get('footer');

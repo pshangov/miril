@@ -261,7 +261,8 @@ Description: A two-column, fixed-width and lightweight template ideal for 1024x7
 	<div id="error">
 	<h2>miril encountered problems:</h2>
 		<ul>
-			<TMPL_LOOP NAME="error"><li><TMPL_VAR NAME="miril_msg">: <TMPL_VAR NAME="perl_msg"></li></TMPL_LOOP>
+			<TMPL_LOOP NAME="warnings"><li class="warning"><TMPL_VAR NAME="message">: <TMPL_VAR NAME="errorvar"></li></TMPL_LOOP>
+			<TMPL_LOOP NAME="fatals"><li class="fatal"><TMPL_VAR NAME="message">: <TMPL_VAR NAME="errorvar"></li></TMPL_LOOP>
 		</ul>
 	</div>
 </TMPL_IF>

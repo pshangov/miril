@@ -89,16 +89,18 @@ sub setup {
 
 	$self->authen->protected_runmodes(':all');
 
+
 	# load view
 	$self->{view} = Miril::View->new(
 		theme            => Miril::Theme::Flashyweb->new,
 		is_authenticated => $self->authen->is_authenticated,
 		latest           => $self->miril->store->get_latest,
+		miril            => $self->miril,
+
 	);
 
 	$self->{validator} = Miril::InputValidator->new;
 
-	$self->miril->push_warning("Test warning");
 }
 
 ### RUN MODES ###
@@ -106,20 +108,24 @@ sub setup {
 sub error {
 	my ($self, $e) = @_;
 
-	my @error_stack = map {$_->message} @{ $self->miril->warnings };
+	my @error_stack;
 
 	if ($e->isa('Miril::Exception')) {
-		push @error_stack, $e->message;
 		warn $e->errorvar;
 	} elsif ($e->isa('autodie::exception')) {
-		push @error_stack, "Unspecified error";
 		warn $e;
+		$e = Miril::Exception->new(
+			message  => "Unspecified error",
+			errorvar => $e,
+		);
 	} else {
-		push @error_stack, "Unspecified error";
 		warn $e;
+		$e = Miril::Exception->new(
+			message  => "Unspecified error",
+			errorvar => $e,
+		);
 	}
-
-	$self->view->{error_stack} = \@error_stack;
+	$self->view->{fatal} = $e;
 	my $tmpl = $self->view->load('error');
 	return $tmpl->output;
 }
