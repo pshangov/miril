@@ -52,16 +52,20 @@ sub get_post {
 		$meta{topics} = \@topic_objects;
 	}
 
-
-	my $post = \%meta;
-
-	$post->{id}       = $id;
-	$post->{text}     = $body;
-	$post->{teaser}   = $teaser;
-	$post->{path}     = $filename;
-	$post->{modified} = Miril::DateTime->new(-M $filename);
-
-	return dao $post;
+	return Miril::Model::File::Post->new(
+		id        => $id,
+		title     => $meta{'title'},
+		body      => $body,
+		teaser    => $teaser
+		path      => $filename
+		modified  => Miril::DateTime->new(-M $filename),
+		published => $meta{'published'},
+		type      => $meta{'type'},
+		url       => $meta{'url'},
+		author    => $meta{'author'},
+		topics    => $meta{'topics'},
+		format    => $meta{'format'},
+	);
 }
 
 sub get_posts {
