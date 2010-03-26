@@ -251,7 +251,7 @@ sub posts_update {
 		return $self->forward('edit', $q->param('old_id'));
 	}
 
-	my $item = {
+	my %item = (
 		'id'     => $q->param('id'),
 		'author' => ( $q->param('author') or undef ),
 		'status' => ( $q->param('status') or undef ),
@@ -259,12 +259,12 @@ sub posts_update {
 		'title'  => ( $q->param('title')  or undef ),
 		'type'   => ( $q->param('type')   or undef ),
 		'old_id' => ( $q->param('old_id') or undef ),
-	};
+	);
 
 	# SHOULD NOT BE HERE
-	$item->{topics} = [$q->param('topic')] if $q->param('topic');
+	$item{topics} = [$q->param('topic')] if $q->param('topic');
 
-	$self->miril->store->save($item);
+	$self->miril->store->save(%item);
 
 	return $self->redirect("?action=view&id=" . $item->{id});
 }

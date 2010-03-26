@@ -12,6 +12,7 @@ use File::Spec;
 use List::Util qw(first);
 use Miril::DateTime;
 use Time::ISO::Simple qw(time2iso iso2time);
+use Miril::Exception;
 
 ### ACCESSORS ###
 
@@ -82,9 +83,28 @@ sub get_posts {
 	my ($tree, @posts, $dirty);
 	
 	if (-e $cfg->cache_data) {
-		$tree = $tpp->parsefile( $cfg->cache_data ) 
-			or $miril->process_error("Could not read cache file", $!, 'fatal');
-		@posts = dao( @{ $tree->{xml}{post} } );
+		try { 
+			$tree = $tpp->parsefile( $cfg->cache_data );
+		} catch {
+			Miril::Exception->throw(
+				message => "Could not read cache file", 
+				erorvar => $!,
+			);
+		};
+		@posts = map {
+			Miril::Model::File::Post->new(
+				id        => $_->id,
+				title     => $_->title,
+				path      => $_->filename,
+				modified  => Miril::DateTime->new(iso2time($_->modified)),
+				published => Miril::DateTime->new(iso2time($_->published)),
+				type      => $_->type,
+				url       => $_->url, # TODO
+				author    => $_->author,
+				topics    => $meta{'topics'},
+				format    => $xfg->format, # TODO
+			);
+		} @{ $tree->{xml}{post} };
 	} else {
 		# miril is run for the first time
 		$tree = {};
@@ -97,12 +117,8 @@ sub get_posts {
 		if ( -e $post->path ) {
 			push @post_ids, $post->id;
 			my $modified = time - ( (-M $post->path) * 86400 );
-			if ( $modified > $post->modified ) {
-				my $updated_post = $self->get_post($post->id);
-				for (qw(id published title type format author topics)) {
-					$post->{$_} = $updated_post->{$_};
-				}
-				$post->{modified} = Miril::DateTime->new($modified);
+			if ( $modified > $post->modified->epoch ) {
+				my $post = $self->get_post($post->id);
 				$dirty++;
 			}
 		} else {
@@ -116,14 +132,7 @@ sub get_posts {
 	while ( my $id = readdir($data_dir) ) {
 		next if -d $id;
 		unless ( first {$_ eq $id} @post_ids ) {
-			my $post;
-			my $new_post = $self->get_post($id);
-			for (qw(id published title type format author topics)) {
-				$post->{$_} = $new_post->{$_};
-			}
-			my $path = File::Spec->catfile($cfg->data_path, $id);
-			$post->{path} = $path;
-			$post->{modified} = -M $path;
+			my $post = $self->get_post($id);
 			push @posts, $post;
 			$dirty++;
 		}
@@ -142,37 +151,43 @@ sub get_posts {
 
 sub save {
 	my $self = shift;
-	my $post = dao shift;
+	my %post = @_;
 
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 	
 	my @posts = $self->get_posts;
 
-	if ($post->old_id) {
+	if ($post{old_id}) {
 		# this is an update
 
 		for (@posts) {
-			if ($_->id eq $post->old_id) {
-				$_->{id}            = $post->id;
-				$_->{author}        = $post->author;
-				$_->{title}         = $post->title;
-				$_->{topics}        = $post->topics;
-				$_->{published}     = _set_publish_date($_->{published}, $post->status);
-				$_->{status}        = $post->status;
+			if ($_->id eq $post{old_id}) {
+				$_->{id}            = $post{id};
+				$_->{author}        = $post{author};
+				$_->{title}         = $post{title};
+				$_->{topics}        = $post{topics};
+				$_->{published}     = _set_publish_date($_->{published}, $post{status});
+				$_->{status}        = $post{status};
 				last;
 			}
 		}
 		
 		# delete the old file if we have changed the id
-		if ($post->old_id ne $post->id) {
-			unlink($cfg->data_path . '/' . $post->old_id) 
-				or $miril->process_error("Cannot delete old version of renamed post", $!);
+		if ($post{old_id} ne $post{id}) {
+			try {
+				unlink($cfg->data_path . '/' . $post{old_id});
+			} catch {
+				Miril::Exception->throw( 
+					message => "Cannot delete old version of renamed post",
+					errorvar => $!
+				);
+			};
 		}	
 
 	} else {
 		# this is a new post
-		my $new_item = dao {
+		my $new_post = Miril::Model::File::Post->new(
 			id        => $post->id,
 			author    => $post->author,
 			title     => $post->title,
@@ -180,9 +195,9 @@ sub save {
 			topics    => { topic => [$post->topics] },
 			published => _set_publish_date(undef, $post->status),
 			status    => $post->status,
-		};
+		);
 		
-		push @posts, $new_item;
+		push @posts, $new_post;
 	}
 	
 	# update the cache file
