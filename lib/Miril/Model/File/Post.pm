@@ -36,13 +36,17 @@ sub teaser {
 sub _populate {
 	my $self = shift;
 	
+	my $post_file;
 	try {
-		my $post_file = File::Slurp::read_file($self->filename);
+		$post_file = File::Slurp::read_file($self->filename);
 	} catch {
-		##
-	}
+		Miril::Exception->throw(
+			message => "Cannot load data file",
+			errorvar => $_,
+		);
+	};
 
-	my ($meta, $body) = split( '<!-- END META -->', $post_file, 2);
+	my ($meta, $body) = split( /\n\n/, $post_file, 2);
 	my ($teaser)      = split( '<!-- END TEASER -->', $body, 2);
 
 	$self->{body} = $body;

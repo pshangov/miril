@@ -186,6 +186,7 @@ sub push_warning {
 	);
 
 	my $warnings_stack = $self->warnings;
+	$warnings_stack = [] unless $warnings_stack;
 	push @$warnings_stack, $warning;
 	$self->{warnings} = $warnings_stack;
 

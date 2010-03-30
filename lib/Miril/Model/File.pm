@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Data::AsObject qw(dao);
+use Hash::AsObject;
 use File::Slurp;
 use XML::TreePP;
 use Try::Tiny qw(try catch);
@@ -13,6 +14,7 @@ use List::Util qw(first);
 use Miril::DateTime;
 use Time::ISO::Simple qw(time2iso iso2time);
 use Miril::Exception;
+use Miril::Model::File::Post;
 
 ### ACCESSORS ###
 
@@ -39,7 +41,7 @@ sub get_post {
 	my $post_file = File::Slurp::read_file($filename) 
 		or $miril->process_error("Could not read data file", $!, 'fatal');
 
-	my ($meta, $body) = split( '<!-- END META -->', $post_file, 2);
+	my ($meta, $body) = split( /\n\n/, $post_file, 2);
 	my ($teaser)      = split( '<!-- END TEASER -->', $body, 2);
     
 	my %meta = _parse_meta($meta);
@@ -57,8 +59,8 @@ sub get_post {
 		id        => $id,
 		title     => $meta{'title'},
 		body      => $body,
-		teaser    => $teaser
-		path      => $filename
+		teaser    => $teaser,
+		path      => $filename,
 		modified  => Miril::DateTime->new(-M $filename),
 		published => $meta{'published'},
 		type      => $meta{'type'},
@@ -93,16 +95,16 @@ sub get_posts {
 		};
 		@posts = map {
 			Miril::Model::File::Post->new(
-				id        => $_->id,
-				title     => $_->title,
-				path      => $_->filename,
-				modified  => Miril::DateTime->new(iso2time($_->modified)),
-				published => Miril::DateTime->new(iso2time($_->published)),
-				type      => $_->type,
-				url       => $_->url, # TODO
-				author    => $_->author,
-				topics    => $meta{'topics'},
-				format    => $xfg->format, # TODO
+				id        => $_->{id},
+				title     => $_->{title},
+				path      => $_->{filename},
+				modified  => Miril::DateTime->new(iso2time($_->{modified})),
+				published => Miril::DateTime->new(iso2time($_->{published})),
+				type      => $_->{type},
+				url       => $_->{url}, # TODO
+				author    => $_->{author},
+				topics    => $_->{topics},
+				format    => $cfg->{format}, # TODO
 			);
 		} @{ $tree->{xml}{post} };
 	} else {
@@ -151,32 +153,32 @@ sub get_posts {
 
 sub save {
 	my $self = shift;
-	my %post = @_;
+	my $post = Hash::AsObject->new(@_);
 
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 	
 	my @posts = $self->get_posts;
 
-	if ($post{old_id}) {
+	if ($post->old_id) {
 		# this is an update
 
 		for (@posts) {
-			if ($_->id eq $post{old_id}) {
-				$_->{id}            = $post{id};
-				$_->{author}        = $post{author};
-				$_->{title}         = $post{title};
-				$_->{topics}        = $post{topics};
-				$_->{published}     = _set_publish_date($_->{published}, $post{status});
-				$_->{status}        = $post{status};
+			if ($_->id eq $post->old_id) {
+				$_->{id}            = $post->id;
+				$_->{author}        = $post->author;
+				$_->{title}         = $post->title;
+				$_->{topics}        = $post->topics;
+				$_->{published}     = _set_publish_date($_->{published}, $post->status);
+				$_->{status}        = $post->status;
 				last;
 			}
 		}
 		
 		# delete the old file if we have changed the id
-		if ($post{old_id} ne $post{id}) {
+		if ($post->old_id ne $post->id) {
 			try {
-				unlink($cfg->data_path . '/' . $post{old_id});
+				unlink($cfg->data_path . '/' . $post->old_id);
 			} catch {
 				Miril::Exception->throw( 
 					message => "Cannot delete old version of renamed post",
@@ -187,7 +189,7 @@ sub save {
 
 	} else {
 		# this is a new post
-		my $new_post = Miril::Model::File::Post->new(
+		push @posts, Miril::Model::File::Post->new(
 			id        => $post->id,
 			author    => $post->author,
 			title     => $post->title,
@@ -197,7 +199,6 @@ sub save {
 			status    => $post->status,
 		);
 		
-		push @posts, $new_post;
 	}
 	
 	# update the cache file
@@ -211,9 +212,9 @@ sub save {
 	# update the data file
 	my $content;
 
-	$content .= "$_: " . $post->{$_} . "\n"  for qw(published title type format author);
-	$content .= "topics: " . join(" ", $post->topics) . "\n";
-	$content .= "<!-- END META -->\n";
+	$content .= ucfirst $_ . ": " . $post->{$_} . "\n"  for qw(title type author published format);
+	$content .= "Topics: " . join(" ", $post->topics) . "\n\n";
+	$content .= "\n";
 	$content .= $post->text;
 
 	my $fh = IO::File->new( File::Spec->catfile($cfg->data_path, $post->id), "w")
@@ -286,13 +287,13 @@ sub _parse_meta {
 	my %meta;
 	
 	foreach my $line (@lines) {
-		if ($line =~ /^(published|title|type|format|author|status):\s+(.+)/) {
-			my $name = $1;
+		if ($line =~ /^(Published|Title|Type|Format|Author|Status):\s+(.+)/) {
+			my $name = lc $1;
 			my $value = $2;
 			$value  =~ s/\s+$//;
 			$meta{$name} = $value;
-		} elsif ($line =~ /topics:\s+(.+)/) {
-			my $value = $1;
+		} elsif ($line =~ /Topics:\s+(.+)/) {
+			my $value = lc $1;
 			$value  =~ s/\s+$//;
 			my @values = split /\s+/, $value;
 			$meta{topics} = \@values;

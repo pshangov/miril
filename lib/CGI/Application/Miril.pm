@@ -266,7 +266,7 @@ sub posts_update {
 
 	$self->miril->store->save(%item);
 
-	return $self->redirect("?action=view&id=" . $item->{id});
+	return $self->redirect("?action=view&id=" . $item{id});
 }
 
 sub posts_delete {
