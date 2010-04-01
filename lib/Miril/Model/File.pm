@@ -55,14 +55,16 @@ sub get_post {
 		$meta{topics} = \@topic_objects;
 	}
 
+	my $modified = time - ( (-M $filename) * 86400 );
+
 	return Miril::Model::File::Post->new(
 		id        => $id,
 		title     => $meta{'title'},
 		body      => $body,
 		teaser    => $teaser,
 		path      => $filename,
-		modified  => Miril::DateTime->new(-M $filename),
-		published => $meta{'published'},
+		modified  => Miril::DateTime->new($modified),
+		published => Miril::DateTime->new(iso2time($meta{'published'})),
 		type      => $meta{'type'},
 		url       => $meta{'url'},
 		author    => $meta{'author'},
@@ -97,9 +99,9 @@ sub get_posts {
 			Miril::Model::File::Post->new(
 				id        => $_->{id},
 				title     => $_->{title},
-				path      => $_->{filename},
-				modified  => Miril::DateTime->new(iso2time($_->{modified})),
-				published => Miril::DateTime->new(iso2time($_->{published})),
+				path      => $_->{path},
+				modified  => Miril::DateTime->new($_->{modified}),
+				published => Miril::DateTime->new($_->{published}),
 				type      => $_->{type},
 				url       => $_->{url}, # TODO
 				author    => $_->{author},
@@ -115,12 +117,14 @@ sub get_posts {
 	my @post_ids;
 
 	# for each post, check if the data in the cache is older than the data in the filesystem
+
 	foreach my $post (@posts) {
 		if ( -e $post->path ) {
 			push @post_ids, $post->id;
 			my $modified = time - ( (-M $post->path) * 86400 );
 			if ( $modified > $post->modified->epoch ) {
-				my $post = $self->get_post($post->id);
+				$post = $self->get_post($post->id);
+				warn $post->id;
 				$dirty++;
 			}
 		} else {
@@ -144,8 +148,15 @@ sub get_posts {
 	if ($dirty) {
 		my $new_tree = $tree;
 		$new_tree->{xml}->{post} = \@posts;
-		$self->tpp->writefile($cfg->cache_data, $new_tree) 
-			or $miril->process_error("Cannot update cache file", $!);
+
+		try { 
+			$self->tpp->writefile($cfg->cache_data, $new_tree); 
+		} catch { 
+			Miril::Exception->throw(
+				message => "Cannot update cache file", 
+				errorvar => $_,
+			);
+		};
 	}
 
 	return @posts;

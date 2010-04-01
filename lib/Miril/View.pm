@@ -55,13 +55,13 @@ sub load {
 	$footer->param('authenticated', $self->is_authenticated ? 1 : 0);
 	$footer->param('sidebar', $sidebar->output);
 	
-	my $tmpl = HTML::Template::Pluggable->new( scalarref => \$text, die_on_bad_params => 0 );
+	my $tmpl = HTML::Template::Pluggable->new( scalarref => \$text, die_on_bad_params => 0, case_sensitive => 1);
 	$tmpl->param('authenticated', $self->is_authenticated ? 1 : 0);
 	$tmpl->param('header' => $header->output, 'footer' => $footer->output );
 
 	if ($self->pager) {
 
-		my $pager_text = $self->tmpl->get('pager');
+		my $pager_text = $self->theme->get('pager');
 		my $pager = HTML::Template::Pluggable->new( scalarref => \$pager_text, die_on_bad_params => 0 );
 		$pager->param('first', $self->pager->{first});
 		$pager->param('last', $self->pager->{last});

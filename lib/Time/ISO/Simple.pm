@@ -11,7 +11,6 @@ use base 'Exporter';
 our @EXPORT_OK = qw(time2iso iso2time);
 
 sub iso2time {
-	my $self = shift;
 	my $iso = shift;
 
 	# 2009-11-26T16:55:34+02:00
@@ -44,7 +43,6 @@ sub iso2time {
 }
 	
 sub time2iso {
-	my $self = shift;
 	my $time = shift;
 
 	# get timezone

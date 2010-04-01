@@ -33,6 +33,12 @@ sub teaser {
 	}
 }
 
+sub status {
+	my $self = shift;
+	my $status = $self->published ? 'published' : 'draft';
+	return $status;
+}
+
 sub _populate {
 	my $self = shift;
 	

@@ -15,6 +15,7 @@ use CGI::Application::Plugin::Forward;
 use Module::Load;
 use File::Spec::Functions qw(catfile);
 use Data::AsObject qw(dao);
+use Data::Page;
 
 use Miril;
 use Miril::Exception;
@@ -145,7 +146,7 @@ sub posts_list {
 	my @current_items = $self->_paginate(@items);
 	
 	my $tmpl = $self->view->load('list');
-	$tmpl->param('items', \@current_items);
+	$tmpl->param('items', {list => \@current_items});
 	return $tmpl->output;
 
 }
