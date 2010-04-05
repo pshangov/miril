@@ -124,7 +124,6 @@ sub get_posts {
 			my $modified = time - ( (-M $post->path) * 86400 );
 			if ( $modified > $post->modified->epoch ) {
 				$post = $self->get_post($post->id);
-				warn $post->id;
 				$dirty++;
 			}
 		} else {
@@ -173,7 +172,7 @@ sub save {
 
 	if ($post->old_id) {
 		# this is an update
-
+		
 		for (@posts) {
 			if ($_->id eq $post->old_id) {
 				$_->{id}            = $post->id;
@@ -223,10 +222,13 @@ sub save {
 	# update the data file
 	my $content;
 
-	$content .= ucfirst $_ . ": " . $post->{$_} . "\n"  for qw(title type author published format);
-	$content .= "Topics: " . join(" ", $post->topics) . "\n\n";
-	$content .= "\n";
-	$content .= $post->text;
+	$post = first { $_->id eq $post->id } @posts;
+
+	$content .= ucfirst $_ . ": " . $post->{$_} . "\n"  for qw(title type author);
+	$content .= "Published: " . ( $post->published ? $post->published->iso : '' ) . "\n";
+	$content .= "Format: " . $cfg->format . "\n";
+	$content .= "Topics: " . join(" ", @{ $post->topics }) . "\n\n";
+	$content .= $post->body;
 
 	my $fh = IO::File->new( File::Spec->catfile($cfg->data_path, $post->id), "w")
 		or $miril->process_error("Cannot update data file", $!, 'fatal');
@@ -318,10 +320,11 @@ sub _parse_meta {
 
 sub _set_publish_date {
 	my ($old_date, $new_status) = @_;
-	my $new_date = time2iso(time);
-	
 	return unless $new_status eq 'published';
-	return($old_date ? $old_date : $new_date);
+
+	return $old_date 
+		? Miril::DateTime->new(iso2time($old_date)) 
+		: Miril::DateTime->new(time);
 }
 
 1;

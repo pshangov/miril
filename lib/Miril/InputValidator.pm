@@ -65,7 +65,6 @@ sub validate {
 
 sub _validate_type {
 	my ($self, $type, $string) = @_;
-	warn "VALIDATE: $type - $string " . $self->validator_rx->{$type};
 	die "Illegal datatype $type" unless $self->validator_rx->{$type};
 	return unless $string =~ $self->validator_rx->{$type};
 }

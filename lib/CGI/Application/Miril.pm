@@ -88,7 +88,7 @@ sub setup {
 		STORE          => [ 'Cookie', SECRET => $self->miril->cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
 	);
 
-	$self->authen->protected_runmodes(':all');
+	#$self->authen->protected_runmodes(':all');
 
 
 	# load view
@@ -117,7 +117,7 @@ sub error {
 		warn $e;
 		$e = Miril::Exception->new(
 			message  => "Unspecified error",
-			errorvar => $e,
+			errorvar => $e->stringify,
 		);
 	} else {
 		warn $e;
@@ -199,7 +199,7 @@ sub posts_edit {
 		$item = dao {
 			id       => $q->param('id'),
 			old_id   => $q->param('old_id'),
-			text     => $q->param('text'),
+			body     => $q->param('body'),
 			title    => $q->param('title'),
 			authors  => $self->_prepare_authors($q->param('author')),
 			topics   => $self->_prepare_topics(%cur_topics),
@@ -214,7 +214,7 @@ sub posts_edit {
 
 		#FIXME
 		if (@{ $item->{topics} }) {
-			%cur_topics = map {$_->id => 1} $item->topics;
+			%cur_topics = map {$_->id => 1} @{ $item->{topics} };
 		}
 	
 		$item->{authors}  = $self->_prepare_authors($item->author) if $cfg->authors;
@@ -240,7 +240,7 @@ sub posts_update {
 		id      => 'text_id required',
 		author  => 'line_text',
 		status  => 'text_id',
-		text    => 'paragraph_text',
+		body    => 'paragraph_text',
 		title   => 'line_text required',
 		type    => 'text_id required',
 		old_id  => 'text_id',
@@ -256,7 +256,7 @@ sub posts_update {
 		'id'     => $q->param('id'),
 		'author' => ( $q->param('author') or undef ),
 		'status' => ( $q->param('status') or undef ),
-		'text'   => ( $q->param('text')   or undef ),
+		'body'   => ( $q->param('body')   or undef ),
 		'title'  => ( $q->param('title')  or undef ),
 		'type'   => ( $q->param('type')   or undef ),
 		'old_id' => ( $q->param('old_id') or undef ),
@@ -287,7 +287,7 @@ sub posts_view {
 
 	my $item = $self->miril->store->get_post($id);
 	if ($item) {
-		$item->{text} = $self->miril->filter->to_xhtml($item->text);
+		$item->{body} = $self->miril->filter->to_xhtml($item->body);
 
 		my $tmpl = $self->view->load('view');
 		$tmpl->param('item', $item);

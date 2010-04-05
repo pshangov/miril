@@ -2,13 +2,13 @@
 <xml>
   <post>
     <author>J. R. R. Tolkien</author>
-    <body>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum.
+    <body>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum. 
     </body>
     <format />  <id>aenean_eu_lorem</id>
-    <modified><![CDATA[1270132262]]></modified>
+    <modified><![CDATA[1270234140]]></modified>
     <path>example\settings\data\aenean_eu_lorem</path>
-    <published><![CDATA[1269958641]]></published>
-    <teaser>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum.
+    <published><![CDATA[1270233809]]></published>
+    <teaser>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum. 
     </teaser>
     <title>Aenean Eu Lorem</title>
     <topics>
@@ -25,7 +25,7 @@
   <body>Miril is available at [miril.org](http://www.miril.org)
   </body>
   <format /><id>contacts</id>
-  <modified><![CDATA[1270132270]]></modified>
+  <modified><![CDATA[1270227000]]></modified>
   <path>example\settings\data\contacts</path>
   <published><![CDATA[1269958641]]></published>
   <teaser>Miril is available at [miril.org](http://www.miril.org)
@@ -38,7 +38,7 @@
   </body>
   <format>markdown</format>
   <id>index</id>
-  <modified><![CDATA[1270132283]]></modified>
+  <modified><![CDATA[1270227000]]></modified>
   <path>example\settings\data\index</path>
   <published><![CDATA[1269958641]]></published>
   <teaser>This is the front page of a sample site create with Miril. Enjoy!
@@ -51,7 +51,7 @@
   </body>
   <format>markdown</format>
   <id>lorem_ipsum_dolor</id>
-  <modified><![CDATA[1270132289]]></modified>
+  <modified><![CDATA[1270227000]]></modified>
   <path>example\settings\data\lorem_ipsum_dolor</path>
   <published><![CDATA[1269958641]]></published>
   <teaser>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Phasellus non erat eu dui dignissim dictum. Integer iaculis nulla at nisl. Proin ut enim non ipsum varius laoreet. Integer feugiat, ante fringilla blandit convallis, leo sapien egestas velit, non condimentum nulla sem vitae risus. Mauris aliquam auctor quam. Sed ac enim. Donec mattis dui id ligula. Integer vel sem eget ante cursus tristique. Nullam vel orci vitae sem interdum placerat. In eget lectus. Donec blandit. Quisque lacus urna, malesuada vel, mollis sit amet, rutrum nec, est. Proin blandit ornare nibh. Duis et felis.

@@ -103,8 +103,8 @@ my $edit = <<EndOfHTML;
 					</p>
 					</TMPL_IF>
 
-					<p class="edit" name="text">Text:<br>
-					<textarea name="text"<TMPL_IF NAME="invalid.text"> class="invalid"</TMPL_IF>><TMPL_VAR NAME="item.text"></textarea></p>
+					<p class="edit" name="body">Body:<br>
+					<textarea name="body"<TMPL_IF NAME="invalid.body"> class="invalid"</TMPL_IF>><TMPL_VAR NAME="item.body"></textarea></p>
 
 					<input type="hidden" name="old_id" value='<TMPL_VAR NAME="item.id">' />
 
@@ -261,8 +261,8 @@ Description: A two-column, fixed-width and lightweight template ideal for 1024x7
 	<div id="error">
 	<h2>miril encountered problems:</h2>
 		<ul>
-			<TMPL_LOOP NAME="warnings"><li class="warning"><TMPL_VAR NAME="message">: <TMPL_VAR NAME="errorvar"></li></TMPL_LOOP>
-			<TMPL_LOOP NAME="fatals"><li class="fatal"><TMPL_VAR NAME="message">: <TMPL_VAR NAME="errorvar"></li></TMPL_LOOP>
+			<TMPL_LOOP NAME="warnings"><li class="warning"><TMPL_VAR NAME="message"><pre><TMPL_VAR NAME="errorvar"></pre></li></TMPL_LOOP>
+			<TMPL_LOOP NAME="fatals"><li class="fatal"><TMPL_VAR NAME="message"><pre><TMPL_VAR NAME="errorvar"></pre></li></TMPL_LOOP>
 		</ul>
 	</div>
 </TMPL_IF>
@@ -465,7 +465,7 @@ my $view = <<EndOfHTML;
 		<div class="post">
 			<h2 class="title"><span class="dingbat">&#x273b;</span> <TMPL_VAR NAME="item.title"></h2>
 			<div class="entry">
-				<TMPL_VAR NAME="item.text">
+				<TMPL_VAR NAME="item.body">
 			</div>
 			<form method="get">
 			<input type="hidden" name="id" value='<TMPL_VAR NAME="item.id">' />

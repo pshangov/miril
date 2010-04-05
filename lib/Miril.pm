@@ -23,7 +23,6 @@ use Object::Tiny qw(
 	tmpl
 	cfg
 	filter
-	warnings
 );
 
 ### CONSTRUCTOR ###
@@ -190,6 +189,11 @@ sub push_warning {
 	push @$warnings_stack, $warning;
 	$self->{warnings} = $warnings_stack;
 
+}
+
+sub warnings {
+	my $self = shift;
+	return @{ $self->{warnings} } if $self->{warnings};
 }
 
 ### PRIVATE METHODS ###

@@ -480,6 +480,11 @@ div#error {
 	margin: 1em 0 1em;
 }
 
+#error ul li pre {
+	margin: 0;
+	color: #6D6D6D;
+}
+
 #error h2 {
 	margin-top: 0.5em;
 	margin-left: 1em;

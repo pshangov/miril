@@ -39,9 +39,8 @@ sub load {
 
 	if ($self->miril->warnings or $self->fatal) {
 		$header->param('has_error', 1 );
-		warn $self->miril->warnings;
-		$header->param('warnings', $self->miril->warnings );
-		$header->param('fatals', [$self->fatal] );
+		$header->param('warnings', [$self->miril->warnings] ) if $self->miril->warnings;
+		$header->param('fatals', [$self->fatal] ) if $self->fatal;
 	}
 
 	# get sidebar
