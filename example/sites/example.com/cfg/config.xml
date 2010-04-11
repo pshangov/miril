@@ -1,13 +1,5 @@
 <xml>
 
-	<!-- PATHS - CHANGE TO MATCH YOUR SETUP -->
-	<data_path>example/settings/data</data_path>
-	<tmpl_path>example/settings/tmpl</tmpl_path>
-	<cache_path>example/settings/cache</cache_path>
-	<cfg_path>example/settings/cfg</cfg_path>
-
-	<model>File</model>
-
 	<output_path>example/htdocs/miril</output_path>
 	<files_path>example/htdocs/miril/files</files_path>
 

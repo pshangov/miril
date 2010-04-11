@@ -30,12 +30,13 @@ use Object::Tiny qw(
 sub new {
 	my $class = shift;
 	my $self = bless {}, $class;
-	my $config_filename = shift;
+	my $miril_dir = shift;
+	my $site = shift;
 
 	
 	# load configuration
 	try {
-		my $cfg = Miril::Config->new($config_filename);
+		my $cfg = Miril::Config->new($miril_dir, $site);
 		$self->{cfg} = $cfg;
 	} catch {
 		Miril::Exception->throw( 
@@ -45,9 +46,11 @@ sub new {
 	};
 	return unless $self->cfg;
 
+	my $cfg = $self->cfg;
+
 	# load store
 	try {
-		my $store_name = "Miril::Model::" . $self->cfg->model;
+		my $store_name = "Miril::Model::" . $cfg->{model};
 		load $store_name;
 		my $store = $store_name->new($self);
 		$self->{store} = $store;
@@ -61,7 +64,7 @@ sub new {
 
 	# load view
 	try {
-		my $view_name = "Miril::View::" . $self->cfg->view;
+		my $view_name = "Miril::View::" . $cfg->{view};
 		load $view_name;
 		$self->{view} = $view_name->new($self);
 	} catch {
@@ -73,9 +76,9 @@ sub new {
 
 	# load filter
 	try {
-		my $filter_name = "Miril::Filter::" . $self->cfg->filter;
+		my $filter_name = "Miril::Filter::" . $cfg->{filter};
 		load $filter_name;
-		$self->{filter} = $filter_name->new($self->cfg);
+		$self->{filter} = $filter_name->new($cfg);
 	} catch {
 		Miril::Exception->throw(
 			errorvar => $_,
@@ -91,6 +94,8 @@ sub new {
 sub publish {
 	my $miril = shift;
 	my $rebuild = shift;
+
+	my $cfg = $miril->cfg;
 
 	my (@to_create, @to_update);
 
@@ -116,20 +121,20 @@ sub publish {
 		$post->text( $miril->filter->to_xhtml($post->text) );
 		$post->teaser( $miril->filter->to_xhtml($post->teaser) );
 
-		my $type = first {$_->id eq $post->type} $miril->cfg->types;
+		my $type = first {$_->id eq $post->type} @{ $cfg->{types} };
 		
 		my $output = $miril->tmpl->load(
 			name => $type->template, 
 			params => {
 				item => $post,
-				cfg => $miril->cfg,
+				cfg => $cfg,
 		});
 
 		my $new_filename = $miril->_get_target_filename($post->id, $post->type);
 		$miril->_file_write($new_filename, $output);
 	}
 
-	foreach my $list ($miril->cfg->lists->list) {
+	foreach my $list (@{ $cfg->{lists} }) {
 
 		my @params = qw(
 			author
@@ -151,21 +156,21 @@ sub publish {
 		my %params;
 
 		foreach my $param (@params) {
-			if ( exists $list->match->{$param} ) {
-				$params{$param} = $list->match->{$param};
+			if ( exists $list->{match}->{$param} ) {
+				$params{$param} = $list->{match}->{$param};
 			}
 		}
 
 		my @items = $miril->store->get_posts(%params);
 
 		my $output = $miril->tmpl->load(
-			name => $list->template,
+			name => $list->{template},
 			params => {
 				items => \@items,
-				cfg => $miril->cfg,
+				cfg => $cfg,
 		});
 
-		my $new_filename = catfile($miril->cfg->output_path, $list->location);
+		my $new_filename = catfile($cfg->{output_path}, $list->{location});
 		$miril->_file_write($new_filename, $output);
 	}
 }
@@ -219,8 +224,8 @@ sub _get_target_filename {
 
 	my ($name, $type) = @_;
 
-	my $current_type = first {$_->id eq $type} $cfg->types;
-	my $target_filename = catfile($cfg->output_path, $current_type->location, $name . ".html");
+	my $current_type = first {$_->id eq $type} $cfg->{types};
+	my $target_filename = catfile($cfg->{output_path}, $current_type->location, $name . ".html");
 
 	return $target_filename;
 }

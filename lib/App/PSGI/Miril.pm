@@ -8,7 +8,10 @@ sub app {
 		my $env = shift;
 		my $miril = CGI::Application::Miril->new(
 			QUERY => CGI::PSGI->new($env),
-			PARAMS => { cfg_file => 'example/settings/cfg/config.xml' },
+			PARAMS => { 
+				miril_dir => 'example',
+				site      => 'example.com',
+			},
 		);
 		$ENV{HTTP_COOKIE} = $env->{HTTP_COOKIE};
 		CGI::Application::PSGI->run($miril);
