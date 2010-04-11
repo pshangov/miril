@@ -1,0 +1,7 @@
+#!perl
+
+use strict;
+use warnings;
+
+use App::Cmd::Miril;
+App::Cmd::Miril->run;
