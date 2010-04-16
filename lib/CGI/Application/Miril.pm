@@ -64,9 +64,9 @@ sub setup {
 	$self->error_mode('error');
 
 	# setup miril
-	my $config_filename = $self->param('cfg_file');
-	$config_filename = 'miril.config' unless $config_filename;
-	$self->{miril}= Miril->new($config_filename);
+	my $miril_dir = $self->param('miril_dir');
+	my $site = $self->param('site');
+	$self->{miril}= Miril->new($miril_dir, $site);
 	
 	# configure authentication
 	try {
