@@ -1,4 +1,4 @@
-package App::Cmd::Miril;
+package Miril::App::Cmd;
 
 use strict;
 use warnings;

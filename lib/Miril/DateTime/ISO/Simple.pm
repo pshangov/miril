@@ -1,4 +1,4 @@
-package Time::ISO::Simple;
+package Miril::DateTime::ISO::Simple;
 
 use strict;
 use warnings;

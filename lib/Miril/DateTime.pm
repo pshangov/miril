@@ -7,7 +7,7 @@ use overload '""' => \&epoch;
 
 use POSIX;
 use Time::Local qw(timelocal);
-use Time::ISO::Simple qw(time2iso);
+use Miril::DateTime::ISO::Simple qw(time2iso);
 
 sub new      { bless \$_[1], $_[0] }
 sub epoch    { ${$_[0]} }

@@ -1,4 +1,4 @@
-package CGI::Application::Miril;
+package Miril::CGI::Application;
 
 use strict;
 use warnings;

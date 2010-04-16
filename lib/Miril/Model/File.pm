@@ -12,7 +12,7 @@ use IO::File;
 use File::Spec;
 use List::Util qw(first);
 use Miril::DateTime;
-use Time::ISO::Simple qw(time2iso iso2time);
+use Miril::DateTime::ISO::Simple qw(time2iso iso2time);
 use Miril::Exception;
 use Miril::Model::File::Post;
 

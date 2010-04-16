@@ -1,12 +1,12 @@
-package App::PSGI::Miril;
+package Miril::App::PSGI;
 
 use CGI::Application::PSGI;
-use CGI::Application::Miril;
+use Miril::CGI::Application;
 
 sub app {
 	return sub {
 		my $env = shift;
-		my $miril = CGI::Application::Miril->new(
+		my $miril = Miril::CGI::Application->new(
 			QUERY => CGI::PSGI->new($env),
 			PARAMS => { 
 				miril_dir => 'example',
