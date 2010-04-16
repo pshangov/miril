@@ -21,7 +21,7 @@ sub new {
 	
 	### SUPPLY DEFAULT VALUES ###
 	
-	$cfg->{model}          = 'File'           unless defined $cfg->{model};
+	$cfg->{store}          = 'File'           unless defined $cfg->{store};
 	$cfg->{user_manager}   = 'XMLTPP'         unless defined $cfg->{user_manager};
 	$cfg->{filter}         = 'Markdown'       unless defined $cfg->{filter};
 	$cfg->{view}           = 'HTML::Template' unless defined $cfg->{view};

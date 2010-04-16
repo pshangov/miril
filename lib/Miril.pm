@@ -50,7 +50,7 @@ sub new {
 
 	# load store
 	try {
-		my $store_name = "Miril::Model::" . $cfg->{model};
+		my $store_name = "Miril::Store::" . $cfg->{store};
 		load $store_name;
 		my $store = $store_name->new($self);
 		$self->{store} = $store;

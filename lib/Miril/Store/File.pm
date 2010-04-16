@@ -1,4 +1,4 @@
-package Miril::Model::File;
+package Miril::Store::File;
 
 use strict;
 use warnings;
@@ -14,7 +14,7 @@ use List::Util qw(first);
 use Miril::DateTime;
 use Miril::DateTime::ISO::Simple qw(time2iso iso2time);
 use Miril::Exception;
-use Miril::Model::File::Post;
+use Miril::Store::File::Post;
 
 ### ACCESSORS ###
 
@@ -57,7 +57,7 @@ sub get_post {
 
 	my $modified = time - ( (-M $filename) * 86400 );
 
-	return Miril::Model::File::Post->new(
+	return Miril::Store::File::Post->new(
 		id        => $id,
 		title     => $meta{'title'},
 		body      => $body,
@@ -96,7 +96,7 @@ sub get_posts {
 			);
 		};
 		@posts = map {
-			Miril::Model::File::Post->new(
+			Miril::Store::File::Post->new(
 				id        => $_->{id},
 				title     => $_->{title},
 				path      => $_->{path},
@@ -199,7 +199,7 @@ sub save {
 
 	} else {
 		# this is a new post
-		push @posts, Miril::Model::File::Post->new(
+		push @posts, Miril::Store::File::Post->new(
 			id        => $post->id,
 			author    => $post->author,
 			title     => $post->title,

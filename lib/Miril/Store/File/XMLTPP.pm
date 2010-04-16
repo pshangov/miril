@@ -1,4 +1,4 @@
-package Miril::Model::File::XMLTPP;
+package Miril::Store::File::XMLTPP;
 
 use strict;
 use warnings;

@@ -1,4 +1,4 @@
-package Miril::Model::File::Post;
+package Miril::Store::File::Post;
 
 use strict;
 use warnings;
