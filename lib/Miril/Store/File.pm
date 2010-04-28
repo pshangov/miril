@@ -104,10 +104,8 @@ sub get_posts {
 				modified  => Miril::DateTime->new($_->{modified}),
 				published => Miril::DateTime->new($_->{published}),
 				type      => $_->{type},
-				url       => $_->{url}, # TODO
 				author    => $_->{author},
 				topics    => $_->{topics},
-				format    => $cfg->{format}, # TODO
 			);
 		} list $tree->{xml}{post};
 	} else {
@@ -223,7 +221,6 @@ sub save {
 		modified  => $_->modified->epoch,
 		published => $_->published->epoch,
 		type      => $_->type,
-		url       => $_->url, # TODO
 		author    => $_->author,
 		topics    => $_->topics,
 	}} @posts;
