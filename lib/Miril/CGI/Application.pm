@@ -37,9 +37,6 @@ use Object::Tiny qw(
 sub setup {
 	my $self = shift;
 
-	#use Data::Dumper;
-	#warn Data::Dumper::Dumper(\%ENV);
-	
 	# setup runmodes
 
     $self->mode_param('action');
@@ -160,8 +157,8 @@ sub search {
 
 	$tmpl->param('statuses', $self->_prepare_statuses );
 	$tmpl->param('types',    $self->_prepare_types    );
-	$tmpl->param('topics',   $self->_prepare_topics   ) if $cfg->topics;
-	$tmpl->param('authors',  $self->_prepare_authors  ) if $cfg->authors;
+	$tmpl->param('topics',   $self->_prepare_topics   ) if list $cfg->topics;
+	$tmpl->param('authors',  $self->_prepare_authors  ) if list $cfg->authors;
 
 	return $tmpl->output;
 }
@@ -175,8 +172,8 @@ sub posts_create {
 
 	$empty_item->{statuses} = $self->_prepare_statuses;
 	$empty_item->{types}    = $self->_prepare_types;
-	$empty_item->{authors}  = $self->_prepare_authors if $cfg->authors;
-	$empty_item->{topics}   = $self->_prepare_topics  if $cfg->topics;
+	$empty_item->{authors}  = $self->_prepare_authors if list $cfg->authors;
+	$empty_item->{topics}   = $self->_prepare_topics  if list $cfg->topics;
 
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('item', $empty_item);
@@ -213,12 +210,12 @@ sub posts_edit {
 		my %cur_topics;
 
 		#FIXME
-		if (@{ $item->{topics} }) {
-			%cur_topics = map {$_->id => 1} @{ $item->{topics} };
+		if ( list $item->topics }) {
+			%cur_topics = map {$_->id => 1} list $item->topics;
 		}
 	
-		$item->{authors}  = $self->_prepare_authors($item->author) if $cfg->authors;
-		$item->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->topics;
+		$item->{authors}  = $self->_prepare_authors($item->author) if list $cfg->authors;
+		$item->{topics}   = $self->_prepare_topics(%cur_topics)    if list $cfg->topics;
 		$item->{statuses} = $self->_prepare_statuses($item->status);
 		$item->{types}    = $self->_prepare_types($item->type);
 	}
@@ -474,7 +471,7 @@ sub _prepare_authors {
 	my $cfg = $self->miril->cfg;
 	my @authors;
 	if ($selected) {
-		@authors = map +{ name => $_, id => $_ , selected => $_ eq $selected }, $cfg->authors;
+		@authors = map +{ name => $_, id => $_ , selected => $_ eq $selected }, list $cfg->authors;
 	} else {
 		@authors = map +{ name => $_, id => $_  }, $cfg->authors;
 	}
@@ -484,21 +481,21 @@ sub _prepare_authors {
 sub _prepare_statuses {
 	my ($self, $selected) = @_;
 	my $cfg = $self->miril->cfg;
-	my @statuses = map +{ name => $_, id => $_, selected => $_ eq $selected }, $cfg->statuses;
+	my @statuses = map +{ name => $_, id => $_, selected => $_ eq $selected }, list $cfg->statuses;
 	return \@statuses;
 }
 
 sub _prepare_topics {
 	my ($self, %selected) = @_;
 	my $cfg = $self->miril->cfg;
-	my @topics   = map +{ name => $_->name, id => $_->id, selected => $selected{$_->id} }, $cfg->topics;
+	my @topics   = map +{ name => $_->name, id => $_->id, selected => $selected{$_->id} }, list $cfg->topics;
 	return \@topics;
 }
 
 sub _prepare_types {
 	my ($self, $selected) = @_;
 	my $cfg = $self->miril->cfg;
-	my @types = map +{ name => $_->name, id => $_->id, selected => $_->id eq $selected }, $cfg->types;
+	my @types = map +{ name => $_->name, id => $_->id, selected => $_->id eq $selected }, list $cfg->types;
 	return \@types;
 }
 

@@ -6,10 +6,9 @@ use strict;
 use autodie;
 use Try::Tiny;
 use Exception::Class;
-
 use Carp;
 use Module::Load;
-
+use Ref::List::AsObject;
 use Miril::Warning;
 use Miril::Exception;
 use Miril::Config;
@@ -50,7 +49,7 @@ sub new {
 
 	# load store
 	try {
-		my $store_name = "Miril::Store::" . $cfg->{store};
+		my $store_name = "Miril::Store::" . $cfg->store;
 		load $store_name;
 		my $store = $store_name->new($self);
 		$self->{store} = $store;
@@ -64,7 +63,7 @@ sub new {
 
 	# load view
 	try {
-		my $view_name = "Miril::View::" . $cfg->{view};
+		my $view_name = "Miril::View::" . $cfg->view;
 		load $view_name;
 		$self->{view} = $view_name->new($self);
 	} catch {
@@ -76,7 +75,7 @@ sub new {
 
 	# load filter
 	try {
-		my $filter_name = "Miril::Filter::" . $cfg->{filter};
+		my $filter_name = "Miril::Filter::" . $cfg->filter;
 		load $filter_name;
 		$self->{filter} = $filter_name->new($cfg);
 	} catch {
@@ -134,7 +133,7 @@ sub publish {
 		$miril->_file_write($new_filename, $output);
 	}
 
-	foreach my $list (@{ $cfg->{lists} }) {
+	foreach my $list (list $cfg->lists) {
 
 		my @params = qw(
 			author
@@ -156,28 +155,23 @@ sub publish {
 		my %params;
 
 		foreach my $param (@params) {
-			if ( exists $list->{match}->{$param} ) {
-				$params{$param} = $list->{match}->{$param};
+			if ( exists $list->match->{$param} ) {
+				$params{$param} = $list->match->{$param};
 			}
 		}
 
 		my @items = $miril->store->get_posts(%params);
 
 		my $output = $miril->tmpl->load(
-			name => $list->{template},
+			name => $list->template,
 			params => {
 				items => \@items,
 				cfg => $cfg,
 		});
 
-		my $new_filename = catfile($cfg->{output_path}, $list->{location});
+		my $new_filename = catfile($cfg->output_path, $list->location);
 		$miril->_file_write($new_filename, $output);
 	}
-}
-
-sub process_error {
-	shift;
-	carp(@_);
 }
 
 sub push_warning {
@@ -224,8 +218,8 @@ sub _get_target_filename {
 
 	my ($name, $type) = @_;
 
-	my $current_type = first {$_->id eq $type} $cfg->{types};
-	my $target_filename = catfile($cfg->{output_path}, $current_type->location, $name . ".html");
+	my $current_type = first {$_->id eq $type} $cfg->types;
+	my $target_filename = catfile($cfg->output_path, $current_type->location, $name . ".html");
 
 	return $target_filename;
 }

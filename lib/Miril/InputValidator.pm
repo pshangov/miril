@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use List::Util qw(first);
-use Hash::AsObject;
+use Data::AsObject qw(dao);
 
 ### ACCESSORS ###
 
@@ -58,7 +58,7 @@ sub validate {
 			die "Required parameter '$key' missing" if $required;
 		}
 	}
-	keys %invalid_fields ? return Hash::AsObject->new(%invalid_fields) : return;
+	keys %invalid_fields ? return dao \%invalid_fields : return;
 }
 
 ### PRIVATE METHODS ###

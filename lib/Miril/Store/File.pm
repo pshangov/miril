@@ -11,6 +11,7 @@ use Try::Tiny qw(try catch);
 use IO::File;
 use File::Spec;
 use List::Util qw(first);
+use Ref::List::AsObject qw(list);
 use Miril::DateTime;
 use Miril::DateTime::ISO::Simple qw(time2iso iso2time);
 use Miril::Exception;
@@ -47,11 +48,11 @@ sub get_post {
 	my %meta = _parse_meta($meta);
 
 	# convert topic id's to topic objects
-	my @topic_names = @{ $meta{topics} };
+	my @topic_names = list $meta{topics};
 
 	if ( @topic_names ) {
 		my %topics_lookup = map {$_ => 1} @topic_names;
-		my @topic_objects = grep { $topics_lookup{$_->{id}} } $cfg->topics;
+		my @topic_objects = grep { $topics_lookup{$_->{id}} } list $cfg->topics;
 		$meta{topics} = \@topic_objects;
 	}
 
@@ -108,7 +109,7 @@ sub get_posts {
 				topics    => $_->{topics},
 				format    => $cfg->{format}, # TODO
 			);
-		} @{ $tree->{xml}{post} };
+		} list $tree->{xml}{post};
 	} else {
 		# miril is run for the first time
 		$tree = {};
@@ -163,7 +164,9 @@ sub get_posts {
 
 sub save {
 	my $self = shift;
-	my $post = Hash::AsObject->new(@_);
+
+	my %post = @_;
+	my $post = dao \%post;
 
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
@@ -213,8 +216,20 @@ sub save {
 	
 	# update the cache file
 
-	my $new_tree = {};
-	$new_tree->{xml}->{post} = \@posts;
+	my @cache_posts = map {{
+		id        => $_->id,
+		title     => $_->title,
+		path      => $_->path,
+		modified  => $_->modified->epoch,
+		published => $_->published->epoch,
+		type      => $_->type,
+		url       => $_->url, # TODO
+		author    => $_->author,
+		topics    => $_->topics,
+	}} @posts;
+
+	my $new_tree;
+	$new_tree->{xml}{post} = \@cache_posts;
 	$self->{tree} = $new_tree;
 	$self->tpp->writefile($cfg->cache_data, $new_tree) 
 		or $miril->process_error("Cannot update cache file", $!, 'fatal');
@@ -249,8 +264,7 @@ sub get_latest {
 	
 	try { 
 		$tree = $tpp->parsefile( $cfg->latest_data );
-		# force array
-		@items = dao @{ $tree->{xml}{item} };
+		@items = dao list $tree->{xml}{item};
 	} catch {
 		$self->process_error($_);
 	};
@@ -273,7 +287,7 @@ sub add_to_latest {
 	if ( -e $cfg->latest_data ) {
 		try { 
 			$tree = $tpp->parsefile( $cfg->latest_data );
-			@items = @{ $tree->{xml}->{item} };
+			@items = list $tree->{xml}{item} };
 		} catch {
 			$self->process_error($_);
 		};

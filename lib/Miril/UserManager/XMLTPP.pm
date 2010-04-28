@@ -30,7 +30,7 @@ sub new {
 		$miril->process_error("Could not parse users file", $_, 'fatal');
 	};
 
-	my @users = map { dao $_ } @{ $tree->{xml}->{user} };
+	my @users = dao list $tree->{xml}{user};
 	$self->{users} = \@users;
 
 	$self->{tree} = $tree;
@@ -132,7 +132,7 @@ sub delete_user {
 	}
 
 	my $new_tree = $self->tree;
-	$new_tree->{xml}->{user} = \@users;
+	$new_tree->{xml}{user} = \@users;
 	$self->{tree} = $new_tree;
 	try {
 		$self->tpp->writefile($self->xml_file, $new_tree);
