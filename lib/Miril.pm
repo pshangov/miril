@@ -100,13 +100,11 @@ sub publish {
 
 	my @posts = $miril->store->get_posts;
 
-	foreach my $post (@posts) {
-		my $src_modified = $post->modified_sec;
-
-		my $target_filename = $miril->_get_target_filename($post->id, $post->type);
-		
-		if (-x $target_filename) {
-			if ( $rebuild or ($src_modified > -M $target_filename) ) {
+	foreach my $post (@posts) 
+	{
+		if (-x $post->out_path) {
+			# TODO - check if this is correct!
+			if ( $rebuild or ($post->modified->epoch > -M $post->out_path) ) {
 				push @to_update, $post->id;
 			}
 		} else {
@@ -129,8 +127,7 @@ sub publish {
 				cfg => $cfg,
 		});
 
-		my $new_filename = $miril->_get_target_filename($post->id, $post->type);
-		$miril->_file_write($new_filename, $output);
+		$miril->_file_write($post->out_path, $output);
 	}
 
 	foreach my $list (list $cfg->lists) {
@@ -174,7 +171,8 @@ sub publish {
 	}
 }
 
-sub push_warning {
+sub push_warning 
+{
 	my $self = shift;
 	my %params = @_;
 
@@ -187,10 +185,10 @@ sub push_warning {
 	$warnings_stack = [] unless $warnings_stack;
 	push @$warnings_stack, $warning;
 	$self->{warnings} = $warnings_stack;
-
 }
 
-sub warnings {
+sub warnings 
+{
 	my $self = shift;
 	return @{ $self->{warnings} } if $self->{warnings};
 }
@@ -209,19 +207,6 @@ sub _file_write {
 			message  => 'Could not save information',
 		);
 	}
-}
-
-sub _get_target_filename {
-	my $self = shift;
-
-	my $cfg = $self->miril->cfg;
-
-	my ($name, $type) = @_;
-
-	my $current_type = first {$_->id eq $type} $cfg->types;
-	my $target_filename = catfile($cfg->output_path, $current_type->location, $name . ".html");
-
-	return $target_filename;
 }
 
 1;

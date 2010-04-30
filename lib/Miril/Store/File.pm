@@ -38,7 +38,7 @@ sub get_post {
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 
-	my $filename = File::Spec->catfile($cfg->data_path, $id);
+	my $filename = 
 	my $post_file = File::Slurp::read_file($filename) 
 		or $miril->process_error("Could not read data file", $!, 'fatal');
 
@@ -47,30 +47,22 @@ sub get_post {
     
 	my %meta = _parse_meta($meta);
 
-	# convert topic id's to topic objects
-	my @topic_names = list $meta{topics};
-
-	if ( @topic_names ) {
-		my %topics_lookup = map {$_ => 1} @topic_names;
-		my @topic_objects = grep { $topics_lookup{$_->{id}} } list $cfg->topics;
-		$meta{topics} = \@topic_objects;
-	}
-
-	my $modified = time - ( (-M $filename) * 86400 );
+	my $modified = $self->_get_modified($filename);
+	my $type = first { $_->id eq $meta{'type'} } $cfg->types;
 
 	return Miril::Store::File::Post->new(
 		id        => $id,
 		title     => $meta{'title'},
 		body      => $body,
 		teaser    => $teaser,
-		path      => $filename,
+		out_path  => $self->_get_out_path($id, $type),
+		in_path   => $self->_get_in_path($id),
 		modified  => Miril::DateTime->new($modified),
 		published => Miril::DateTime->new(iso2time($meta{'published'})),
-		type      => $meta{'type'},
-		url       => $meta{'url'},
+		type      => $type,
+		url       => $self->_get_utl($id, $type),
 		author    => $meta{'author'},
-		topics    => $meta{'topics'},
-		format    => $meta{'format'},
+		topics    => $self->_get_topics( list $meta{'topics'} ),
 	);
 }
 
@@ -97,17 +89,21 @@ sub get_posts {
 			);
 		};
 		@posts = map {
+			my $type = $_->type;
+			my $type_obj = first { $_->id eq $type } $cfg->types;
 			Miril::Store::File::Post->new(
-				id        => $_->{id},
-				title     => $_->{title},
-				path      => $_->{path},
-				modified  => Miril::DateTime->new($_->{modified}),
-				published => Miril::DateTime->new($_->{published}),
-				type      => $_->{type},
-				author    => $_->{author},
-				topics    => $_->{topics},
+				id        => $_->id,
+				title     => $_->title,
+				in_path   => $self->_get_in_path($_->id),
+				out_path  => $self->_get_out_path($_->id, $type_obj),
+				modified  => Miril::DateTime->new($_->modified),
+				published => Miril::DateTime->new($_->published),
+				type      => $type_obj,
+				author    => $_->author,
+				topics    => $self->_get_topics( list $_->topics ),
+				url       => $self->_get_url($_->id, $type_obj),
 			);
-		} list $tree->{xml}{post};
+		} list dao $tree->{xml}{post};
 	} else {
 		# miril is run for the first time
 		$tree = {};
@@ -118,9 +114,9 @@ sub get_posts {
 	# for each post, check if the data in the cache is older than the data in the filesystem
 
 	foreach my $post (@posts) {
-		if ( -e $post->path ) {
+		if ( -e $post->in_path ) {
 			push @post_ids, $post->id;
-			my $modified = time - ( (-M $post->path) * 86400 );
+			my $modified = $self->_get_modified($post->in_path);
 			if ( $modified > $post->modified->epoch ) {
 				$post = $self->get_post($post->id);
 				$dirty++;
@@ -213,11 +209,9 @@ sub save {
 	}
 	
 	# update the cache file
-
 	my @cache_posts = map {{
 		id        => $_->id,
 		title     => $_->title,
-		path      => $_->path,
 		modified  => $_->modified->epoch,
 		published => $_->published->epoch,
 		type      => $_->type,
@@ -311,7 +305,7 @@ sub _parse_meta {
 	my %meta;
 	
 	foreach my $line (@lines) {
-		if ($line =~ /^(Published|Title|Type|Format|Author|Status):\s+(.+)/) {
+		if ($line =~ /^(Published|Title|Type|Author|Status):\s+(.+)/) {
 			my $name = lc $1;
 			my $value = $2;
 			$value  =~ s/\s+$//;
@@ -336,6 +330,48 @@ sub _set_publish_date {
 	return $old_date 
 		? Miril::DateTime->new(iso2time($old_date)) 
 		: Miril::DateTime->new(time);
+}
+
+sub _get_in_path {
+	my $self = shift;
+	my $id = shift;
+	my $cfg = $self->miril->cfg;
+	return File::Spec->catfile($cfg->data_path, $id);
+}
+
+sub _get_out_path {
+	my $self = shift;
+	my ($name, $type) = @_;
+	my $cfg = $self->miril->cfg;
+	my $path = catfile($cfg->output_path, $type->location, $name . ".html");
+	return $path;
+}
+
+sub _get_url 
+{
+	my $self = shift;
+	my ($name, $type) = @_;
+	my $cfg = $self->miril->cfg;
+	my $url = Miril::URL->new(
+		abs => $cfg->domain . $cfg->http_dir . $type->location . $name . "html",
+		rel => $cfg->http_dir . $type->location . $name . "html",
+	);
+	return $url;
+}
+
+sub _get_topcs
+{
+	my $self = shift;
+	my $cfg = $self->miril->cfg;
+	my %topics_lookup = map {$_ => 1} @_;
+	my @topic_objects = grep { $topics_lookup{$_->{id}} } list $cfg->topics;
+	return \@topic_objects;
+}
+
+sub _get_modified {
+	my $self = shift;
+	my $filename = shift;
+	return time - ( (-M $filename) * 86400 );
 }
 
 1;

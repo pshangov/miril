@@ -5,6 +5,7 @@ use warnings;
 
 use XML::TreePP;
 use Data::AsObject qw(dao);
+use Ref::List::AsObject qw(list);
 use File::Spec::Functions qw(catfile catdir);
 
 sub new {
@@ -32,16 +33,33 @@ sub new {
 	$cfg->{latest_data}    = catfile($base_dir, 'cache', 'latest.xml');
 	$cfg->{users_data}     = catfile($base_dir, 'cfg',   'users.xml' );
 
+	$cfg->{data_path}      = catdir($base_dir, 'data');
 	$cfg->{tmpl_path}      = catdir($base_dir, 'tmpl');
 
 	$cfg->{workflow}{status} = [qw(draft published)];
 	$cfg->{statuses} = [qw(draft published)];
 
+	my @topics = map { 
+		Miril::Topic->new(
+			id   => $_->id,
+			name => $_->name,
+		) 
+	} list $cfg->{topics}{topic};
+
+	my @types = map {
+		Miril::Type->new(
+			id       => $_->id,
+			name     => $_->name,
+			location => $_->location,
+			template => $_->template,
+		)
+	} list $cfg->{types}{type};
+
 	### SIMPLIFY THE HASHREF ###
 	
 	$cfg->{authors} = $cfg->{authors}{author};
-	$cfg->{topics}  = $cfg->{topics}{topic};
-	$cfg->{types}   = $cfg->{types}{type};
+	$cfg->{topics}  = \@topics;
+	$cfg->{types}   = \@types;
 
 	return dao $cfg;
 }
