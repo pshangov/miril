@@ -249,19 +249,19 @@ sub get_latest {
 	my $cfg = $self->miril->cfg;
 
     my $tpp = XML::TreePP->new();
-	$tpp->set( force_array => ['item'] );
+	$tpp->set( force_array => ['post'] );
 	my $tree;
-	my @items;
+	my @posts;
 	
 	try { 
 		$tree = $tpp->parsefile( $cfg->latest_data );
-		@items = dao list $tree->{xml}{item};
+		@posts = dao list $tree->{xml}{post};
 	} catch {
 		$self->process_error($_);
 	};
 	
 
-	return \@items;
+	return \@posts;
 }
 
 sub add_to_latest {
@@ -271,24 +271,24 @@ sub add_to_latest {
 	my ($id, $title) = @_;
 
     my $tpp = XML::TreePP->new();
-	$tpp->set( force_array => ['item'] );
+	$tpp->set( force_array => ['post'] );
 	my $tree;
-	my @items;
+	my @posts;
 	
 	if ( -e $cfg->latest_data ) {
 		try { 
 			$tree = $tpp->parsefile( $cfg->latest_data );
-			@items = list $tree->{xml}{item} };
+			@posts = list $tree->{xml}{post} };
 		} catch {
 			$self->process_error($_);
 		};
 	}
 
-	@items = grep { $_->{id} ne $id } @items;
-	unshift @items, { id => $id, title => $title};
-	@items = @items[0 .. 9] if @items > 10;
+	@posts = grep { $_->{id} ne $id } @posts;
+	unshift @posts, { id => $id, title => $title};
+	@posts = @posts[0 .. 9] if @posts > 10;
 
-	$tree->{xml}{item} = \@items;
+	$tree->{xml}{post} = \@posts;
 	
 	try { 
 		$tpp->writefile( $cfg->latest_data, $tree );

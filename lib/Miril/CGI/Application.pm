@@ -132,7 +132,7 @@ sub posts_list {
 	my $self = shift;
 	my $q = $self->query;
 
-	my @items = $self->miril->store->get_posts(
+	my @posts = $self->miril->store->get_posts(
 		author => ( $q->param('author') or undef ),
 		title  => ( $q->param('title' ) or undef ),
 		type   => ( $q->param('type'  ) or undef ),
@@ -140,10 +140,10 @@ sub posts_list {
 		topic  => ( $q->param('topic' ) ? \($q->param('topic')) : undef ),
 	);
 
-	my @current_items = $self->_paginate(@items);
+	my @current_posts = $self->_paginate(@posts);
 	
 	my $tmpl = $self->view->load('list');
-	$tmpl->param('items', {list => \@current_items});
+	$tmpl->param('posts', {list => \@current_posts});
 	return $tmpl->output;
 
 }
@@ -168,15 +168,15 @@ sub posts_create {
 
 	my $cfg = $self->miril->cfg;
 
-	my $empty_item;
+	my $empty_post;
 
-	$empty_item->{statuses} = $self->_prepare_statuses;
-	$empty_item->{types}    = $self->_prepare_types;
-	$empty_item->{authors}  = $self->_prepare_authors if list $cfg->authors;
-	$empty_item->{topics}   = $self->_prepare_topics  if list $cfg->topics;
+	$empty_post->{statuses} = $self->_prepare_statuses;
+	$empty_post->{types}    = $self->_prepare_types;
+	$empty_post->{authors}  = $self->_prepare_authors if list $cfg->authors;
+	$empty_post->{topics}   = $self->_prepare_topics  if list $cfg->topics;
 
 	my $tmpl = $self->view->load('edit');
-	$tmpl->param('item', $empty_item);
+	$tmpl->param('post', $empty_post);
 	
 	return $tmpl->output;
 }
@@ -186,14 +186,14 @@ sub posts_edit {
 
 	my $cfg = $self->miril->cfg;
 	my $q = $self->query;
-	my $item;
+	my $post;
 
 	if ($invalid_id) {
 		my %cur_topics;
 		if ($q->param('topic')) {
 			%cur_topics = map {$_ => 1} $q->param('topic');
 		}
-		$item = dao {
+		$post = dao {
 			id       => $q->param('id'),
 			old_id   => $q->param('old_id'),
 			body     => $q->param('body'),
@@ -204,27 +204,27 @@ sub posts_edit {
 			types    => $self->_prepare_types($q->param('type')),
 		};
 	} else {
-		#TODO check if $item is defined
-		$item = $self->miril->store->get_post($q->param('id'));
+		#TODO check if $post is defined
+		$post = $self->miril->store->get_post($q->param('id'));
 	
 		my %cur_topics;
 
 		#FIXME
-		if ( list $item->topics }) {
-			%cur_topics = map {$_->id => 1} list $item->topics;
+		if ( list $post->topics }) {
+			%cur_topics = map {$_->id => 1} list $post->topics;
 		}
 	
-		$item->{authors}  = $self->_prepare_authors($item->author) if list $cfg->authors;
-		$item->{topics}   = $self->_prepare_topics(%cur_topics)    if list $cfg->topics;
-		$item->{statuses} = $self->_prepare_statuses($item->status);
-		$item->{types}    = $self->_prepare_types($item->type);
+		$post->{authors}  = $self->_prepare_authors($post->author) if list $cfg->authors;
+		$post->{topics}   = $self->_prepare_topics(%cur_topics)    if list $cfg->topics;
+		$post->{statuses} = $self->_prepare_statuses($post->status);
+		$post->{types}    = $self->_prepare_types($post->type);
 	}
 	
 	my $tmpl = $self->view->load('edit');
-	$tmpl->param('item', $item);
+	$tmpl->param('post', $post);
 	$tmpl->param('invalid', $self->param('invalid'));
 
-	$self->miril->store->add_to_latest($item->id, $item->title);
+	$self->miril->store->add_to_latest($post->id, $post->title);
 
 	return $tmpl->output;
 }
@@ -249,7 +249,7 @@ sub posts_update {
 		return $self->forward('edit', $q->param('old_id'));
 	}
 
-	my %item = (
+	my %post = (
 		'id'     => $q->param('id'),
 		'author' => ( $q->param('author') or undef ),
 		'status' => ( $q->param('status') or undef ),
@@ -260,11 +260,11 @@ sub posts_update {
 	);
 
 	# SHOULD NOT BE HERE
-	$item{topics} = [$q->param('topic')] if $q->param('topic');
+	$post{topics} = [$q->param('topic')] if $q->param('topic');
 
-	$self->miril->store->save(%item);
+	$self->miril->store->save(%post);
 
-	return $self->redirect("?action=view&id=" . $item{id});
+	return $self->redirect("?action=view&id=" . $post{id});
 }
 
 sub posts_delete {
@@ -282,12 +282,12 @@ sub posts_view {
 	my $q = $self->query;
 	my $id = $q->param('old_id') ? $q->param('old_id') : $q->param('id');
 
-	my $item = $self->miril->store->get_post($id);
-	if ($item) {
-		$item->{body} = $self->miril->filter->to_xhtml($item->body);
+	my $post = $self->miril->store->get_post($id);
+	if ($post) {
+		$post->{body} = $self->miril->filter->to_xhtml($post->body);
 
 		my $tmpl = $self->view->load('view');
-		$tmpl->param('item', $item);
+		$tmpl->param('post', $post);
 		return $tmpl->output;
 	} else {
 		return $self->redirect("?action=list");	
@@ -501,17 +501,17 @@ sub _prepare_types {
 
 sub _paginate {
 	my $self = shift;
-	my @items = @_;
+	my @posts = @_;
 	
 	my $cfg = $self->miril->cfg;
 
-	return unless @items;
+	return unless @posts;
 
-	if (@items > $cfg->items_per_page) {
+	if (@posts > $cfg->posts_per_page) {
 
 		my $page = Data::Page->new;
-		$page->total_entries(scalar @items);
-		$page->entries_per_page($cfg->items_per_page);
+		$page->total_entries(scalar @posts);
+		$page->entries_per_page($cfg->posts_per_page);
 		$page->current_page($self->query->param('page_no') ? $self->query->param('page_no') : 1);
 		
 		my $pager;
@@ -527,10 +527,10 @@ sub _paginate {
 		}
 
 		$self->view->{pager} = $pager;
-		return $page->splice(\@items);
+		return $page->splice(\@posts);
 
 	} else {
-		return @items;
+		return @posts;
 	}
 }
 

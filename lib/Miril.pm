@@ -123,7 +123,7 @@ sub publish {
 		my $output = $miril->tmpl->load(
 			name => $type->template, 
 			params => {
-				item => $post,
+				post => $post,
 				cfg => $cfg,
 		});
 
@@ -157,12 +157,12 @@ sub publish {
 			}
 		}
 
-		my @items = $miril->store->get_posts(%params);
+		my @posts = $miril->store->get_posts(%params);
 
 		my $output = $miril->tmpl->load(
 			name => $list->template,
 			params => {
-				items => \@items,
+				posts => \@posts,
 				cfg => $cfg,
 		});
 

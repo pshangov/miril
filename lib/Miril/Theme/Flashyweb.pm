@@ -58,27 +58,27 @@ my $edit = <<EndOfHTML;
 	<!-- start content -->
 	<div id="content">
 		<div class="post">
-			<h2 class="title"><TMPL_IF NAME="item.title"><TMPL_VAR NAME="item.title"><TMPL_ELSE>New Article</TMPL_IF></h2>
+			<h2 class="title"><TMPL_IF NAME="post.title"><TMPL_VAR NAME="post.title"><TMPL_ELSE>New Article</TMPL_IF></h2>
 			<div class="edit">
 				<form method="POST">
 					<p class="edit">Title:<br>
-					<input type="text" name="title" class="textbox <TMPL_IF NAME="invalid.title"> invalid</TMPL_IF>" value='<TMPL_VAR NAME="item.title">' /></p>
+					<input type="text" name="title" class="textbox <TMPL_IF NAME="invalid.title"> invalid</TMPL_IF>" value='<TMPL_VAR NAME="post.title">' /></p>
 
 					<p class="edit">ID:<br>
-					<input type="text" name="id" class="textbox<TMPL_IF NAME="invalid.id"> invalid</TMPL_IF>" value='<TMPL_VAR NAME="item.id">' /></p>
+					<input type="text" name="id" class="textbox<TMPL_IF NAME="invalid.id"> invalid</TMPL_IF>" value='<TMPL_VAR NAME="post.id">' /></p>
 					
 					<p class="edit">Type:<br>
 					<select name="type"<TMPL_IF NAME="invalid.type"> class="invalid"</TMPL_IF>>
-					<TMPL_LOOP NAME="item.types">
+					<TMPL_LOOP NAME="post.types">
 						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>
 
-					<TMPL_IF NAME="item.authors">
+					<TMPL_IF NAME="post.authors">
 					<p class="edit">Author:<br>
 					<select name="author"<TMPL_IF NAME="invalid.author"> class="invalid"</TMPL_IF>>
-					<TMPL_LOOP NAME="item.authors">
+					<TMPL_LOOP NAME="post.authors">
 						<option value='<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
@@ -87,16 +87,16 @@ my $edit = <<EndOfHTML;
 
 					<p class="edit">Status:<br>
 					<select name="status" <TMPL_IF NAME="invalid.status"> class="invalid"</TMPL_IF>>
-					<TMPL_LOOP NAME="item.statuses">
+					<TMPL_LOOP NAME="post.statuses">
 						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>
 
-					<TMPL_IF NAME="item.topics">
+					<TMPL_IF NAME="post.topics">
 					<p class="edit">Topic:<br>
 					<select name="topic" size=3 multiple="multiple"<TMPL_IF NAME="invalid.topic"> class="invalid"</TMPL_IF>>
-					<TMPL_LOOP NAME="item.topics">
+					<TMPL_LOOP NAME="post.topics">
 						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
@@ -104,9 +104,9 @@ my $edit = <<EndOfHTML;
 					</TMPL_IF>
 
 					<p class="edit" name="body">Body:<br>
-					<textarea name="body"<TMPL_IF NAME="invalid.body"> class="invalid"</TMPL_IF>><TMPL_VAR NAME="item.body"></textarea></p>
+					<textarea name="body"<TMPL_IF NAME="invalid.body"> class="invalid"</TMPL_IF>><TMPL_VAR NAME="post.body"></textarea></p>
 
-					<input type="hidden" name="old_id" value='<TMPL_VAR NAME="item.id">' />
+					<input type="hidden" name="old_id" value='<TMPL_VAR NAME="post.id">' />
 
 					<button type="submit" id="x" name="action" value="update">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;
 					<button type="submit" id="x" name="action" value="delete">Delete</button>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -282,7 +282,7 @@ my $list = <<EndOfHTML;
 		</div>
 		<div class="entry">
 				
-		<TMPL_LOOP NAME="items.list">
+		<TMPL_LOOP NAME="posts.list">
 			<h3><span class="dingbat">&#8226;</span><a href='?action=view&id=<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.title"></a></h3>
 			<p class="item-desc">
 				<b>Status:</b> <TMPL_VAR NAME="this.status">,&nbsp; 
@@ -463,12 +463,12 @@ my $view = <<EndOfHTML;
 	<!-- start content -->
 	<div id="content">
 		<div class="post">
-			<h2 class="title"><span class="dingbat">&#x273b;</span> <TMPL_VAR NAME="item.title"></h2>
+			<h2 class="title"><span class="dingbat">&#x273b;</span> <TMPL_VAR NAME="post.title"></h2>
 			<div class="entry">
-				<TMPL_VAR NAME="item.body">
+				<TMPL_VAR NAME="post.body">
 			</div>
 			<form method="get">
-			<input type="hidden" name="id" value='<TMPL_VAR NAME="item.id">' />
+			<input type="hidden" name="id" value='<TMPL_VAR NAME="post.id">' />
 			<button name="action" value="edit" id="x">Edit</button>&nbsp;&nbsp;&nbsp;&nbsp;
 			<button name="action" value="list" id="x">Cancel</button>
 			</form>

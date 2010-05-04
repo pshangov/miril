@@ -161,7 +161,7 @@ Next you may need to configure your content types. This is what a basic configur
         <name>Story</name>
         <id>story</id>
         <location>story</location>
-        <template>item.tmpl</template>
+        <template>post.tmpl</template>
       </type>
       <type>
         <name>Page</name>
@@ -198,7 +198,7 @@ The template file Miril will use to create html pages of this content type.
 
 =head3 Creating lists
 
-Miril allows you to create special pages which combine data from multiple items - e.g. a list of articles, a RSS feed, etc. This is how you configure lists:
+Miril allows you to create special pages which combine data from multiple posts - e.g. a list of articles, a RSS feed, etc. This is how you configure lists:
 
   <xml>
   ...
@@ -245,29 +245,29 @@ The location of the file, relative to C<output_path>, where Miril will write thi
 
 =item match
 
-The C<match> elemement is used to determine which items are included in the list. The filtering criteria are:
+The C<match> elemement is used to determine which posts are included in the list. The filtering criteria are:
 
 =over 2
 
 =item type
 
-Only return items with this type id.
+Only return posts with this type id.
 
 =item author
 
-Only return items with the specified author.
+Only return posts with the specified author.
 
 =item topic
 
-Only return items with the specified topic id.
+Only return posts with the specified topic id.
 
 =item last
 
-Only return the N most recent items matching the above criteria.
+Only return the N most recent posts matching the above criteria.
 
 =back
 
-Only published items can be included in the list (i.e. items whose status is C<published> and not C<draft>).
+Only published posts can be included in the list (i.e. posts whose status is C<published> and not C<draft>).
 
 =back
 
@@ -340,59 +340,59 @@ Miril is not accessible to unregistered users. All registered users have identic
 
 Once the configuration and users files have been set up, you can run Miril and edit content. In order to publish content, however, you need to provide the templates which will be used to render your pages. The templates are located in the directory specified by the C<tmpl_path> option in the configuration file, and must contain all the templates specified when configuring content types and lists, as well as any additional templates referenced by them (such as headers and footers). Currently the only supported template format is L<HTML::Template> with L<HTML::Template::Plugin::Dot>. The templates are initialised with the C<die_on_bad_params> option set to false, and the C<global_vars> option set to true.
 
-Each template used to generate a page of a certain content type is passed an C<item> paremeter, which is an object containing all information about the item being rendered. The structure of the C<item> object is as follows:
+Each template used to generate a page of a certain content type is passed an C<post> paremeter, which is an object containing all information about the post being rendered. The structure of the C<post> object is as follows:
 
 =over
 
-=item item.title
+=item post.title
 
 The title of the post.
 
-=item item.id
+=item post.id
 
 The alphanumerical id of the post.
 
-=item item.teaser
+=item post.teaser
 
 The teaser of the post, rendered into html.
 
-=item item.text
+=item post.text
 
 The full text of the post, rendered into html.
 
-=item item.type
+=item post.type
 
 The type of the post (e.g. "page").
 
-=item item.url
+=item post.url
 
 The url at which the post will be accessible (e.g. "/news/my_first_post.html").
 
-=item item.full_url
+=item post.full_url
 
 Contains the post url preceded by whatever is in the C<domain> configuration option (e.g. "http://www.example.com/news/my_first_post.html").
 
-=item item.author
+=item post.author
 
 The author of the post.
 
-=item item.published.epoch
+=item post.published.epoch
 
 The time when the post was published, in epoch format (e.g. "1249899886").
 
-=item item.published.epoch
+=item post.published.epoch
 
 The time when the post was published, in iso format (e.g. "2009-08-10T13:24:46FLE Daylight Time").
 
-=item item.published.num
+=item post.published.num
 
 The date when the post was published, in numeric format (e.g. "2009.08.10").
 
-=item item.published.print
+=item post.published.print
 
 The date when the post was published, in word format (e.g. "Monday, 10 Aug 2009").
 
-=item item.modified.xxx
+=item post.modified.xxx
 
 Same as above, but refers to the time when the post was last modified.
 
@@ -402,7 +402,7 @@ An arreyref of topics associated with this post. Each topic is an object with tw
 
 =back
 
-Each template used to generate a list is passed an C<items> paremeter, which is a list of objects containing all information about the items being rendered. The structure of those objects is the same as of the C<item> objects described above.
+Each template used to generate a list is passed an C<posts> paremeter, which is a list of objects containing all information about the posts being rendered. The structure of those objects is the same as of the C<post> objects described above.
 
 =head1 USER INTERFACE
 
@@ -416,27 +416,27 @@ This is the main screen. It displays a list of all content entries. It provides 
 
 Displays a list of all files the user has uploaded and a link to a file upload form.
 
-=head2 Edit Item
+=head2 Edit Post
 
-This screen is displayed when creating a new item or when modifying an existing one. Most of the options should be self explanatory, but there are a few things to keep in mind:
+This screen is displayed when creating a new post or when modifying an existing one. Most of the options should be self explanatory, but there are a few things to keep in mind:
 
 =over 
 
 =item * 
 
-The ID field is an aplphanumeric string which servers as an unique id for this item. Future versions may create this id automatically and hide it from the user altogether. It may be useful, however, to specify it manually, since this id is used to generate the url of the output file (usually by attacing C<.html> at the end) and the user may want to have control over the url for SEO purposes.
+The ID field is an aplphanumeric string which servers as an unique id for this post. Future versions may create this id automatically and hide it from the user altogether. It may be useful, however, to specify it manually, since this id is used to generate the url of the output file (usually by attacing C<.html> at the end) and the user may want to have control over the url for SEO purposes.
 
 =item *
 
-The status field has two options - C<draft> and C<published>. Items marked as C<draft> will be available for viewing and editing from Miril's UI, but will not be published to the live website. 
+The status field has two options - C<draft> and C<published>. Posts marked as C<draft> will be available for viewing and editing from Miril's UI, but will not be published to the live website. 
 
 =item * 
 
-The item text is run through a filter before publishing. Currently only Markdown is available via the L<Text::MultiMarkdown> module. 
+The post text is run through a filter before publishing. Currently only Markdown is available via the L<Text::MultiMarkdown> module. 
 
 =item *
 
-Additionally, you can break your post into a teaser and full text by inserting the C<E<lt>!-- BREAK --E<gt>> string somewhere in the item text. The content before the break mark will be available in the C<teser> property of the C<item> object passed to your templates.
+Additionally, you can break your post into a teaser and full text by inserting the C<E<lt>!-- BREAK --E<gt>> string somewhere in the post text. The content before the break mark will be available in the C<teser> property of the C<post> object passed to your templates.
 
 =back
 
@@ -454,7 +454,7 @@ The code is currently pretty messy - this is still an alpha release!
 
 =item *
 
-The API is going to be changing a lot before the 1.0 release, so be sure to keep up with the development process (see L</"SUPPORT"> below) if you plann to use Miril at this stage. Things that are going to change include the structure of the configuration file, the structure of the C<item> objects, and the API for extending Miril (which has not been documented yet anyway).
+The API is going to be changing a lot before the 1.0 release, so be sure to keep up with the development process (see L</"SUPPORT"> below) if you plann to use Miril at this stage. Things that are going to change include the structure of the configuration file, the structure of the C<post> objects, and the API for extending Miril (which has not been documented yet anyway).
 
 =head1 SUPPORT
 

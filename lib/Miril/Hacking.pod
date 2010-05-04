@@ -92,11 +92,11 @@ Miril can store its data in plain text files or in a database (database support 
 
 Constructor.
 
-=item get_item
+=item get_post
 
 Receives as its argument the ID of a post, and returns a post object.
 
-=item get_items
+=item get_posts
 
 Optionally receives as an argument search criteria provided as a hash (e.g. "title", "author", "status", etc.) and returns all matching posts. If no arguments are supplied, returns a list of all posts.
 
@@ -116,7 +116,7 @@ Currently only L<Miril::Model::File::XMLTPP> is availabe. It writes the body of 
 
 =head2 View (templating systems)
 
-A view for Miril is a templating engine used to publish data from its database to html. It is the templating language used by Miril users to create the templates for their website, and it may be different from the templating language used to display Miril's user interface theme. Currently Miril supports L<HTML::Template> and L<Text::Template> views. A view must inherit from L<Miril::View::Abstract> and provide a single method: C<load>. This method receives two named arguments: C<name> and C<params>. C<name> is the name of the requested template, as specified for each post and list type in the Miril configuration file. C<params> is a hashref with variables to be passed on to the templates (normally these will be C<$item> for ordinary posts and C<$items> for lists).
+A view for Miril is a templating engine used to publish data from its database to html. It is the templating language used by Miril users to create the templates for their website, and it may be different from the templating language used to display Miril's user interface theme. Currently Miril supports L<HTML::Template> and L<Text::Template> views. A view must inherit from L<Miril::View::Abstract> and provide a single method: C<load>. This method receives two named arguments: C<name> and C<params>. C<name> is the name of the requested template, as specified for each post and list type in the Miril configuration file. C<params> is a hashref with variables to be passed on to the templates (normally these will be C<$post> for ordinary posts and C<$posts> for lists).
 
 =head2 Filters
 
