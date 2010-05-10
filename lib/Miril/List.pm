@@ -2,18 +2,14 @@ package Miril::List;
 
 use strict;
 use warnings;
-
+use Carp qw(croak);
 use Ref::List::AsObject qw(list);
 
 ### ACCESSORS ###
 
 use Object::Tiny qw(
 	posts
-	name
-	authors
-	topics
-	types
-	span
+	key
 	count
 );
 
@@ -21,31 +17,51 @@ use Object::Tiny qw(
 
 sub new {
 	my $class = shift;
-	my @posts = @_;
-	
-	my $self = bless {}, $class;
+	my %params = @_;
+	my $posts = $params{posts};
 
-	my (%topics, %types, %authors);
-	foreach my $post (@posts) {
-		$authors{$post->author}++;
-		$types{$post->type->name}++;
-		$topcs{$_->name}++ for list $post->topics;
-	}
+	my $self = bless {}, $class;
 	
-	$self->{posts}   = \@posts;
-	$self->{count}   = @posts;
-	$self->{topics}  = [keys %topics];
-	$self->{types}   = [keys %types];
-	$self->{authors} = [keys %authors];
+	$self->{posts} = $params{posts};
+	$self->{count} = list $params{posts};
+	$self->{key}   = $params{key};
 
 	return $self;
 }
 
 ### METHODS ###
 
-sub match {
+sub group 
+{
 	my $self = shift;
-	my %conditions = @_; #author topic type span
+	my $group_key = shift; 
+	
+	my ($obj_cb, $key_cb);
+
+	# must work with perl 5.8 so 'switch' is a no-no
+	$group_key eq 'topic'   && $obj_cb = sub { shift->topic }     && $key_cb = sub { shift->topic->id };
+	$group_key eq 'type'    && $obj_cb = sub { shift->type }      && $key_cb = sub { shift->type->id };
+	$group_key eq 'author'  && $obj_cb = sub { shift->author }    && $key_cb = sub { shift->author };
+	$group_key eq 'm_year'  && $obj_cb = sub { shift->modified }  && $key_cb = sub { shift->modified->strftime('%y') };
+	$group_key eq 'm_month' && $obj_cb = sub { shift->modified }  && $key_cb = sub { shift->modified->strftime('%y%m') };
+	$group_key eq 'm_date'  && $obj_cb = sub { shift->modified }  && $key_cb = sub { shift->modified->strftime('%y%m%d') };
+	$group_key eq 'p_year'  && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y') };
+	$group_key eq 'p_month' && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y%m') };
+	$group_key eq 'p_date'  && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y%m%d') };
+
+	!$group_key && croak "Key is required in order to group posts in list " . $self->name;
+	!$key_cb    && croak "Invalid key '" . $group_key . "' passed to group.";
+
+	my (%groups, @groups);
+	
+	$groups{$key_cb->($_)}->[-1] = $_ for list $self->posts;
+	
+	push @groups, Miril::List->new(
+		posts => $groups{$_},
+		key   => $obj_cb->($groups{$_}->[-1]),
+	) for sort keys %groups;
+
+	return @groups;
 }
 
 1;
