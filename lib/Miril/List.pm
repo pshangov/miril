@@ -25,6 +25,7 @@ sub new {
 	$self->{posts} = $params{posts};
 	$self->{count} = list $params{posts};
 	$self->{key}   = $params{key};
+	$self->{pager} = $params{pager};
 
 	return $self;
 }
@@ -35,6 +36,8 @@ sub group
 {
 	my $self = shift;
 	my $group_key = shift; 
+	return $self->{group_key} unless $group_key;
+	$self->{group_key} = $group_key;
 	
 	my ($obj_cb, $key_cb);
 
@@ -49,8 +52,7 @@ sub group
 	$group_key eq 'p_month' && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y%m') };
 	$group_key eq 'p_date'  && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y%m%d') };
 
-	!$group_key && croak "Key is required in order to group posts in list " . $self->name;
-	!$key_cb    && croak "Invalid key '" . $group_key . "' passed to group.";
+	!$key_cb && croak "Invalid key '" . $group_key . "' passed to group.";
 
 	my (%groups, @groups);
 	

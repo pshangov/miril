@@ -159,15 +159,85 @@ sub publish {
 
 		my @posts = $miril->store->get_posts(%params);
 
-		my $output = $miril->tmpl->load(
-			name => $list->template,
-			params => {
-				posts => \@posts,
-				cfg => $cfg,
-		});
+		if ($list->group) {
+		
+			my $list_main = Miril::List->new( posts => \@posts );
+			
+			foreach my $list_group ($list_main->group($list->group))
+			{
+				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
 
-		my $new_filename = catfile($cfg->output_path, $list->location);
-		$miril->_file_write($new_filename, $output);
+				my $group_key = $list_group->group;
+				my $f_args;
+
+				$group_key eq 'topic'  && $f_args = { topic => $list->key->id };
+				$group_key eq 'type'   && $f_args = { type => $list->key->id };
+				$group_key eq 'author' && $f_args = { author => $list->key };
+		
+				!$group_key && $f_args = { 
+					year  => $list->key->strftime('%y'), 
+					month => $list->key->strftime('%m'), 
+					date  => $list->key->strftime('%d'), 
+				};
+
+				my $location = $formatter->format({args => $f_args});
+	
+				my $output = $miril->tmpl->load(
+					name => $list->template,
+					params => {
+						list => $list_group,
+						cfg => $cfg,
+				});
+		
+				my $new_filename = catfile($cfg->output_path, $location);
+				$miril->_file_write($new_filename, $output);
+			}
+		}
+		elsif ($list->page)
+		{
+			my $pager = Data::Page->new;
+			my $posts_no = scalar @posts;
+			$pager->total_entries($posts_no);
+			$pager->entries_per_page($list->page);
+			foreach my $page_no ($pager->first_page .. $pager->last_page)
+			{
+				my $current_pager = Data::Page->new;
+				$current_pager->total_entries($posts_no);
+				$current_pager->entries_per_page($list->page);
+				$current_pager->current_page($page_no);
+				my @current_posts = $pager->splice(\@posts);
+	
+				my $list_page = Miril::List->new(
+					posts => \@current_posts,
+					pager => $current_pager,
+				);
+					
+				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
+				my $location = $formatter->format({args => { page => $page_no }});
+
+				my $output = $miril->tmpl->load(
+					name => $list->template,
+					params => {
+						list => $list_group,
+						cfg => $cfg,
+				});
+		
+				my $new_filename = catfile($cfg->output_path, $location);
+				$miril->_file_write($new_filename, $output);
+			}
+		}	
+		else
+		{
+			my $output = $miril->tmpl->load(
+				name => $list->template,
+				params => {
+					posts => Miril::List->new( posts => \@posts ),
+					cfg => $cfg,
+			});
+		
+			my $new_filename = catfile($cfg->output_path, $list->location);
+			$miril->_file_write($new_filename, $output);
+		}
 	}
 }
 
