@@ -4,8 +4,8 @@
 	<files_path>example/htdocs/miril/files</files_path>
 
 	<!-- URL CONSTRUCTION -->
-	<http_dir>/miril</http_dir>
-	<files_http_dir>/miril/files</files_http_dir>
+	<http_dir>/miril/</http_dir>
+	<files_http_dir>/miril/files/</files_http_dir>
 	<domain>http://localhost</domain>
 
 	<!-- MAKE SURE YOU CHANGE THIS! -->

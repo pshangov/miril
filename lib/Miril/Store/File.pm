@@ -16,6 +16,8 @@ use Miril::DateTime;
 use Miril::DateTime::ISO::Simple qw(time2iso iso2time);
 use Miril::Exception;
 use Miril::Store::File::Post;
+use File::Spec::Functions qw(catfile);
+use Miril::URL;
 
 ### ACCESSORS ###
 
@@ -38,7 +40,7 @@ sub get_post {
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 
-	my $filename = 
+	my $filename = $self->_get_in_path($id);
 	my $post_file = File::Slurp::read_file($filename) 
 		or $miril->process_error("Could not read data file", $!, 'fatal');
 
@@ -48,7 +50,7 @@ sub get_post {
 	my %meta = _parse_meta($meta);
 
 	my $modified = $self->_get_modified($filename);
-	my $type = first { $_->id eq $meta{'type'} } $cfg->types;
+	my $type = first { $_->id eq $meta{'type'} } list $cfg->types;
 
 	return Miril::Store::File::Post->new(
 		id        => $id,
@@ -56,12 +58,12 @@ sub get_post {
 		body      => $body,
 		teaser    => $teaser,
 		out_path  => $self->_get_out_path($id, $type),
-		in_path   => $self->_get_in_path($id),
+		in_path   => $filename,
 		modified  => Miril::DateTime->new($modified),
 		published => Miril::DateTime->new(iso2time($meta{'published'})),
 		type      => $type,
-		url       => $self->_get_utl($id, $type),
-		author    => $meta{'author'},
+		url       => $self->_get_url($id, $type),
+		author    => $self->_get_author($meta{'author'}),
 		topics    => $self->_get_topics( list $meta{'topics'} ),
 	);
 }
@@ -90,7 +92,7 @@ sub get_posts {
 		};
 		@posts = map {
 			my $type = $_->type;
-			my $type_obj = first { $_->id eq $type } $cfg->types;
+			my $type_obj = first { $_->id eq $type->id } list $cfg->types;
 			Miril::Store::File::Post->new(
 				id        => $_->id,
 				title     => $_->title,
@@ -99,11 +101,11 @@ sub get_posts {
 				modified  => Miril::DateTime->new($_->modified),
 				published => Miril::DateTime->new($_->published),
 				type      => $type_obj,
-				author    => $_->author,
+				author    => $self->_get_author($_->author),
 				topics    => $self->_get_topics( list $_->topics ),
 				url       => $self->_get_url($_->id, $type_obj),
 			);
-		} list dao $tree->{xml}{post};
+		} dao @{ $tree->{xml}{post} };
 	} else {
 		# miril is run for the first time
 		$tree = {};
@@ -236,7 +238,7 @@ sub save {
 	$content .= "Topics: " . join(" ", @{ $post->topics }) . "\n\n";
 	$content .= $post->body;
 
-	my $fh = IO::File->new( File::Spec->catfile($cfg->data_path, $post->id), "w")
+	my $fh = IO::File->new( catfile($cfg->data_path, $post->id), "w")
 		or $miril->process_error("Cannot update data file", $!, 'fatal');
 	$fh->print($content)
 		or $miril->process_error("Cannot update data file", $!, 'fatal');
@@ -278,14 +280,14 @@ sub add_to_latest {
 	if ( -e $cfg->latest_data ) {
 		try { 
 			$tree = $tpp->parsefile( $cfg->latest_data );
-			@posts = list $tree->{xml}{post} };
+			@posts = list $tree->{xml}{post};
 		} catch {
 			$self->process_error($_);
 		};
 	}
 
 	@posts = grep { $_->{id} ne $id } @posts;
-	unshift @posts, { id => $id, title => $title};
+	unshift @posts, { id => $id, title => $title };
 	@posts = @posts[0 .. 9] if @posts > 10;
 
 	$tree->{xml}{post} = \@posts;
@@ -336,7 +338,7 @@ sub _get_in_path {
 	my $self = shift;
 	my $id = shift;
 	my $cfg = $self->miril->cfg;
-	return File::Spec->catfile($cfg->data_path, $id);
+	return catfile($cfg->data_path, $id);
 }
 
 sub _get_out_path {
@@ -353,13 +355,20 @@ sub _get_url
 	my ($name, $type) = @_;
 	my $cfg = $self->miril->cfg;
 	my $url = Miril::URL->new(
-		abs => $cfg->domain . $cfg->http_dir . $type->location . $name . "html",
-		rel => $cfg->http_dir . $type->location . $name . "html",
+		abs => $cfg->domain . $cfg->http_dir . $type->location . $name . ".html",
+		rel => $cfg->http_dir . $type->location . $name . ".html",
 	);
 	return $url;
 }
 
-sub _get_topcs
+sub _get_author
+{
+	my $self = shift;
+	my $author = shift;
+	return $author ? $author : undef;
+}
+
+sub _get_topics
 {
 	my $self = shift;
 	my $cfg = $self->miril->cfg;

@@ -12,6 +12,7 @@ use Ref::List::AsObject;
 use Miril::Warning;
 use Miril::Exception;
 use Miril::Config;
+use Text::Sprintf::Named;
 
 our $VERSION = '0.007';
 
@@ -23,6 +24,7 @@ use Object::Tiny qw(
 	cfg
 	filter
 );
+
 
 ### CONSTRUCTOR ###
 
@@ -86,6 +88,12 @@ sub new {
 	};
 	
 	return $self;
+}
+
+sub warnings 
+{
+	my $self = shift;
+	return list $self->{warnings};
 }
 
 ### PUBLIC METHODS ###
@@ -181,9 +189,9 @@ sub publish {
 				my $group_key = $list_group->group;
 				my $f_args;
 
-				$group_key eq 'topic'  && $f_args = { topic => $list->key->id };
-				$group_key eq 'type'   && $f_args = { type => $list->key->id };
-				$group_key eq 'author' && $f_args = { author => $list->key };
+				$f_args = { topic  => $list->key->id } if $group_key eq 'topic';
+				$f_args = { type   => $list->key->id } if $group_key eq 'type';
+				$f_args = { author => $list->key     } if $group_key eq 'author';
 		
 				!$group_key && $f_args = { 
 					year  => $list->key->strftime('%y'), 
@@ -229,7 +237,7 @@ sub publish {
 				my $output = $miril->tmpl->load(
 					name => $list->template,
 					params => {
-						list => $list_group,
+						list => $list_page,
 						cfg => $cfg,
 				});
 		
@@ -262,17 +270,11 @@ sub push_warning
 		errorvar => $params{'errorvar'},
 	);
 
-	my $warnings_stack = $self->warnings;
-	$warnings_stack = [] unless $warnings_stack;
-	push @$warnings_stack, $warning;
-	$self->{warnings} = $warnings_stack;
+	my @warnings_stack = $self->warnings;
+	push @warnings_stack, $warning;
+	$self->{warnings} = \@warnings_stack;
 }
 
-sub warnings 
-{
-	my $self = shift;
-	return @{ $self->{warnings} } if $self->{warnings};
-}
 
 ### PRIVATE METHODS ###
 

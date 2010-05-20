@@ -16,7 +16,7 @@ use Module::Load;
 use File::Spec::Functions qw(catfile);
 use Data::AsObject qw(dao);
 use Data::Page;
-
+use Ref::List::AsObject qw(list);
 use Miril;
 use Miril::Exception;
 use Miril::Theme::Flashyweb;
@@ -210,7 +210,8 @@ sub posts_edit {
 		my %cur_topics;
 
 		#FIXME
-		if ( list $post->topics }) {
+		if ( list $post->topics ) 
+		{
 			%cur_topics = map {$_->id => 1} list $post->topics;
 		}
 	
@@ -471,9 +472,9 @@ sub _prepare_authors {
 	my $cfg = $self->miril->cfg;
 	my @authors;
 	if ($selected) {
-		@authors = map +{ name => $_, id => $_ , selected => $_ eq $selected }, list $cfg->authors;
+		@authors = map {{ name => $_, id => $_ , selected => $_ eq $selected }} list $cfg->authors;
 	} else {
-		@authors = map +{ name => $_, id => $_  }, $cfg->authors;
+		@authors = map {{ name => $_, id => $_  }} list $cfg->authors;
 	}
 	return \@authors;
 }
@@ -481,21 +482,45 @@ sub _prepare_authors {
 sub _prepare_statuses {
 	my ($self, $selected) = @_;
 	my $cfg = $self->miril->cfg;
-	my @statuses = map +{ name => $_, id => $_, selected => $_ eq $selected }, list $cfg->statuses;
+	my @statuses;
+	if ($selected)
+	{
+		@statuses = map {{ name => $_, id => $_, selected => $_ eq $selected }} list $cfg->statuses;
+	}
+	else
+	{
+		@statuses = map {{ name => $_, id => $_ }} list $cfg->statuses;
+	}
 	return \@statuses;
 }
 
 sub _prepare_topics {
 	my ($self, %selected) = @_;
 	my $cfg = $self->miril->cfg;
-	my @topics   = map +{ name => $_->name, id => $_->id, selected => $selected{$_->id} }, list $cfg->topics;
+	my @topics;
+	if (%selected)
+	{
+		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} list $cfg->topics;
+	}
+	else
+	{
+		my @topics = map {{ name => $_->name, id => $_->id, }} list $cfg->topics;
+	}
 	return \@topics;
 }
 
 sub _prepare_types {
 	my ($self, $selected) = @_;
 	my $cfg = $self->miril->cfg;
-	my @types = map +{ name => $_->name, id => $_->id, selected => $_->id eq $selected }, list $cfg->types;
+	my @types;
+	if ($selected)
+	{
+		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected }} list $cfg->types;
+	}
+	else 
+	{
+		@types = map {{ name => $_->name, id => $_->id }} list $cfg->types;
+	}
 	return \@types;
 }
 

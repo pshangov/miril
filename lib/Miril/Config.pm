@@ -7,6 +7,8 @@ use XML::TreePP;
 use Data::AsObject qw(dao);
 use Ref::List::AsObject qw(list);
 use File::Spec::Functions qw(catfile catdir);
+use Miril::Topic;
+use Miril::Type;
 
 sub new {
 	my $class     = shift;
@@ -41,17 +43,17 @@ sub new {
 
 	my @topics = map { 
 		Miril::Topic->new(
-			id   => $_->id,
-			name => $_->name,
+			id   => $_->{id},
+			name => $_->{name},
 		) 
 	} list $cfg->{topics}{topic};
 
 	my @types = map {
 		Miril::Type->new(
-			id       => $_->id,
-			name     => $_->name,
-			location => $_->location,
-			template => $_->template,
+			id       => $_->{id},
+			name     => $_->{name},
+			location => $_->{location},
+			template => $_->{template},
 		)
 	} list $cfg->{types}{type};
 

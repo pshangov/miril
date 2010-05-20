@@ -3,8 +3,6 @@ package Miril::Post;
 use strict;
 use warnings;
 
-use 
-
 ### ACCESSORS ###
 
 use Object::Tiny qw(
@@ -18,12 +16,15 @@ use Object::Tiny qw(
 	modified
 	topics
 	type
+	out_path
 );
 
 
 ### CONSTRUCTOR ###
 
-sub new {
+
+sub new 
+{
 	my $class = shift;
 	return bless { @_ }, $class;
 }

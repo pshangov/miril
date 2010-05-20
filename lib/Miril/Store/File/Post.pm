@@ -11,6 +11,8 @@ use File::Spec;
 
 use base 'Miril::Post';
 
+use Object::Tiny qw(in_path);
+
 sub body {
 	my $self = shift;
 
