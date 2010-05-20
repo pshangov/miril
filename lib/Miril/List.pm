@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Carp qw(croak);
 use Ref::List::AsObject qw(list);
+use List::Util qw(first);
 
 ### ACCESSORS ###
 
@@ -64,6 +65,14 @@ sub group
 	) for sort keys %groups;
 
 	return @groups;
+}
+
+sub by_id
+{
+	my $self = shift;
+	my $id = shift;
+
+	return first { $_ eq $id } list $self->posts;
 }
 
 1;

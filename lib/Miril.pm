@@ -130,34 +130,45 @@ sub publish {
 		$miril->_file_write($post->out_path, $output);
 	}
 
-	foreach my $list (list $cfg->lists) {
+	foreach my $list (list $cfg->lists) 
+	{
+		my @posts;
 
-		my @params = qw(
-			author
-			type
-			status
-			topic
-			created_before
-			created_on
-			created_after
-			updated_before
-			updated_on
-			updated_after
-			published_before
-			published_on
-			published_after
-			last
-		);
+		# accept ids
+		if ( $list->match->id )
+		{
+			push @posts, $miril->store->get_post($_) for list $list->match->id;
+		}
+		else 
+		{
+			my @params = qw(
+				author
+				type
+				status
+				topic
+				created_before
+				created_on
+				created_after
+				updated_before
+				updated_on
+				updated_after
+				published_before
+				published_on
+				published_after
+				last
+			);
+		
+			my %params;
 
-		my %params;
-
-		foreach my $param (@params) {
-			if ( exists $list->match->{$param} ) {
-				$params{$param} = $list->match->{$param};
+			foreach my $param (@params) {
+				if ( exists $list->match->{$param} ) {
+					$params{$param} = $list->match->{$param};
+				}
 			}
+
+			@posts = $miril->store->get_posts(%params);
 		}
 
-		my @posts = $miril->store->get_posts(%params);
 
 		if ($list->group) {
 		
