@@ -1,21 +1,18 @@
 package Miril::App::PSGI;
 
-use CGI::Application::PSGI;
 use Miril::CGI::Application;
+use CGI::Application::Emulate::PSGI;
 
 sub app {
-	return sub {
-		my $env = shift;
+	return CGI::Application::Emulate::PSGI->handler( sub {
 		my $miril = Miril::CGI::Application->new(
-			QUERY => CGI::PSGI->new($env),
 			PARAMS => { 
 				miril_dir => 'example',
 				site      => 'example.com',
 			},
 		);
-		$ENV{HTTP_COOKIE} = $env->{HTTP_COOKIE};
-		CGI::Application::PSGI->run($miril);
-	};
+		$miril->run;
+	} );
 }
 
 1;

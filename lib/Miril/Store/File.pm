@@ -18,6 +18,7 @@ use Miril::Exception;
 use Miril::Store::File::Post;
 use File::Spec::Functions qw(catfile);
 use Miril::URL;
+use Data::Dumper qw(Dumper);
 
 ### ACCESSORS ###
 
@@ -91,21 +92,20 @@ sub get_posts {
 			);
 		};
 		@posts = map {
-			my $type = $_->type;
-			my $type_obj = first { $_->id eq $type->id } list $cfg->types;
+			my $type = $self->_get_type($_->type);
 			Miril::Store::File::Post->new(
 				id        => $_->id,
 				title     => $_->title,
 				in_path   => $self->_get_in_path($_->id),
-				out_path  => $self->_get_out_path($_->id, $type_obj),
+				out_path  => $self->_get_out_path($_->id, $type),
 				modified  => Miril::DateTime->new($_->modified),
 				published => Miril::DateTime->new($_->published),
-				type      => $type_obj,
+				type      => $type,
 				author    => $self->_get_author($_->author),
 				topics    => $self->_get_topics( list $_->topics ),
-				url       => $self->_get_url($_->id, $type_obj),
+				url       => $self->_get_url($_->id, $type),
 			);
-		} dao @{ $tree->{xml}{post} };
+		} dao list $tree->{xml}{post};
 	} else {
 		# miril is run for the first time
 		$tree = {};
@@ -143,7 +143,7 @@ sub get_posts {
 	# update cache file
 	if ($dirty) {
 		my $new_tree = $tree;
-		$new_tree->{xml}->{post} = \@posts;
+		$new_tree->{xml}->{post} = $self->_generate_cache_hash(@posts);
 
 		try { 
 			$self->tpp->writefile($cfg->cache_data, $new_tree); 
@@ -161,8 +161,8 @@ sub get_posts {
 sub save {
 	my $self = shift;
 
-	my %post = @_;
-	my $post = dao \%post;
+	my $post = dao {@_};
+	warn Dumper $post;
 
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
@@ -174,12 +174,14 @@ sub save {
 		
 		for (@posts) {
 			if ($_->id eq $post->old_id) {
-				$_->{id}            = $post->id;
-				$_->{author}        = $post->author;
-				$_->{title}         = $post->title;
-				$_->{topics}        = $post->topics;
-				$_->{published}     = _set_publish_date($_->{published}, $post->status);
-				$_->{status}        = $post->status;
+				$_->{id}        = $post->id;
+				$_->{author}    = $post->author;
+				$_->{title}     = $post->title;
+				$_->{type}      = $self->_get_type($post->type),
+				$_->{topics}    = $post->topics;
+				$_->{published} = _set_publish_date($_->{published}, $post->status);
+				$_->{status}    = $post->status;
+				$_->{body}      = $post->body;
 				last;
 			}
 		}
@@ -202,7 +204,7 @@ sub save {
 			id        => $post->id,
 			author    => $post->author,
 			title     => $post->title,
-			type      => $post->type,
+			type      =>  $self->_get_type($post->type),
 			topics    => { topic => [$post->topics] },
 			published => _set_publish_date(undef, $post->status),
 			status    => $post->status,
@@ -211,18 +213,8 @@ sub save {
 	}
 	
 	# update the cache file
-	my @cache_posts = map {{
-		id        => $_->id,
-		title     => $_->title,
-		modified  => $_->modified->epoch,
-		published => $_->published->epoch,
-		type      => $_->type,
-		author    => $_->author,
-		topics    => $_->topics,
-	}} @posts;
-
 	my $new_tree;
-	$new_tree->{xml}{post} = \@cache_posts;
+	$new_tree->{xml}{post} = $self->_generate_cache_hash(@posts);
 	$self->{tree} = $new_tree;
 	$self->tpp->writefile($cfg->cache_data, $new_tree) 
 		or $miril->process_error("Cannot update cache file", $!, 'fatal');
@@ -232,10 +224,9 @@ sub save {
 
 	$post = first { $_->id eq $post->id } @posts;
 
-	$content .= ucfirst $_ . ": " . $post->{$_} . "\n"  for qw(title type author);
-	$content .= "Published: " . ( $post->published ? $post->published->iso : '' ) . "\n";
-	$content .= "Format: " . $cfg->format . "\n";
-	$content .= "Topics: " . join(" ", @{ $post->topics }) . "\n\n";
+	$content .= ucfirst $_ . ": " . $post->{$_} . "\n"  for qw(title author);
+	$content .= "Type: " . $post->type->id . "\n";
+	$content .= "Topics: " . join(" ", list $post->topics) . "\n\n";
 	$content .= $post->body;
 
 	my $fh = IO::File->new( catfile($cfg->data_path, $post->id), "w")
@@ -361,6 +352,13 @@ sub _get_url
 	return $url;
 }
 
+sub _get_type
+{
+	my $self = shift;
+	my $type_id = shift;
+	return first { $_->id eq $type_id } list $self->miril->cfg->types;
+}
+
 sub _get_author
 {
 	my $self = shift;
@@ -381,6 +379,24 @@ sub _get_modified {
 	my $self = shift;
 	my $filename = shift;
 	return time - ( (-M $filename) * 86400 );
+}
+
+sub _generate_cache_hash
+{
+	my $self = shift;
+	my @posts = @_;
+
+	my @cache_posts = map {{
+		id        => $_->id,
+		title     => $_->title,
+		modified  => $_->modified->epoch,
+		published => $_->published ? $_->published->epoch : undef,
+		type      => $_->type->id,
+		author    => $_->author,
+		topics    => $_->topics,
+	}} @posts;
+
+	return \@cache_posts;
 }
 
 1;

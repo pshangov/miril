@@ -1,98 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xml>
   <post>
-    <author>J. R. R. Tolkien</author>
-    <body>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum. 
-    </body>
+    <author>J. K. Rowling</author>
     <id>aenean_eu_lorem</id>
-    <in_path>example\sites\example.com\data\aenean_eu_lorem</in_path>
-    <modified><![CDATA[1271426743]]></modified>
-    <out_path>example\htdocs\miril\aenean_eu_lorem.html</out_path>
-    <published><![CDATA[1270233809]]></published>
-    <teaser>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum. 
-    </teaser>
-    <title>Aenean Eu Lorem</title>
-    <topics>
-      <id>flowers</id>
-      <name>Flowers</name>
-    </topics>
-    <topics>
-      <id>animals</id>
-      <name>Fuzzy Animals</name>
-    </topics>
-    <type>
-      <id>news</id>
-      <location></location>
-      <name>News</name>
-      <template>page.tmpl</template>
-    </type>
-    <url>
-      <abs>http://localhost/miril/aenean_eu_lorem.html</abs>
-      <rel>/miril/aenean_eu_lorem.html</rel>
-    </url>
+    <modified>1274552024</modified>
+    <published />  <title>Aenean Eu Lorem</title>
+    <topics />  <type>page</type>
   </post>
   <post><author>J. R. R. Tolkien</author>
-  <body>Miril is available at [miril.org](http://www.miril.org)
-  </body>
   <id>contacts</id>
-  <in_path>example\sites\example.com\data\contacts</in_path>
-  <modified><![CDATA[1271426743]]></modified>
-  <out_path>example\htdocs\miril\contacts.html</out_path>
-  <published><![CDATA[1269958641]]></published>
-  <teaser>Miril is available at [miril.org](http://www.miril.org)
-  </teaser>
+  <modified>1270226741</modified>
+  <published>1269958641</published>
   <title>Contacts</title>
-  <type>
-    <id>page</id>
-    <location></location>
-    <name>Page</name>
-    <template>page.tmpl</template>
-  </type>
-  <url>
-    <abs>http://localhost/miril/contacts.html</abs>
-    <rel>/miril/contacts.html</rel>
-  </url>
+  <type>page</type>
   </post>
-  <post><author /><body>This is the front page of a sample site create with Miril. Enjoy!
-  </body>
-  <id>index</id>
-  <in_path>example\sites\example.com\data\index</in_path>
-  <modified><![CDATA[1271426743]]></modified>
-  <out_path>example\htdocs\miril\index.html</out_path>
-  <published><![CDATA[1269958641]]></published>
-  <teaser>This is the front page of a sample site create with Miril. Enjoy!
-  </teaser>
+  <post><author /><id>index</id>
+  <modified>1270226741</modified>
+  <published>1269958641</published>
   <title>Start Page</title>
-  <type>
-    <id>page</id>
-    <location></location>
-    <name>Page</name>
-    <template>page.tmpl</template>
-  </type>
-  <url>
-    <abs>http://localhost/miril/index.html</abs>
-    <rel>/miril/index.html</rel>
-  </url>
+  <type>page</type>
   </post>
-  <post><author /><body>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Phasellus non erat eu dui dignissim dictum. Integer iaculis nulla at nisl. Proin ut enim non ipsum varius laoreet. Integer feugiat, ante fringilla blandit convallis, leo sapien egestas velit, non condimentum nulla sem vitae risus. Mauris aliquam auctor quam. Sed ac enim. Donec mattis dui id ligula. Integer vel sem eget ante cursus tristique. Nullam vel orci vitae sem interdum placerat. In eget lectus. Donec blandit. Quisque lacus urna, malesuada vel, mollis sit amet, rutrum nec, est. Proin blandit ornare nibh. Duis et felis.
-  </body>
-  <id>lorem_ipsum_dolor</id>
-  <in_path>example\sites\example.com\data\lorem_ipsum_dolor</in_path>
-  <modified><![CDATA[1271426743]]></modified>
-  <out_path>example\htdocs\miril\lorem_ipsum_dolor.html</out_path>
-  <published><![CDATA[1269958641]]></published>
-  <teaser>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Phasellus non erat eu dui dignissim dictum. Integer iaculis nulla at nisl. Proin ut enim non ipsum varius laoreet. Integer feugiat, ante fringilla blandit convallis, leo sapien egestas velit, non condimentum nulla sem vitae risus. Mauris aliquam auctor quam. Sed ac enim. Donec mattis dui id ligula. Integer vel sem eget ante cursus tristique. Nullam vel orci vitae sem interdum placerat. In eget lectus. Donec blandit. Quisque lacus urna, malesuada vel, mollis sit amet, rutrum nec, est. Proin blandit ornare nibh. Duis et felis.
-  </teaser>
+  <post><author /><id>lorem_ipsum_dolor</id>
+  <modified>1270226741</modified>
+  <published>1269958641</published>
   <title>Lorem Ipsum Dolor</title>
-  <type>
-    <id>news</id>
-    <location></location>
-    <name>News</name>
-    <template>page.tmpl</template>
-  </type>
-  <url>
-    <abs>http://localhost/miril/lorem_ipsum_dolor.html</abs>
-    <rel>/miril/lorem_ipsum_dolor.html</rel>
-  </url>
+  <type>news</type>
   </post>
 </xml>

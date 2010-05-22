@@ -46,7 +46,7 @@ sub _populate {
 	
 	my $post_file;
 	try {
-		$post_file = File::Slurp::read_file($self->filename);
+		$post_file = File::Slurp::read_file($self->in_path);
 	} catch {
 		Miril::Exception->throw(
 			message => "Cannot load data file",

@@ -85,7 +85,7 @@ sub setup {
 		STORE          => [ 'Cookie', SECRET => $self->miril->cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
 	);
 
-	#$self->authen->protected_runmodes(':all');
+	$self->authen->protected_runmodes(':all');
 
 
 	# load view
