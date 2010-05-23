@@ -18,6 +18,7 @@ use Miril::Exception;
 use Miril::Store::File::Post;
 use File::Spec::Functions qw(catfile);
 use Miril::URL;
+use Syntax::Keyword::Gather qw(gather take);
 use Data::Dumper qw(Dumper);
 
 ### ACCESSORS ###
@@ -61,7 +62,7 @@ sub get_post {
 		out_path  => $self->_get_out_path($id, $type),
 		in_path   => $filename,
 		modified  => Miril::DateTime->new($modified),
-		published => Miril::DateTime->new(iso2time($meta{'published'})),
+		published => $meta{'published'} ? Miril::DateTime->new(iso2time($meta{'published'})) : undef,
 		type      => $type,
 		url       => $self->_get_url($id, $type),
 		author    => $self->_get_author($meta{'author'}),
@@ -71,12 +72,13 @@ sub get_post {
 
 sub get_posts {
 	my $self = shift;
+	my %params = @_;
 	my $miril =  $self->miril;
 	my $cfg = $miril->cfg;
 
 	# read and parse cache file
 	my $tpp = XML::TreePP->new();
-	$tpp->set( force_array => ['post'] );
+	$tpp->set( force_array => ['post', 'topic'] );
 	$tpp->set( indent => 2 );
 	$self->{tpp} = $tpp;
     
@@ -93,6 +95,8 @@ sub get_posts {
 		};
 		@posts = map {
 			my $type = $self->_get_type($_->type);
+			my @topics = list $_->topics->topic if $_->topics;
+			
 			Miril::Store::File::Post->new(
 				id        => $_->id,
 				title     => $_->title,
@@ -102,7 +106,7 @@ sub get_posts {
 				published => Miril::DateTime->new($_->published),
 				type      => $type,
 				author    => $self->_get_author($_->author),
-				topics    => $self->_get_topics( list $_->topics ),
+				topics    => $self->_get_topics(@topics),
 				url       => $self->_get_url($_->id, $type),
 			);
 		} dao list $tree->{xml}{post};
@@ -114,7 +118,6 @@ sub get_posts {
 	my @post_ids;
 
 	# for each post, check if the data in the cache is older than the data in the filesystem
-
 	foreach my $post (@posts) {
 		if ( -e $post->in_path ) {
 			push @post_ids, $post->id;
@@ -128,9 +131,21 @@ sub get_posts {
 			$dirty++;
 		}
 	}
+
+	# clean up posts deleted from the cache
+	@posts = grep { defined } @posts;
 	
 	# check for entries missing from the cache
 	opendir(my $data_dir, $cfg->data_path);
+	while ( my $id = readdir($data_dir) ) {
+		next if -d $id;
+		unless ( first {$_ eq $id} @post_ids ) {
+			my $post = $self->get_post($id);
+			push @posts, $post;
+			$dirty++;
+		}
+	}
+	
 	while ( my $id = readdir($data_dir) ) {
 		next if -d $id;
 		unless ( first {$_ eq $id} @post_ids ) {
@@ -155,30 +170,48 @@ sub get_posts {
 		};
 	}
 
-	return @posts;
+	# filter posts
+	if (%params)
+	{
+		return gather 
+		{
+			for my $cur_post (@posts)
+			{
+				my $title_rx = $params{'title'};
+				next if $params{'title'}  && $cur_post->title    !~ /$title_rx/i;
+				next if $params{'author'} && $cur_post->author   ne $params{'author'};
+				next if $params{'type'}   && $cur_post->type->id ne $params{'type'};
+				next if $params{'status'} && $cur_post->status   ne $params{'status'};
+				take $cur_post;
+			}
+		};
+	} 
+	else
+	{
+		return @posts;
+	}
 }
 
 sub save {
 	my $self = shift;
 
 	my $post = dao {@_};
-	warn Dumper $post;
 
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
 	
 	my @posts = $self->get_posts;
-
+	
 	if ($post->old_id) {
 		# this is an update
-		
+
 		for (@posts) {
 			if ($_->id eq $post->old_id) {
 				$_->{id}        = $post->id;
 				$_->{author}    = $post->author;
 				$_->{title}     = $post->title;
-				$_->{type}      = $self->_get_type($post->type),
-				$_->{topics}    = $post->topics;
+				$_->{type}      = $self->_get_type($post->type);
+				$_->{topics}    = $self->_get_topics(list $post->topics);
 				$_->{published} = _set_publish_date($_->{published}, $post->status);
 				$_->{status}    = $post->status;
 				$_->{body}      = $post->body;
@@ -193,7 +226,7 @@ sub save {
 			} catch {
 				Miril::Exception->throw( 
 					message => "Cannot delete old version of renamed post",
-					errorvar => $!
+					errorvar => $_
 				);
 			};
 		}	
@@ -204,36 +237,63 @@ sub save {
 			id        => $post->id,
 			author    => $post->author,
 			title     => $post->title,
-			type      =>  $self->_get_type($post->type),
-			topics    => { topic => [$post->topics] },
+			type      => $self->_get_type($post->type),
+			topics    => $self->_get_topics($post->topics),
 			published => _set_publish_date(undef, $post->status),
 			status    => $post->status,
+			body      => $post->body,
 		);
-		
 	}
-	
+
 	# update the cache file
 	my $new_tree;
 	$new_tree->{xml}{post} = $self->_generate_cache_hash(@posts);
 	$self->{tree} = $new_tree;
-	$self->tpp->writefile($cfg->cache_data, $new_tree) 
-		or $miril->process_error("Cannot update cache file", $!, 'fatal');
+
+	try
+	{
+		$self->tpp->writefile($cfg->cache_data, $new_tree)
+	}
+	catch
+	{
+		Miril::Exception->throw(
+			message => "Could noe update cache file", 
+			erorvar => $_,
+		);
+	};
 	
 	# update the data file
 	my $content;
-
+	
 	$post = first { $_->id eq $post->id } @posts;
 
 	$content .= ucfirst $_ . ": " . $post->{$_} . "\n"  for qw(title author);
 	$content .= "Type: " . $post->type->id . "\n";
-	$content .= "Topics: " . join(" ", list $post->topics) . "\n\n";
+	$content .= "Published: " . $post->published->iso . "\n" if $post->published;
+	$content .= "Topics: " . join(" ", map { $_->id } list $post->topics) . "\n\n";
 	$content .= $post->body;
 
-	my $fh = IO::File->new( catfile($cfg->data_path, $post->id), "w")
-		or $miril->process_error("Cannot update data file", $!, 'fatal');
-	$fh->print($content)
-		or $miril->process_error("Cannot update data file", $!, 'fatal');
-	$fh->close;
+	try
+	{
+		my $fh = IO::File->new( catfile($cfg->data_path, $post->id), "w");
+		$fh->print($content);
+		$fh->close;
+	}
+	catch
+	{
+		Miril::Exception->throw(
+			message => "Could not update data file", 
+			erorvar => $_,
+		);
+	};
+}
+
+sub delete
+{
+	my $self = shift;
+	my $id = shift;
+
+	unlink catfile($self->miril->cfg->data_path, $id) or die $!;
 }
 
 sub get_latest {
@@ -318,7 +378,7 @@ sub _parse_meta {
 
 sub _set_publish_date {
 	my ($old_date, $new_status) = @_;
-	return unless $new_status eq 'published';
+	return undef unless $new_status eq 'published';
 
 	return $old_date 
 		? Miril::DateTime->new(iso2time($old_date)) 
@@ -389,11 +449,11 @@ sub _generate_cache_hash
 	my @cache_posts = map {{
 		id        => $_->id,
 		title     => $_->title,
-		modified  => $_->modified->epoch,
+		modified  => $_->modified ? $_->modified->epoch : Miril::DateTime->new(time)->epoch,
 		published => $_->published ? $_->published->epoch : undef,
 		type      => $_->type->id,
 		author    => $_->author,
-		topics    => $_->topics,
+		topics    => { topic => [ map {$_->id} list $_->topics ] },
 	}} @posts;
 
 	return \@cache_posts;

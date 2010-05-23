@@ -79,7 +79,7 @@ my $edit = <<EndOfHTML;
 					<p class="edit">Author:<br>
 					<select name="author"<TMPL_IF NAME="invalid.author"> class="invalid"</TMPL_IF>>
 					<TMPL_LOOP NAME="post.authors">
-						<option value='<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.name"></option>
+						<option value='<TMPL_VAR NAME="this.id">'<TMPL_IF NAME="this.selected"> selected="selected"</TMPL_IF>><TMPL_VAR NAME="this.name"></option>
 					</TMPL_LOOP>
 					</select>
 					</p>

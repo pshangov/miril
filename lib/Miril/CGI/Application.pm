@@ -22,6 +22,7 @@ use Miril::Exception;
 use Miril::Theme::Flashyweb;
 use Miril::View;
 use Miril::InputValidator;
+use Data::Dumper qw(Dumper);
 
 ### ACCESSORS ###
 
@@ -220,7 +221,7 @@ sub posts_edit {
 		$post->{statuses} = $self->_prepare_statuses($post->status);
 		$post->{types}    = $self->_prepare_types($post->type);
 	}
-	
+
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('post', $post);
 	$tmpl->param('invalid', $self->param('invalid'));
@@ -497,16 +498,16 @@ sub _prepare_statuses {
 sub _prepare_topics {
 	my ($self, %selected) = @_;
 	my $cfg = $self->miril->cfg;
-	my @topics;
 	if (%selected)
 	{
 		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} list $cfg->topics;
+		return \@topics;
 	}
 	else
 	{
 		my @topics = map {{ name => $_->name, id => $_->id, }} list $cfg->topics;
+		return \@topics;
 	}
-	return \@topics;
 }
 
 sub _prepare_types {
@@ -515,7 +516,7 @@ sub _prepare_types {
 	my @types;
 	if ($selected)
 	{
-		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected }} list $cfg->types;
+		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected->id }} list $cfg->types;
 	}
 	else 
 	{

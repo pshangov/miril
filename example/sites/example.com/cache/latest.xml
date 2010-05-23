@@ -5,8 +5,16 @@
 <title>Aenean Eu Lorem</title>
 </post>
 <post>
+<id>lorem_ipsum_dolor</id>
+<title>Lorem Ipsum Dolor</title>
+</post>
+<post>
 <id>index</id>
 <title>Start Page</title>
+</post>
+<post>
+<id>test</id>
+<title>test</title>
 </post>
 <post>
 <id>aenean_eu_lorem ddddddd</id>
@@ -15,9 +23,5 @@
 <post>
 <id>contacts</id>
 <title>Contacts</title>
-</post>
-<post>
-<id>lorem_ipsum_dolor</id>
-<title>Lorem Ipsum Dolor </title>
 </post>
 </xml>

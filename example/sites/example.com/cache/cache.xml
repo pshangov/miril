@@ -1,29 +1,38 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xml>
   <post>
-    <author>J. K. Rowling</author>
+    <author>J. R. R. Tolkien</author>
     <id>aenean_eu_lorem</id>
-    <modified>1274552024</modified>
+    <modified>1274639014</modified>
     <published />  <title>Aenean Eu Lorem</title>
-    <topics />  <type>page</type>
+    <topics></topics>
+    <type>page</type>
   </post>
-  <post><author>J. R. R. Tolkien</author>
-  <id>contacts</id>
-  <modified>1270226741</modified>
-  <published>1269958641</published>
-  <title>Contacts</title>
-  <type>page</type>
+  <post>
+    <author>J. R. R. Tolkien</author>
+    <id>contacts</id>
+    <modified>1270226741</modified>
+    <published>1269958641</published>
+    <title>Contacts</title>
+    <topics></topics>
+    <type>page</type>
   </post>
-  <post><author /><id>index</id>
-  <modified>1270226741</modified>
-  <published>1269958641</published>
-  <title>Start Page</title>
-  <type>page</type>
+  <post>
+    <author />  <id>index</id>
+    <modified>1270226741</modified>
+    <published>1269958641</published>
+    <title>Start Page</title>
+    <topics></topics>
+    <type>page</type>
   </post>
-  <post><author /><id>lorem_ipsum_dolor</id>
-  <modified>1270226741</modified>
-  <published>1269958641</published>
-  <title>Lorem Ipsum Dolor</title>
-  <type>news</type>
+  <post>
+    <author>J. R. R. Tolkien</author>
+    <id>lorem_ipsum_dolor</id>
+    <modified>1274638456</modified>
+    <published />  <title>Lorem Ipsum Dolor</title>
+    <topics>
+      <topic>flowers</topic>
+    </topics>
+    <type>news</type>
   </post>
 </xml>
