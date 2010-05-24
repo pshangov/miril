@@ -28,76 +28,6 @@ use Object::Tiny qw(
 
 ### CONSTRUCTOR ###
 
-sub new {
-	my $class = shift;
-	my $self = bless {}, $class;
-	my $miril_dir = shift;
-	my $site = shift;
-
-	
-	# load configuration
-	try {
-		my $cfg = Miril::Config->new($miril_dir, $site);
-		$self->{cfg} = $cfg;
-	} catch {
-		Miril::Exception->throw( 
-			errorvar => $_,
-			message  => 'Could not open configuration file',
-		);
-	};
-	return unless $self->cfg;
-
-	my $cfg = $self->cfg;
-
-	# load store
-	try {
-		my $store_name = "Miril::Store::" . $cfg->store;
-		load $store_name;
-		my $store = $store_name->new($self);
-		$self->{store} = $store;
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not load store',
-		);
-	};
-	return unless $self->store;
-
-	# load view
-	try {
-		my $view_name = "Miril::View::" . $cfg->view;
-		load $view_name;
-		$self->{view} = $view_name->new($self);
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not load view',
-		);
-	};
-
-	# load filter
-	try {
-		my $filter_name = "Miril::Filter::" . $cfg->filter;
-		load $filter_name;
-		$self->{filter} = $filter_name->new($cfg);
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not load filter',
-		);
-	};
-	
-	return $self;
-}
-
-sub warnings 
-{
-	my $self = shift;
-	return list $self->{warnings};
-}
-
-### PUBLIC METHODS ###
-
 sub publish {
 	my $miril = shift;
 	my $rebuild = shift;
@@ -259,6 +189,78 @@ sub publish {
 		}
 	}
 }
+
+sub new {
+	my $class = shift;
+	my $self = bless {}, $class;
+	my $miril_dir = shift;
+	my $site = shift;
+
+	
+	# load configuration
+	try {
+		my $cfg = Miril::Config->new($miril_dir, $site);
+		$self->{cfg} = $cfg;
+	} catch {
+		Miril::Exception->throw( 
+			errorvar => $_,
+			message  => 'Could not open configuration file',
+		);
+	};
+	return unless $self->cfg;
+
+	my $cfg = $self->cfg;
+
+	# load store
+	try {
+		my $store_name = "Miril::Store::" . $cfg->store;
+		load $store_name;
+		my $store = $store_name->new($self);
+		$self->{store} = $store;
+	} catch {
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not load store',
+		);
+	};
+	return unless $self->store;
+
+	# load view
+	try {
+		my $view_name = "Miril::View::" . $cfg->view;
+		load $view_name;
+		$self->{view} = $view_name->new($self);
+	} catch {
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not load view',
+		);
+	};
+
+	# load filter
+	try {
+		my $filter_name = "Miril::Filter::" . $cfg->filter;
+		load $filter_name;
+		$self->{filter} = $filter_name->new($cfg);
+	} catch {
+		Miril::Exception->throw(
+			errorvar => $_,
+			message  => 'Could not load filter',
+		);
+	};
+	
+	return $self;
+}
+
+sub warnings 
+{
+	my $self = shift;
+	return list $self->{warnings};
+}
+
+### PUBLIC METHODS ###
+
+
 
 sub push_warning 
 {

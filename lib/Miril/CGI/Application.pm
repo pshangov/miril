@@ -461,7 +461,7 @@ sub posts_publish {
 	my $rebuild = $self->query->param("rebuild");
 
 	if ($do) {
-		$self->publish($rebuild);
+		$self->miril->publish($rebuild);
 		return $self->redirect("?action=list");
 	} else {
 		my $tmpl = $self->view->load('publish');
