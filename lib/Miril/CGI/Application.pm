@@ -23,6 +23,9 @@ use Miril::Theme::Flashyweb;
 use Miril::View;
 use Miril::InputValidator;
 use Data::Dumper qw(Dumper);
+use File::Copy qw(copy);
+use Number::Format qw(format_bytes);
+use POSIX qw(strftime);
 
 ### ACCESSORS ###
 
@@ -138,7 +141,7 @@ sub posts_list {
 		title  => ( $q->param('title' ) or undef ),
 		type   => ( $q->param('type'  ) or undef ),
 		status => ( $q->param('status') or undef ),
-		topic  => ( $q->param('topic' ) ? \($q->param('topic')) : undef ),
+		topic  => ( $q->param('topic' ) or undef ),
 	);
 
 	my @current_posts = $self->_paginate(@posts);
@@ -378,7 +381,7 @@ sub files_list {
 
 	my @files_with_data = map +{ 
 		name     => $_, 
-		href     => "$files_http_dir/$_", 
+		href     => $files_http_dir . $_, 
 		size     => format_bytes( -s catfile($files_path, $_) ), 
 		modified => strftime( "%d/%m/%Y %H:%M", localtime( $self->_get_last_modified_time(catfile($files_path, $_)) ) ), 
 	}, @current_files;

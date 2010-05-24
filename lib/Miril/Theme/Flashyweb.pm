@@ -145,7 +145,7 @@ my $files = <<EndOfHTML;
 		<div class="pager">
 			<TMPL_VAR NAME="pager">
 		</div>
-		<button type="submit" id="x" name="action" value="delete_files">Delete selected</button>
+		<button type="submit" id="x" name="action" value="unlink">Delete selected</button>
 		</form>
 	
 		</div>
@@ -172,7 +172,7 @@ my $upload = <<EndOfHTML;
 				<p class="edit"><input type="file" name="file" />
 				<p class="edit"><input type="file" name="file" />
 			</div>
-			<button type="submit" id="x" name="action" value="upload_files">Upload files</button>
+			<button type="submit" id="x" name="action" value="upload">Upload files</button>
 			<button name="action" value="files" id="x">Cancel</button>
 			</p>
 		</form>

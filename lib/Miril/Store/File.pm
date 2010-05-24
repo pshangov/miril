@@ -19,6 +19,7 @@ use Miril::Store::File::Post;
 use File::Spec::Functions qw(catfile);
 use Miril::URL;
 use Syntax::Keyword::Gather qw(gather take);
+use Perl6::Junction qw(none);
 use Data::Dumper qw(Dumper);
 
 ### ACCESSORS ###
@@ -182,6 +183,7 @@ sub get_posts {
 				next if $params{'author'} && $cur_post->author   ne $params{'author'};
 				next if $params{'type'}   && $cur_post->type->id ne $params{'type'};
 				next if $params{'status'} && $cur_post->status   ne $params{'status'};
+				next if $params{'topic'}  && !first {$_->id eq $params{'topic'}} list $cur_post->topics;
 				take $cur_post;
 			}
 		};
