@@ -27,6 +27,7 @@ use Data::Dumper qw(Dumper);
 use File::Copy qw(copy);
 use Number::Format qw(format_bytes);
 use POSIX qw(strftime);
+use Syntax::Keyword::Gather qw(gather take);
 
 ### ACCESSORS ###
 
@@ -380,12 +381,21 @@ sub files_list {
 
 	my @current_files = $self->_paginate(@files);
 
-	my @files_with_data = map +{ 
-		name     => $_, 
-		href     => $files_http_dir . $_, 
-		size     => format_bytes( -s catfile($files_path, $_) ), 
-		modified => strftime( "%d/%m/%Y %H:%M", localtime( $self->_get_last_modified_time(catfile($files_path, $_)) ) ), 
-	}, @current_files;
+	my @files_with_data = gather 
+	{ 
+		for my $file (@current_files)
+		{
+			my $filepath = catfile($files_path, $file);
+			my @modified = localtime( time() - ( (-M $filepath) * 60 * 60 * 24 ) );
+
+			take {
+				name     => $file, 
+				href     => $files_http_dir . $file, 
+				size     => format_bytes( -s $filepath ), 
+				modified => strftime( "%d/%m/%Y %H:%M", @modified), 
+			};
+		}
+	};
 
 	my $tmpl = $self->view->load('files');
 	$tmpl->param('files', \@files_with_data);
@@ -472,6 +482,9 @@ sub posts_publish {
 
 ### PRIVATE METHODS ###
 
+# ---- form generation utilities 
+# this stuff is ugly, should be replaced with HTML::FillInForm::Lite
+
 sub _prepare_authors {
 	my ($self, $selected) = @_;
 	my $cfg = $self->miril->cfg;
@@ -528,6 +541,9 @@ sub _prepare_types {
 	}
 	return \@types;
 }
+
+# --- pagination 
+# needs to be abstracted so that different UI's (e.g. Mojo) could use it 
 
 sub _paginate {
 	my $self = shift;
@@ -589,13 +605,6 @@ sub _generate_paged_url {
 	$paged_url .= "&page_no=$page_no";
 
 	return $paged_url;
-}
-
-sub _get_last_modified_time {
-	my $self = shift;
-	my $filename = shift;
-
-	return time() - ( (-M $filename) * 60 * 60 * 24 );
 }
 
 1;

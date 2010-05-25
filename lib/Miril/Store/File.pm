@@ -19,7 +19,6 @@ use Miril::Store::File::Post;
 use File::Spec::Functions qw(catfile);
 use Miril::URL;
 use Syntax::Keyword::Gather qw(gather take);
-use Perl6::Junction qw(none);
 use Data::Dumper qw(Dumper);
 
 ### ACCESSORS ###
@@ -295,7 +294,17 @@ sub delete
 	my $self = shift;
 	my $id = shift;
 
-	unlink catfile($self->miril->cfg->data_path, $id) or die $!;
+	try
+	{
+		unlink catfile($self->miril->cfg->data_path, $id);
+	}
+	catch
+	{
+		Miril::Exception->throw(
+			message => "Could not delete data file", 
+			erorvar => $_,
+		);
+	};
 }
 
 sub get_latest {
