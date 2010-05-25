@@ -1,7 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <xml>
-	<user>
-		<username>admin</username>
-		<password>123456</password>
-		<name>Administrator</name>
-	</user>
+  <user>
+    <name>Administrator</name>
+    <password>123456</password>
+    <username>admin</username>
+  </user>
 </xml>

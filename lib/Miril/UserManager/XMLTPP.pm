@@ -80,12 +80,12 @@ sub set_user {
 	my $found = undef;
 	
 	# try update
-	for (@users) {
-		if ($_->username eq $user->username) {
-			$_->{password} = $user->password;
-			$_->{email}    = $user->email;
-			$_->{name}     = $user->name;
-
+	for my $u (@users) 
+	{
+		if ($u->username eq $user->username) 
+		{
+			$u->{password} = $user->password;
+			$u->{name}     = $user->name;
 			$found++;
 			last;
 		}
@@ -96,7 +96,6 @@ sub set_user {
 		my $new_user = dao {
 			username => $user->username,
 			password => $user->password,
-			email    => $user->email,
 			name     => $user->name,
 		};
 		
@@ -142,15 +141,16 @@ sub delete_user {
 	};
 }
 
-sub encrypt {
+sub encrypt 
+{
 	my $self = shift;
 	my $password = shift;
 
-	return $password;
-
+	# only Digest::MD5 is available in core perl 5.8
 	my $md5 = Digest::MD5->new;
 	$md5->add($password);
-	return $md5->digest; 
+	my $digest = $md5->b64digest; 
+	return $digest;
 }
 
 ### ACCESSORS ###

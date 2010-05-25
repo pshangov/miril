@@ -316,18 +316,16 @@ sub logout {
 	return $self->redirect("?action=login");
 }
 
-sub account {
+sub account 
+{
 	my $self = shift;
 	my $q = $self->query;
 
-	if (   $q->param('name')
-		or $q->param('email')
-		or $q->param('new_password') 
-	) {
+	if ( $q->param('name') or $q->param('new_password') ) 
+	{
 	
 		my $username        = $q->param('username');
 		my $name            = $q->param('name');
-		my $email           = $q->param('email');
 		my $new_password    = $q->param('new_password');
 		my $retype_password = $q->param('retype_password');
 		my $password        = $q->param('password');
@@ -335,18 +333,22 @@ sub account {
 		my $user = $self->user_manager->get_user($username);
 		my $encrypted = $self->user_manager->encrypt($password);
 
-		if ( $name and $email and ($encrypted eq $user->{password}) ) {
-			$user->{name} = $name;
-			$user->{email} = $email;
-			if ( $new_password and ($new_password eq $retype_password) ) {
-				$user->{password} = $self->user_manager->encrypt($new_password);
-			}
-			$self->user_manager->set_user($user);
-
-			return $self->redirect("?"); 
+		unless ( ($user->{password} eq $password) or ($user->{password} eq $encrypted) )
+		{
+			$self->miril->push_warning( 
+				message => 'Wrong existing password!',
+				errorvar => '',
+			);
+			return $self->redirect("?action=account") 
 		}
 
-		return $self->redirect("?action=account");
+		$user->{name} = $name;
+		if ( $new_password and ($new_password eq $retype_password) ) {
+			$user->{password} = $self->user_manager->encrypt($new_password);
+		}
+		$self->user_manager->set_user($user);
+		return $self->redirect("?"); 
+
 
 	} else {
 	

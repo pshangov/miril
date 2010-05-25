@@ -17,11 +17,9 @@ my $account = <<EndOfHTML;
 			<h2 class="title"><span class="dingbat">&#x273b;</span> <TMPL_VAR NAME="user.username"></h2>
 			<div class="edit">
 				<form method="POST">
-					<p class="edit">Name <span class="required">*</span>:<br>
-					<input type="text" name="name" class="textbox" value='<TMPL_VAR NAME="user.name">' /></p>
 
-					<p class="edit">Email: <span class="required">*</span><br>
-					<input type="text" name="email" class="textbox" value='<TMPL_VAR NAME="user.email">' /></p>
+					<p class="edit">Name:<br>
+					<input type="text" name="name" class="textbox" value='<TMPL_VAR NAME="user.name">' /></p>
 
 					<p class="edit">New password:<br>
 					<input type="password" name="new_password" class="textbox" />
@@ -31,16 +29,15 @@ my $account = <<EndOfHTML;
 					<input type="password" name="retype_password" class="textbox" />
 					</p>
 
-					<p class="edit">Existing password: <span class="required">*</span><br>
+					<p class="edit">Existing password: <span class="required">(Required)</span><br>
 					<input type="password" name="password" class="textbox" />
 					</p>
 
 					<input type="hidden" name="username" value='<TMPL_VAR NAME="user.username">' />
 
-					<button type="submit" id="x" name="action" value="update_user">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;
+					<button type="submit" id="x" name="action" value="account">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;
 					<button type="submit" id="x" name="action" value="list">Cancel</button>
 
-					<p class="edit"><span class="required">* - Required fields</span></p>
 				</form>
 			</div>
 		</div>
