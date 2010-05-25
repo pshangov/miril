@@ -15,23 +15,23 @@
 	
 	<entry>
 		<title>Aenean Eu Lorem</title>
-		<link href='http://www.example.com/miril_example/aenean_eu_lorem.html' />
-		<id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
-		<updated>2009-09-22T18:09:30FLE Daylight Time</updated>
-		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum.</p>
+		<link href='http://www.example.com/aenean_eu_lorem.html' />
+		<id>aenean_eu_lorem</id>
+		<updated>1970-01-01T02:00:00+03:00</updated>
+		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum.
 </div></summary>
-		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum.</p>
+		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">Aenean eu lorem at odio placerat fringilla. Cras faucibus velit quis dui. Proin scelerisque orci nec arcu. Pellentesque cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Nullam mattis iaculis purus. Curabitur velit. Vivamus et diam pharetra elit auctor molestie. Suspendisse potenti. Praesent enim. Vivamus at magna. Ut et dolor eu erat facilisis sollicitudin. Duis sed ante. Suspendisse lorem. Suspendisse mollis, dolor sit amet pellentesque sodales, diam risus adipiscing diam, vel ornare lorem pede ac ipsum.
 </div></content>
 	</entry>
  	
 	<entry>
-		<title>Lorem Ipsum Dolor </title>
-		<link href='http://www.example.com/miril_example/lorem_ipsum_dolor .html' />
-		<id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
-		<updated>2009-09-22T18:08:43FLE Daylight Time</updated>
-		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Phasellus non erat eu dui dignissim dictum. Integer iaculis nulla at nisl. Proin ut enim non ipsum varius laoreet. Integer feugiat, ante fringilla blandit convallis, leo sapien egestas velit, non condimentum nulla sem vitae risus. Mauris aliquam auctor quam. Sed ac enim. Donec mattis dui id ligula. Integer vel sem eget ante cursus tristique. Nullam vel orci vitae sem interdum placerat. In eget lectus. Donec blandit. Quisque lacus urna, malesuada vel, mollis sit amet, rutrum nec, est. Proin blandit ornare nibh. Duis et felis.</p>
+		<title>Lorem Ipsum Dolor</title>
+		<link href='http://www.example.com/lorem_ipsum_dolor.html' />
+		<id>lorem_ipsum_dolor</id>
+		<updated>2010-05-24T16:44:39+03:00</updated>
+		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Phasellus non erat eu dui dignissim dictum. Integer iaculis nulla at nisl. Proin ut enim non ipsum varius laoreet. Integer feugiat, ante fringilla blandit convallis, leo sapien egestas velit, non condimentum nulla sem vitae risus. Mauris aliquam auctor quam. Sed ac enim. Donec mattis dui id ligula. Integer vel sem eget ante cursus tristique. Nullam vel orci vitae sem interdum placerat. In eget lectus. Donec blandit. Quisque lacus urna, malesuada vel, mollis sit amet, rutrum nec, est. Proin blandit ornare nibh. Duis et felis.
 </div></summary>
-		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Phasellus non erat eu dui dignissim dictum. Integer iaculis nulla at nisl. Proin ut enim non ipsum varius laoreet. Integer feugiat, ante fringilla blandit convallis, leo sapien egestas velit, non condimentum nulla sem vitae risus. Mauris aliquam auctor quam. Sed ac enim. Donec mattis dui id ligula. Integer vel sem eget ante cursus tristique. Nullam vel orci vitae sem interdum placerat. In eget lectus. Donec blandit. Quisque lacus urna, malesuada vel, mollis sit amet, rutrum nec, est. Proin blandit ornare nibh. Duis et felis.</p>
+		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Phasellus non erat eu dui dignissim dictum. Integer iaculis nulla at nisl. Proin ut enim non ipsum varius laoreet. Integer feugiat, ante fringilla blandit convallis, leo sapien egestas velit, non condimentum nulla sem vitae risus. Mauris aliquam auctor quam. Sed ac enim. Donec mattis dui id ligula. Integer vel sem eget ante cursus tristique. Nullam vel orci vitae sem interdum placerat. In eget lectus. Donec blandit. Quisque lacus urna, malesuada vel, mollis sit amet, rutrum nec, est. Proin blandit ornare nibh. Duis et felis.
 </div></content>
 	</entry>
  	

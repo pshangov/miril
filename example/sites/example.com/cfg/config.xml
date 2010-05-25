@@ -1,12 +1,12 @@
 <xml>
 
-	<output_path>example/htdocs/miril</output_path>
-	<files_path>example/htdocs/miril/files</files_path>
+	<output_path>example/www</output_path>
+	<files_path>example/www/files</files_path>
 
 	<!-- URL CONSTRUCTION -->
-	<http_dir>/miril/</http_dir>
-	<files_http_dir>/miril/files/</files_http_dir>
-	<domain>http://localhost</domain>
+	<http_dir>/</http_dir>
+	<files_http_dir>/files/</files_http_dir>
+	<domain>http://www.example.com</domain>
 
 	<!-- MAKE SURE YOU CHANGE THIS! -->
 	<secret>Some secret line</secret>

@@ -1,4 +1,4 @@
-package Miril::View::Abstract;
+package Miril::Template::Abstract;
 
 use strict;
 use warnings;

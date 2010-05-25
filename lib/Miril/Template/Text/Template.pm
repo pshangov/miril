@@ -1,9 +1,9 @@
-package Miril::View::Text::Template;
+package Miril::Template::Text::Template;
 
 use strict;
 use warnings;
 
-use base 'Miril::View::Abstract';
+use base 'Miril::Template::Abstract';
 
 use Text::Template;
 use File::Spec::Functions qw(catfile);

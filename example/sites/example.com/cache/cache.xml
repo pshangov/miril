@@ -3,16 +3,15 @@
   <post>
     <author>J. R. R. Tolkien</author>
     <id>aenean_eu_lorem</id>
-    <modified>1274708837</modified>
-    <published>1274708670</published>
-    <title>Aenean Eu Lorem</title>
+    <modified>1274781966</modified>
+    <published />  <title>Aenean Eu Lorem</title>
     <topics></topics>
     <type>news</type>
   </post>
   <post>
     <author>J. R. R. Tolkien</author>
     <id>contacts</id>
-    <modified>1271426855</modified>
+    <modified>1271429966</modified>
     <published>1269958641</published>
     <title>Contacts</title>
     <topics></topics>
@@ -20,7 +19,7 @@
   </post>
   <post>
     <author />  <id>index</id>
-    <modified>1271426855</modified>
+    <modified>1271429966</modified>
     <published>1269958641</published>
     <title>Start Page</title>
     <topics></topics>
@@ -29,7 +28,7 @@
   <post>
     <author>J. R. R. Tolkien</author>
     <id>lorem_ipsum_dolor</id>
-    <modified>1274708846</modified>
+    <modified>1274711957</modified>
     <published>1274708679</published>
     <title>Lorem Ipsum Dolor</title>
     <topics>

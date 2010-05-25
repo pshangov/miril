@@ -12,14 +12,14 @@
 		<name>Your Name</name>
 	</author>
  	
-	<TMPL_LOOP NAME="posts">
+	<TMPL_LOOP NAME="list.posts">
 	<entry>
-		<title><TMPL_VAR NAME="title"></title>
-		<link href='<TMPL_VAR NAME="url.abs">' />
-		<id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
-		<updated><TMPL_VAR NAME="published.iso"></updated>
-		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><TMPL_VAR NAME="teaser"></div></summary>
-		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><TMPL_VAR NAME="text"></div></content>
+		<title><TMPL_VAR NAME="this.title"></title>
+		<link href='<TMPL_VAR NAME="this.url.abs">' />
+		<id><TMPL_VAR NAME="this.id"></id>
+		<updated><TMPL_VAR NAME="this.published.iso"></updated>
+		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><TMPL_VAR NAME="this.teaser"></div></summary>
+		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><TMPL_VAR NAME="this.body"></div></content>
 	</entry>
  	</TMPL_LOOP>
 

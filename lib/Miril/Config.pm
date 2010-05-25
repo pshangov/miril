@@ -27,7 +27,7 @@ sub new {
 	$cfg->{store}          = 'File'           unless defined $cfg->{store};
 	$cfg->{user_manager}   = 'XMLTPP'         unless defined $cfg->{user_manager};
 	$cfg->{filter}         = 'Markdown'       unless defined $cfg->{filter};
-	$cfg->{view}           = 'HTML::Template' unless defined $cfg->{view};
+	$cfg->{template}       = 'HTML::Template' unless defined $cfg->{template};
 
 	$cfg->{posts_per_page} = 10               unless defined $cfg->{posts_per_page};
 
@@ -57,11 +57,22 @@ sub new {
 		)
 	} list $cfg->{types}{type};
 
+	my @lists = map {
+		{
+			id       => $_->{id},
+			name     => $_->{name},
+			match    => $_->{match},
+			template => $_->{template},
+			location => $_->{location},
+		}
+	} list $cfg->{lists}{list};
+
 	### SIMPLIFY THE HASHREF ###
 	
 	$cfg->{authors} = $cfg->{authors}{author};
 	$cfg->{topics}  = \@topics;
 	$cfg->{types}   = \@types;
+	$cfg->{lists}   = \@lists;
 
 	return dao $cfg;
 }

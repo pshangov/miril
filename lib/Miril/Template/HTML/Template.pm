@@ -1,9 +1,9 @@
-package Miril::View::HTML::Template;
+package Miril::Template::HTML::Template;
 
 use strict;
 use warnings;
 
-use base 'Miril::View::Abstract';
+use base 'Miril::Template::Abstract';
 
 use HTML::Template::Pluggable;
 use HTML::Template::Plugin::Dot;

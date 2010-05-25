@@ -22,6 +22,7 @@ use Miril::Exception;
 use Miril::Theme::Flashyweb;
 use Miril::View;
 use Miril::InputValidator;
+use Miril::Publisher;
 use Data::Dumper qw(Dumper);
 use File::Copy qw(copy);
 use Number::Format qw(format_bytes);
@@ -461,7 +462,7 @@ sub posts_publish {
 	my $rebuild = $self->query->param("rebuild");
 
 	if ($do) {
-		$self->miril->publish($rebuild);
+		Miril::Publisher->publish($self->miril, $rebuild);
 		return $self->redirect("?action=list");
 	} else {
 		my $tmpl = $self->view->load('publish');

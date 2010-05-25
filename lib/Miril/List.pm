@@ -42,18 +42,56 @@ sub group
 	
 	my ($obj_cb, $key_cb);
 
-	# must work with perl 5.8 so 'switch' is a no-no
-	$group_key eq 'topic'   && $obj_cb = sub { shift->topic }     && $key_cb = sub { shift->topic->id };
-	$group_key eq 'type'    && $obj_cb = sub { shift->type }      && $key_cb = sub { shift->type->id };
-	$group_key eq 'author'  && $obj_cb = sub { shift->author }    && $key_cb = sub { shift->author };
-	$group_key eq 'm_year'  && $obj_cb = sub { shift->modified }  && $key_cb = sub { shift->modified->strftime('%y') };
-	$group_key eq 'm_month' && $obj_cb = sub { shift->modified }  && $key_cb = sub { shift->modified->strftime('%y%m') };
-	$group_key eq 'm_date'  && $obj_cb = sub { shift->modified }  && $key_cb = sub { shift->modified->strftime('%y%m%d') };
-	$group_key eq 'p_year'  && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y') };
-	$group_key eq 'p_month' && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y%m') };
-	$group_key eq 'p_date'  && $obj_cb = sub { shift->published } && $key_cb = sub { shift->published->strftime('%y%m%d') };
-
-	!$key_cb && croak "Invalid key '" . $group_key . "' passed to group.";
+	# must be perl 5.8-compatible so we can't use switch
+	if ($group_key eq 'topic')
+	{
+		$obj_cb = sub { shift->topic };
+		$key_cb = sub { shift->topic->id };
+	}
+	elsif ($group_key eq 'type')
+	{
+		$obj_cb = sub { shift->type };
+		$key_cb = sub { shift->type->id };
+	}
+	elsif ($group_key eq 'author')
+	{
+		$obj_cb = sub { shift->author };
+		$key_cb = sub { shift->author };
+	}
+	elsif ($group_key eq 'm_year')
+	{
+		$obj_cb = sub { shift->modified };
+		$key_cb = sub { shift->modified->strftime('%y') };
+	}
+	elsif ($group_key eq 'm_month')
+	{
+		$obj_cb = sub { shift->modified };
+		$key_cb = sub { shift->modified->strftime('%y%m') };
+	}
+	elsif ($group_key eq 'm_date')
+	{
+		$obj_cb = sub { shift->modified };
+		$key_cb = sub { shift->modified->strftime('%y%m%d') };
+	}
+	elsif ($group_key eq 'p_year')
+	{
+		$obj_cb = sub { shift->published };
+		$key_cb = sub { shift->published->strftime('%y') };
+	}
+	elsif ($group_key eq 'p_month')
+	{
+		$obj_cb = sub { shift->published };
+		$key_cb = sub { shift->published->strftime('%y%m') };
+	}
+	elsif ($group_key eq 'p_date')
+	{
+		$obj_cb = sub { shift->published };
+		$key_cb = sub { shift->published->strftime('%y%m%d') };
+	}
+	else
+	{
+		croak "Invalid key '" . $group_key . "' passed to group.";
+	}
 
 	my (%groups, @groups);
 	
