@@ -135,7 +135,7 @@ sub publish {
 				}
 
 				my $location = $formatter->format({args => $f_args});
-				$list_group->{url} = inflate_list_url($tag_url_id, $cfg->domain, $cfg->http_dir, $list->location),
+				$list_group->{url} = $miril->util->inflate_list_url($tag_url_id, $list->location);
 					
 				my $output = $miril->tmpl->load(
 					name => $list->template,
@@ -169,7 +169,7 @@ sub publish {
 					posts => \@current_posts,
 					pager => $current_pager,
 					title => $list->title,
-					url   => _inflate_list_url(undef, $cfg->domain, $cfg->http_dir, $location),
+					url   => $miril->util->inflate_list_url(undef, $cfg->domain, $cfg->http_dir, $location),
 				);
 
 				my $output = $miril->tmpl->load(
@@ -191,7 +191,7 @@ sub publish {
 					list => Miril::List->new( 
 						posts => \@posts,
 						title => $list->title,
-						url   => _inflate_list_url($list->id, $cfg->domain, $cfg->http_dir, $list->location),
+						url   => $miril->util->inflate_list_url($list->id, $cfg->domain, $cfg->http_dir, $list->location),
 					),
 					cfg => $cfg,
 			});
@@ -214,16 +214,6 @@ sub _file_write {
 			message  => 'Could not save information',
 		);
 	}
-}
-
-sub _inflate_list_url
-{
-	my ($id, $domain, $http_dir, $location) = @_;
-	return Miril::URL->new(
-		abs => 'http://' . $domain . $http_dir . $location,
-		rel => $http_dir . $location,
-		tag => $id ? 'tag:' . $domain . ',/list/' . $id : undef,
-	);
 }
 
 1;

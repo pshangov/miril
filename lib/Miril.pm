@@ -12,7 +12,7 @@ use Ref::List::AsObject;
 use Miril::Warning;
 use Miril::Exception;
 use Miril::Config;
-use Text::Sprintf::Named;
+use Miril::Util;
 
 our $VERSION = '0.007';
 
@@ -23,6 +23,7 @@ use Object::Tiny qw(
 	tmpl
 	cfg
 	filter
+	util
 );
 
 
@@ -86,6 +87,9 @@ sub new {
 			message  => 'Could not load filter',
 		);
 	};
+
+	# load utils
+	$self->{util} = Miril::Util->new($cfg);
 	
 	return $self;
 }

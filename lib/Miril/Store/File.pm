@@ -3,8 +3,8 @@ package Miril::Store::File;
 use strict;
 use warnings;
 
+use autodie;
 use Data::AsObject qw(dao);
-use Hash::AsObject;
 use File::Slurp;
 use XML::TreePP;
 use Try::Tiny qw(try catch);
@@ -27,54 +27,71 @@ use Object::Tiny qw(miril tpp tree);
 
 ### CONSTRUCTOR ###
 
-sub new {
-	my $self = bless {}, shift;
-	$self->{miril} = shift;
+sub new 
+{
+	my ($class, $miril) = @_;
+
+	my $self = bless {}, $class;
+	$self->{miril} = $miril;
 	return $self;
 }
 
 ### PUBLIC METHODS ###
 
-sub get_post {
-	my $self  = shift;
-	my $id = shift;
+sub get_post 
+{
+	my ($self, $id) = @_;
 
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
+	my $util = $miril->util;
 
-	my $filename = $self->_get_in_path($id);
-	my $post_file = File::Slurp::read_file($filename) 
-		or $miril->process_error("Could not read data file", $!, 'fatal');
+	my $filename = $util->inflate_in_path($id);
+	my $post_file;
+	
+	try
+	{
+		$post_file = File::Slurp::read_file($filename);
+	}
+	catch
+	{
+		Miril::Exception->throw(
+			message => "Could not read data file", 
+			errorvar => $_,
+		);
+	};
 
 	my ($meta, $body) = split( /\n\n/, $post_file, 2);
 	my ($teaser)      = split( '<!-- END TEASER -->', $body, 2);
     
 	my %meta = _parse_meta($meta);
 
-	my $modified = $self->_get_modified($filename);
-	my $type = first { $_->id eq $meta{'type'} } list $cfg->types;
+	my $modified = $util->inflate_date_modified($filename);
+	my $type = $util->inflate_type($meta{'type'});
 
 	return Miril::Store::File::Post->new(
 		id        => $id,
 		title     => $meta{'title'},
 		body      => $body,
 		teaser    => $teaser,
-		out_path  => $self->_get_out_path($id, $type),
+		out_path  => $util->inflate_out_path($id, $type),
 		in_path   => $filename,
 		modified  => Miril::DateTime->new($modified),
 		published => $meta{'published'} ? Miril::DateTime->new(iso2time($meta{'published'})) : undef,
 		type      => $type,
-		url       => $self->_get_url($id, $type),
-		author    => $self->_get_author($meta{'author'}),
-		topics    => $self->_get_topics( list $meta{'topics'} ),
+		url       => $util->inflate_post_url($id, $type),
+		author    => $util->inflate_author($meta{'author'}),
+		topics    => $util->inflate_topics( list $meta{'topics'} ),
 	);
 }
 
-sub get_posts {
-	my $self = shift;
-	my %params = @_;
+sub get_posts 
+{
+	my ($self, %params) = @_;
+
 	my $miril =  $self->miril;
 	my $cfg = $miril->cfg;
+	my $util = $miril->util;
 
 	# read and parse cache file
 	my $tpp = XML::TreePP->new();
@@ -85,29 +102,30 @@ sub get_posts {
 	my ($tree, @posts, $dirty);
 	
 	if (-e $cfg->cache_data) {
-		try { 
+		try 
+		{ 
 			$tree = $tpp->parsefile( $cfg->cache_data );
 		} catch {
 			Miril::Exception->throw(
 				message => "Could not read cache file", 
-				erorvar => $!,
+				erorvar => $_,
 			);
 		};
 		@posts = map {
-			my $type = $self->_get_type($_->type);
+			my $type = $util->inflate_type($_->type);
 			my @topics = list $_->topics->topic if $_->topics;
 			
 			Miril::Store::File::Post->new(
 				id        => $_->id,
 				title     => $_->title,
-				in_path   => $self->_get_in_path($_->id),
-				out_path  => $self->_get_out_path($_->id, $type),
+				in_path   => $util->inflate_in_path($_->id),
+				out_path  => $util->inflate_out_path($_->id, $type),
 				modified  => Miril::DateTime->new($_->modified),
 				published => Miril::DateTime->new($_->published),
 				type      => $type,
-				author    => $self->_get_author($_->author),
-				topics    => $self->_get_topics(@topics),
-				url       => $self->_get_url($_->id, $type),
+				author    => $util->inflate_author($_->author),
+				topics    => $util->inflate_topics(@topics),
+				url       => $util->inflate_post_url($_->id, $type),
 			);
 		} dao list $tree->{xml}{post};
 	} else {
@@ -121,7 +139,7 @@ sub get_posts {
 	foreach my $post (@posts) {
 		if ( -e $post->in_path ) {
 			push @post_ids, $post->id;
-			my $modified = $self->_get_modified($post->in_path);
+			my $modified = $util->inflate_date_modified($post->in_path);
 			if ( $modified > $post->modified->epoch ) {
 				$post = $self->get_post($post->id);
 				$dirty++;
@@ -158,7 +176,7 @@ sub get_posts {
 	# update cache file
 	if ($dirty) {
 		my $new_tree = $tree;
-		$new_tree->{xml}->{post} = $self->_generate_cache_hash(@posts);
+		$new_tree->{xml}{post} = _generate_cache_hash(@posts);
 
 		try { 
 			$self->tpp->writefile($cfg->cache_data, $new_tree); 
@@ -193,13 +211,14 @@ sub get_posts {
 	}
 }
 
-sub save {
-	my $self = shift;
+sub save 
+{
+	my ($self, %post) = @_;
 
-	my $post = dao {@_};
-
+	my $post = dao \%post;
 	my $miril = $self->miril;
 	my $cfg = $miril->cfg;
+	my $util = $miril->util;
 	
 	my @posts = $self->get_posts;
 	
@@ -211,9 +230,9 @@ sub save {
 				$_->{id}        = $post->id;
 				$_->{author}    = $post->author;
 				$_->{title}     = $post->title;
-				$_->{type}      = $self->_get_type($post->type);
-				$_->{topics}    = $self->_get_topics(list $post->topics);
-				$_->{published} = _set_publish_date($_->{published}, $post->status);
+				$_->{type}      = $util->inflate_type($post->type);
+				$_->{topics}    = $util->inflate_topics(list $post->topics);
+				$_->{published} = $util->inflate_date_published($_->published->epoch, $post->status);
 				$_->{status}    = $post->status;
 				$_->{body}      = $post->body;
 				last;
@@ -238,9 +257,9 @@ sub save {
 			id        => $post->id,
 			author    => $post->author,
 			title     => $post->title,
-			type      => $self->_get_type($post->type),
-			topics    => $self->_get_topics($post->topics),
-			published => _set_publish_date(undef, $post->status),
+			type      => $util->inflate_type($post->type),
+			topics    => $util->inflate_topics($post->topics),
+			published => $util->inflate_date_published(undef, $post->status),
 			status    => $post->status,
 			body      => $post->body,
 		);
@@ -248,7 +267,7 @@ sub save {
 
 	# update the cache file
 	my $new_tree;
-	$new_tree->{xml}{post} = $self->_generate_cache_hash(@posts);
+	$new_tree->{xml}{post} = _generate_cache_hash(@posts);
 	$self->{tree} = $new_tree;
 
 	try
@@ -291,8 +310,7 @@ sub save {
 
 sub delete
 {
-	my $self = shift;
-	my $id = shift;
+	my ($self, $id) = @_;
 
 	try
 	{
@@ -307,8 +325,9 @@ sub delete
 	};
 }
 
-sub get_latest {
-	my $self = shift;
+sub get_latest 
+{
+	my ($self) = @_;
 	
 	my $cfg = $self->miril->cfg;
 
@@ -317,34 +336,45 @@ sub get_latest {
 	my $tree;
 	my @posts;
 	
-	try { 
+	try 
+	{ 
 		$tree = $tpp->parsefile( $cfg->latest_data );
 		@posts = dao list $tree->{xml}{post};
-	} catch {
-		$self->process_error($_);
+	} 
+	catch 
+	{
+		Miril::Exception->throw(
+			message => "Could not get list of latest files",
+			errorvar => $),
+		);
 	};
 	
 
 	return \@posts;
 }
 
-sub add_to_latest {
-	my $self = shift;
+sub add_to_latest 
+{
+	my ($self, $id, $title) = @_;
+
 	my $cfg = $self->miril->cfg;
-
-	my ($id, $title) = @_;
-
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['post'] );
 	my $tree;
 	my @posts;
 	
 	if ( -e $cfg->latest_data ) {
-		try { 
+		try 
+		{ 
 			$tree = $tpp->parsefile( $cfg->latest_data );
 			@posts = list $tree->{xml}{post};
-		} catch {
-			$self->process_error($_);
+		} 
+		catch 
+		{
+			Miril::Exception->throw(
+				message => "Could not add to list of latest files",
+				errorvar => $),
+			);
 		};
 	}
 
@@ -354,17 +384,25 @@ sub add_to_latest {
 
 	$tree->{xml}{post} = \@posts;
 	
-	try { 
+	try 
+	{ 
 		$tpp->writefile( $cfg->latest_data, $tree );
-	} catch {
-		$self->process_error("Failed to include in latest used", $_);
-	};
+	} 
+	catch
+	{
+			Miril::Exception->throw(
+				message => "Could not write list of latest files",
+				errorvar => $),
+			);
+		};
 }
 
-### PRIVATE METHODS ###
+### PRIVATE FUNCTIONS ###
 
-sub _parse_meta {
-	my $meta = shift;
+sub _parse_meta 
+{
+	my ($meta) = @_;
+
 	my @lines = split /\n/, $meta;
 	my %meta;
 	
@@ -387,76 +425,9 @@ sub _parse_meta {
 	return %meta;
 }
 
-sub _set_publish_date {
-	my ($old_date, $new_status) = @_;
-	return undef unless $new_status eq 'published';
-
-	return $old_date 
-		? Miril::DateTime->new(iso2time($old_date)) 
-		: Miril::DateTime->new(time);
-}
-
-sub _get_in_path {
-	my $self = shift;
-	my $id = shift;
-	my $cfg = $self->miril->cfg;
-	return catfile($cfg->data_path, $id);
-}
-
-sub _get_out_path {
-	my $self = shift;
-	my ($name, $type) = @_;
-	my $cfg = $self->miril->cfg;
-	my $path = catfile($cfg->output_path, $type->location, $name . ".html");
-	return $path;
-}
-
-sub _get_url 
-{
-	my $self = shift;
-	my ($name, $type) = @_;
-	my $cfg = $self->miril->cfg;
-	my $url = Miril::URL->new(
-		abs => 'http://' . $cfg->domain . $cfg->http_dir . $type->location . $name . '.html',
-		rel => $cfg->http_dir . $type->location . $name . '.html',
-		tag => 'tag:' . $cfg->domain . ',/' . $name,
-	);
-	return $url;
-}
-
-sub _get_type
-{
-	my $self = shift;
-	my $type_id = shift;
-	return first { $_->id eq $type_id } list $self->miril->cfg->types;
-}
-
-sub _get_author
-{
-	my $self = shift;
-	my $author = shift;
-	return $author ? $author : undef;
-}
-
-sub _get_topics
-{
-	my $self = shift;
-	my $cfg = $self->miril->cfg;
-	my %topics_lookup = map {$_ => 1} @_;
-	my @topic_objects = grep { $topics_lookup{$_->{id}} } list $cfg->topics;
-	return \@topic_objects;
-}
-
-sub _get_modified {
-	my $self = shift;
-	my $filename = shift;
-	return time - ( (-M $filename) * 86400 );
-}
-
 sub _generate_cache_hash
 {
-	my $self = shift;
-	my @posts = @_;
+	my (@posts) = @_;
 
 	my @cache_posts = map {{
 		id        => $_->id,
