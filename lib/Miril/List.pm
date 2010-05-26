@@ -5,6 +5,7 @@ use warnings;
 use Carp qw(croak);
 use Ref::List::AsObject qw(list);
 use List::Util qw(first);
+use Miril::DateTime;
 
 ### ACCESSORS ###
 
@@ -12,6 +13,8 @@ use Object::Tiny qw(
 	posts
 	key
 	count
+	title
+	url
 );
 
 ### CONSTRUCTOR ###
@@ -27,6 +30,8 @@ sub new {
 	$self->{count} = list $params{posts};
 	$self->{key}   = $params{key};
 	$self->{pager} = $params{pager};
+	$self->{title} = $params{title};
+	$self->{url}   = $params{url};
 
 	return $self;
 }
@@ -100,17 +105,23 @@ sub group
 	push @groups, Miril::List->new(
 		posts => $groups{$_},
 		key   => $obj_cb->($groups{$_}->[-1]),
+		title => $self->title,
 	) for sort keys %groups;
 
 	return @groups;
 }
 
-sub by_id
+sub post_by_id
 {
 	my $self = shift;
 	my $id = shift;
 
 	return first { $_ eq $id } list $self->posts;
+}
+
+sub timestamp
+{
+	return Miril::DateTime->new(time());
 }
 
 1;

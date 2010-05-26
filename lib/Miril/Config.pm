@@ -64,6 +64,7 @@ sub new {
 			match    => $_->{match},
 			template => $_->{template},
 			location => $_->{location},
+			title    => $_->{title},
 		}
 	} list $cfg->{lists}{list};
 

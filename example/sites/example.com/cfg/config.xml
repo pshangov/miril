@@ -1,12 +1,13 @@
 <xml>
 
+	<name>example.com website</name>
 	<output_path>example/www</output_path>
 	<files_path>example/www/files</files_path>
 
 	<!-- URL CONSTRUCTION -->
+	<domain>www.example.com</domain>
 	<http_dir>/</http_dir>
 	<files_http_dir>/files/</files_http_dir>
-	<domain>http://www.example.com</domain>
 
 	<!-- MAKE SURE YOU CHANGE THIS! -->
 	<secret>Some secret line</secret>
@@ -51,6 +52,7 @@
 		<!-- THE NEWS PAGE -->
 		<list>
 			<id>news</id>
+			<title>News</title>
 			<template>news.tmpl</template>
 			<location>news.html</location>
 			<match>
@@ -62,6 +64,7 @@
 		<!-- THE NEWS ARCHIVE -->
 		<list>
 			<id>news_archive</id>
+			<title>News Archive</title>
 			<template>archive.tmpl</template>
 			<location>archive.html</location>
 			<match>
@@ -72,6 +75,7 @@
 		<!-- THE ATOM FEED WITH RECENT NEWS -->
 		<list>
 			<id>feed</id>
+			<title>Sample Atom Feed</title>
 			<template>atom.tmpl</template>
 			<location>atom.xml</location>
 			<match>

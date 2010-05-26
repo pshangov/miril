@@ -417,8 +417,9 @@ sub _get_url
 	my ($name, $type) = @_;
 	my $cfg = $self->miril->cfg;
 	my $url = Miril::URL->new(
-		abs => $cfg->domain . $cfg->http_dir . $type->location . $name . ".html",
-		rel => $cfg->http_dir . $type->location . $name . ".html",
+		abs => 'http://' . $cfg->domain . $cfg->http_dir . $type->location . $name . '.html',
+		rel => $cfg->http_dir . $type->location . $name . '.html',
+		tag => 'tag:' . $cfg->domain . ',/' . $name,
 	);
 	return $url;
 }

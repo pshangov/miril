@@ -15,6 +15,7 @@ use Miril::List;
 use Ref::List::AsObject qw(list);
 use File::Spec::Functions qw(catfile);
 use Text::Sprintf::Named;
+use Miril::URL;
 
 our $VERSION = '0.007';
 
@@ -97,27 +98,45 @@ sub publish {
 
 		if ($list->group) {
 		
-			my $list_main = Miril::List->new( posts => \@posts );
+			my $list_main = Miril::List->new( 
+				posts => \@posts, 
+				title => $list->title,
+			);
 			
 			foreach my $list_group ($list_main->group($list->group))
 			{
 				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
 
 				my $group_key = $list_group->group;
-				my $f_args;
+				my ($f_args, $tag_url_id);
 
-				$f_args = { topic  => $list->key->id } if $group_key eq 'topic';
-				$f_args = { type   => $list->key->id } if $group_key eq 'type';
-				$f_args = { author => $list->key     } if $group_key eq 'author';
-		
-				$f_args = { 
-					year  => $list->key->strftime('%y'), 
-					month => $list->key->strftime('%m'), 
-					date  => $list->key->strftime('%d'), 
-				} unless $group_key;
+				if ($group_key eq 'topic')
+				{
+					$f_args = { topic => $list->key->id };
+					$tag_url_id = $list->id . '/' . $list->key->id;
+				}
+				elsif ($group_key eq 'type')
+				{
+					$f_args = { type => $list->key->id };
+					$tag_url_id = $list->id . '/' . $list->key->id;
+				}
+				elsif ($group_key eq 'author')
+				{
+					$f_args = { author => $list->key};
+					$tag_url_id = $list->id . '/' . $list->key;
+				}
+				else
+				{	
+					$f_args = { 
+						year  => $list->key->strftime('%y'), 
+						month => $list->key->strftime('%m'), 
+						date  => $list->key->strftime('%d'), 
+					};
+				}
 
 				my $location = $formatter->format({args => $f_args});
-	
+				$list_group->{url} = inflate_list_url($tag_url_id, $cfg->domain, $cfg->http_dir, $list->location),
+					
 				my $output = $miril->tmpl->load(
 					name => $list->template,
 					params => {
@@ -142,14 +161,16 @@ sub publish {
 				$current_pager->entries_per_page($list->page);
 				$current_pager->current_page($page_no);
 				my @current_posts = $pager->splice(\@posts);
-	
-				my $list_page = Miril::List->new(
-					posts => \@current_posts,
-					pager => $current_pager,
-				);
 					
 				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
 				my $location = $formatter->format({args => { page => $page_no }});
+					
+				my $list_page = Miril::List->new(
+					posts => \@current_posts,
+					pager => $current_pager,
+					title => $list->title,
+					url   => _inflate_list_url(undef, $cfg->domain, $cfg->http_dir, $location),
+				);
 
 				my $output = $miril->tmpl->load(
 					name => $list->template,
@@ -167,7 +188,11 @@ sub publish {
 			my $output = $miril->tmpl->load(
 				name => $list->template,
 				params => {
-					list => Miril::List->new( posts => \@posts ),
+					list => Miril::List->new( 
+						posts => \@posts,
+						title => $list->title,
+						url   => _inflate_list_url($list->id, $cfg->domain, $cfg->http_dir, $list->location),
+					),
 					cfg => $cfg,
 			});
 		
@@ -189,6 +214,16 @@ sub _file_write {
 			message  => 'Could not save information',
 		);
 	}
+}
+
+sub _inflate_list_url
+{
+	my ($id, $domain, $http_dir, $location) = @_;
+	return Miril::URL->new(
+		abs => 'http://' . $domain . $http_dir . $location,
+		rel => $http_dir . $location,
+		tag => $id ? 'tag:' . $domain . ',/list/' . $id : undef,
+	);
 }
 
 1;

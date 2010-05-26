@@ -484,8 +484,7 @@ sub posts_publish {
 
 ### PRIVATE METHODS ###
 
-# ---- form generation utilities 
-# this stuff is ugly, should be replaced with HTML::FillInForm::Lite
+# form generation utilities: this stuff is ugly, should be replaced with HTML::FillInForm::Lite
 
 sub _prepare_authors {
 	my ($self, $selected) = @_;
@@ -544,8 +543,7 @@ sub _prepare_types {
 	return \@types;
 }
 
-# --- pagination 
-# needs to be abstracted so that different UI's (e.g. Mojo) could use it 
+# pagination: needs to be abstracted so that different UI's (e.g. Mojo) could use it 
 
 sub _paginate {
 	my $self = shift;

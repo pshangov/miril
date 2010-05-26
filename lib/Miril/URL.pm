@@ -6,6 +6,7 @@ use warnings;
 use Object::Tiny qw(
 	abs
 	rel
+	tag
 );
 
 sub new {

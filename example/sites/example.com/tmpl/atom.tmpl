@@ -2,12 +2,10 @@
  
 <feed xmlns="http://www.w3.org/2005/Atom">
  
-	<title>Sample Miril Site</title>
-	<subtitle>... your slogan or tag line here</subtitle>
-	<link href="http://www.example.com/feed.xml" rel="self" />
-	<link href="http://www.example.com/feed.xml" />
-	<id>urn:uuid:60a76c80-d399-11d9-b91C-0003939e0af6</id>
-	<updated>2003-12-13T18:30:02Z</updated>
+	<title><TMPL_VAR NAME="list.title"></title>
+	<link href='<TMPL_VAR NAME="list.url.abs">' rel="self" />
+	<id><TMPL_VAR NAME="list.url.tag"></id>
+	<updated><TMPL_VAR NAME="list.timestamp.iso"></updated>
 	<author>
 		<name>Your Name</name>
 	</author>
@@ -16,7 +14,7 @@
 	<entry>
 		<title><TMPL_VAR NAME="this.title"></title>
 		<link href='<TMPL_VAR NAME="this.url.abs">' />
-		<id><TMPL_VAR NAME="this.id"></id>
+		<id><TMPL_VAR NAME="this.url.tag"></id>
 		<updated><TMPL_VAR NAME="this.published.iso"></updated>
 		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><TMPL_VAR NAME="this.teaser"></div></summary>
 		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><TMPL_VAR NAME="this.body"></div></content>

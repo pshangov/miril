@@ -17,6 +17,7 @@ use Object::Tiny qw(
 	topics
 	type
 	out_path
+	tag_url
 );
 
 
