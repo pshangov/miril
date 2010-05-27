@@ -49,8 +49,9 @@ sub publish {
 		my $output = $miril->tmpl->load(
 			name => $post->type->template, 
 			params => {
-				post => $post,
-				cfg => $cfg,
+				post  => $post,
+				cfg   => $cfg,
+				title => $post->title,
 		});
 
 		_file_write($post->out_path, $output);
@@ -140,8 +141,9 @@ sub publish {
 				my $output = $miril->tmpl->load(
 					name => $list->template,
 					params => {
-						list => $list_group,
-						cfg => $cfg,
+						list  => $list_group,
+						cfg   => $cfg,
+						title => $list_group->title,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -175,8 +177,9 @@ sub publish {
 				my $output = $miril->tmpl->load(
 					name => $list->template,
 					params => {
-						list => $list_page,
-						cfg => $cfg,
+						list  => $list_page,
+						cfg   => $cfg,
+						title => $list_page->title,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -194,6 +197,7 @@ sub publish {
 						url   => $miril->util->inflate_list_url($list->id, $cfg->domain, $cfg->http_dir, $list->location),
 					),
 					cfg => $cfg,
+					title => $list->title,
 			});
 		
 			my $new_filename = catfile($cfg->output_path, $list->location);

@@ -61,17 +61,6 @@
 			</match>
 		</list>
 
-		<!-- THE NEWS ARCHIVE -->
-		<list>
-			<id>news_archive</id>
-			<title>News Archive</title>
-			<template>archive.tmpl</template>
-			<location>archive.html</location>
-			<match>
-				<type>news</type>
-			</match>
-		</list>
-
 		<!-- THE ATOM FEED WITH RECENT NEWS -->
 		<list>
 			<id>feed</id>
