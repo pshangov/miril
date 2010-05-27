@@ -8,11 +8,12 @@ use Miril::CGI::Application;
 use CGI::Application::Emulate::PSGI;
 
 sub app {
+	my ($self, $miril_dir, $site) = @_;
 	return CGI::Application::Emulate::PSGI->handler( sub {
 		my $miril = Miril::CGI::Application->new(
 			PARAMS => { 
-				miril_dir => 'example',
-				site      => 'example.com',
+				miril_dir => $miril_dir,
+				site      => $site,
 			},
 		);
 		$miril->run;
