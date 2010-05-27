@@ -2,6 +2,8 @@ package Miril::List;
 
 use strict;
 use warnings;
+use autodie;
+
 use Carp qw(croak);
 use Ref::List::AsObject qw(list);
 use List::Util qw(first);

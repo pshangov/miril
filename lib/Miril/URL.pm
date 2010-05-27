@@ -2,6 +2,7 @@ package Miril::URL;
 
 use strict;
 use warnings;
+use autodie;
 
 use Object::Tiny qw(
 	abs

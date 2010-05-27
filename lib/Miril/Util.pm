@@ -2,6 +2,7 @@ package Miril::Util;
 
 use strict;
 use warnings;
+use autodie;
 
 use File::Spec::Functions        qw(catfile);
 use Ref::List::AsObject          qw(list);

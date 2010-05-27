@@ -2,8 +2,8 @@ package Miril::Store::File;
 
 use strict;
 use warnings;
-
 use autodie;
+
 use Data::AsObject qw(dao);
 use File::Slurp;
 use XML::TreePP;

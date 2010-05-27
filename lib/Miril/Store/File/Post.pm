@@ -2,8 +2,8 @@ package Miril::Store::File::Post;
 
 use strict;
 use warnings;
-
 use autodie;
+
 use Try::Tiny;
 use Miril::Exception;
 

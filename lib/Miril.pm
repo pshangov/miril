@@ -2,8 +2,8 @@ package Miril;
 
 use warnings;
 use strict;
-
 use autodie;
+
 use Try::Tiny;
 use Exception::Class;
 use Carp;

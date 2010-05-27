@@ -2,6 +2,7 @@ package Miril::DateTime::ISO::Simple;
 
 use strict;
 use warnings;
+use autodie;
 
 use Time::Local qw(timelocal);
 use POSIX qw(strftime);

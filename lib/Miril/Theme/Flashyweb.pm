@@ -2,6 +2,7 @@ package Miril::Theme::Flashyweb;
 
 use strict;
 use warnings;
+use autodie;
 
 use Miril::Theme::Flashyweb::Stylesheet;
 

@@ -2,6 +2,7 @@ package Miril::Template::Abstract;
 
 use strict;
 use warnings;
+use autodie;
 
 sub new {
 	my $class = shift;

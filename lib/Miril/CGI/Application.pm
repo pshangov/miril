@@ -2,8 +2,8 @@ package Miril::CGI::Application;
 
 use strict;
 use warnings;
-
 use autodie;
+
 use Try::Tiny;
 use Exception::Class;
 

@@ -2,6 +2,7 @@ package Miril::App::Cmd::Command::server;
 
 use strict;
 use warnings;
+use autodie;
 
 use Miril::App::Cmd -command;
 

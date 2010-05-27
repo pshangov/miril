@@ -2,6 +2,7 @@ package Miril::Theme::Flashyweb::Stylesheet;
 
 use strict;
 use warnings;
+use autodie;
 
 sub get {
 

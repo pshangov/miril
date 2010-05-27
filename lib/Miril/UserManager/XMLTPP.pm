@@ -2,6 +2,7 @@ package Miril::UserManager::XMLTPP;
 
 use strict;
 use warnings;
+use autodie;
 
 use XML::TreePP;
 use Digest::MD5;
@@ -9,6 +10,7 @@ use List::Util qw(first);
 use Data::AsObject qw(dao);
 use Ref::List::AsObject qw(list);
 use Try::Tiny qw(try catch);
+use Miril::Exception;
 
 sub new { 
 	my $class = shift;
@@ -25,10 +27,16 @@ sub new {
 	$tpp->set( force_array => ['user'] );
     my $tree;
 
-	try {
+	try 
+	{
 		$tree = $tpp->parsefile( $cfg->users_data );
-	} catch {
-		$miril->process_error("Could not parse users file", $_, 'fatal');
+	} 
+	catch 
+	{
+		Miril::Exception->throw(
+			message  => "Could not parse users file", 
+			errorvar => $_,
+		);
 	};
 
 	my @users = dao list $tree->{xml}{user};
@@ -106,10 +114,16 @@ sub set_user {
 	my $new_tree = $self->tree;
 	$new_tree->{xml}->{user} = \@users;
 	$self->{tree} = $new_tree;
-	try {
+	try 
+	{
 		$self->tpp->writefile($self->xml_file, $new_tree);
-	} catch {
-		$miril->process_error("Could not update user info", $_);
+	} 
+	catch 
+	{
+		Miril::Exception->throw(
+			message  => "Could not update user info", 
+			errorvar => $_,
+		);
 	};
 }
 
@@ -134,10 +148,16 @@ sub delete_user {
 	my $new_tree = $self->tree;
 	$new_tree->{xml}{user} = \@users;
 	$self->{tree} = $new_tree;
-	try {
+	try 
+	{
 		$self->tpp->writefile($self->xml_file, $new_tree);
-	} catch {
-		$miril->process_error("Could not delete user", $_);
+	} 
+	catch 
+	{
+		Miril::Exception->throw(
+			message  => "Could not delete user", 
+			errorvar => $_,
+		);
 	};
 }
 

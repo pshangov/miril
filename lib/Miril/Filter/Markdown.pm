@@ -2,6 +2,7 @@ package Miril::Filter::Markdown;
 
 use strict;
 use warnings;
+use autodie;
 
 use Text::MultiMarkdown;
 

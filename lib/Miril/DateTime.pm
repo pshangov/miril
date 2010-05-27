@@ -2,6 +2,7 @@ package Miril::DateTime;
 
 use strict;
 use warnings;
+use autodie;
 
 use overload '""' => \&epoch;
 

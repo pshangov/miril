@@ -2,6 +2,7 @@ package Miril::Post;
 
 use strict;
 use warnings;
+use autodie;
 
 ### ACCESSORS ###
 

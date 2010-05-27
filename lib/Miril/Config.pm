@@ -2,6 +2,7 @@ package Miril::Config;
 
 use strict;
 use warnings;
+use autodie;
 
 use XML::TreePP;
 use Data::AsObject qw(dao);

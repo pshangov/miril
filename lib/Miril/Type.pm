@@ -2,6 +2,7 @@ package Miril::Type;
 
 use strict;
 use warnings;
+use autodie;
 
 use Object::Tiny qw(
 	id

@@ -2,6 +2,7 @@ package Miril::View;
 
 use strict;
 use warnings;
+use autodie;
 
 use HTML::Template::Pluggable;
 use HTML::Template::Plugin::Dot;

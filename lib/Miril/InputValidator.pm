@@ -2,6 +2,7 @@ package Miril::InputValidator;
 
 use strict;
 use warnings;
+use autodie;
 
 use List::Util qw(first);
 use Data::AsObject qw(dao);

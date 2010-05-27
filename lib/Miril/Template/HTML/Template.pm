@@ -2,6 +2,7 @@ package Miril::Template::HTML::Template;
 
 use strict;
 use warnings;
+use autodie;
 
 use base 'Miril::Template::Abstract';
 

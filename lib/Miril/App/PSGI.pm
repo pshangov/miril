@@ -1,5 +1,9 @@
 package Miril::App::PSGI;
 
+use strict;
+use warnings;
+use autodie;
+
 use Miril::CGI::Application;
 use CGI::Application::Emulate::PSGI;
 
