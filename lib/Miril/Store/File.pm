@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use autodie;
 
-use Data::AsObject qw(dao);
+use Data::AsObject dao => { mode => 'silent' };
 use File::Slurp;
 use XML::TreePP;
 use Try::Tiny qw(try catch);
@@ -335,6 +335,8 @@ sub get_latest
 	$tpp->set( force_array => ['post'] );
 	my $tree;
 	my @posts;
+
+	return [] unless -e $cfg->latest_data;
 	
 	try 
 	{ 
@@ -345,7 +347,7 @@ sub get_latest
 	{
 		Miril::Exception->throw(
 			message => "Could not get list of latest files",
-			errorvar => $),
+			errorvar => $_,
 		);
 	};
 	

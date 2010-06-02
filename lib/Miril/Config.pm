@@ -71,7 +71,7 @@ sub new {
 
 	### SIMPLIFY THE HASHREF ###
 	
-	$cfg->{authors} = $cfg->{authors}{author};
+	$cfg->{authors} = $cfg->{authors}{author} ? $cfg->{authors}{author} : [];
 	$cfg->{topics}  = \@topics;
 	$cfg->{types}   = \@types;
 	$cfg->{lists}   = \@lists;
