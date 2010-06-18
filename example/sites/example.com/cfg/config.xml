@@ -52,7 +52,7 @@
 		<!-- THE NEWS PAGE -->
 		<list>
 			<id>news</id>
-			<title>News</title>
+			<name>News</name>
 			<template>news.tmpl</template>
 			<location>news.html</location>
 			<match>
@@ -64,7 +64,7 @@
 		<!-- THE ATOM FEED WITH RECENT NEWS -->
 		<list>
 			<id>feed</id>
-			<title>Sample Atom Feed</title>
+			<name>Sample Atom Feed</name>
 			<template>atom.tmpl</template>
 			<location>atom.xml</location>
 			<match>

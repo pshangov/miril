@@ -96,12 +96,11 @@ sub publish {
 			@posts = $miril->store->get_posts(%params);
 		}
 
-
 		if ($list->group) {
 		
 			my $list_main = Miril::List->new( 
 				posts => \@posts, 
-				title => $list->title,
+				title => $list->name,
 			);
 			
 			foreach my $list_group ($list_main->group($list->group))
@@ -143,7 +142,7 @@ sub publish {
 					params => {
 						list  => $list_group,
 						cfg   => $cfg,
-						title => $list_group->title,
+						title => $list_group->name,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -170,7 +169,7 @@ sub publish {
 				my $list_page = Miril::List->new(
 					posts => \@current_posts,
 					pager => $current_pager,
-					title => $list->title,
+					title => $list->name,
 					url   => $miril->util->inflate_list_url(undef, $cfg->domain, $cfg->http_dir, $location),
 				);
 
@@ -179,7 +178,7 @@ sub publish {
 					params => {
 						list  => $list_page,
 						cfg   => $cfg,
-						title => $list_page->title,
+						title => $list_page->name,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -193,11 +192,11 @@ sub publish {
 				params => {
 					list => Miril::List->new( 
 						posts => \@posts,
-						title => $list->title,
+						title => $list->name,
 						url   => $miril->util->inflate_list_url($list->id, $cfg->domain, $cfg->http_dir, $list->location),
 					),
 					cfg => $cfg,
-					title => $list->title,
+					title => $list->name,
 			});
 		
 			my $new_filename = catfile($cfg->output_path, $list->location);

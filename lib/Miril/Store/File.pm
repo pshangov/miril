@@ -191,7 +191,7 @@ sub get_posts
 	# filter posts
 	if (%params)
 	{
-		return gather 
+		@posts = gather 
 		{
 			for my $cur_post (@posts)
 			{
@@ -205,10 +205,8 @@ sub get_posts
 			}
 		};
 	} 
-	else
-	{
-		return @posts;
-	}
+	
+	return sort { $a->published->epoch < $b->published->epoch } @posts;
 }
 
 sub save 
