@@ -24,6 +24,7 @@ sub load {
 			path              => $self->{tmpl_path},
 			die_on_bad_params => 0,
 			global_vars       => 1,
+			case_sensitive    => 1,
 		);
 	} 
 	catch 

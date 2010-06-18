@@ -62,7 +62,7 @@ sub get_post
 	};
 
 	my ($meta, $source) = split( /\n\n/, $post_file, 2);
-	my ($teaser)      = split( '<!-- END TEASER -->', $source, 2);
+	my ($teaser)      = split( '<!-- BREAK -->', $source, 2);
     
 	my %meta = _parse_meta($meta);
 
