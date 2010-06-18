@@ -11,6 +11,7 @@ use Object::Tiny qw(
 	title
 	body
 	teaser
+	source
 	url
 	author
 	published

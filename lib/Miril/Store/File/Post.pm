@@ -6,8 +6,8 @@ use autodie;
 
 use Try::Tiny;
 use Miril::Exception;
-
-use File::Spec;
+use Miril::Filter::Markdown;
+use File::Slurp;
 
 use base 'Miril::Post';
 
@@ -43,7 +43,7 @@ sub status {
 
 sub _populate {
 	my $self = shift;
-	
+
 	my $post_file;
 	try {
 		$post_file = File::Slurp::read_file($self->in_path);
@@ -54,11 +54,15 @@ sub _populate {
 		);
 	};
 
-	my ($meta, $body) = split( /\n\n/, $post_file, 2);
-	my ($teaser)      = split( '<!-- END TEASER -->', $body, 2);
+	my ($meta, $source) = split( /\n\n/, $post_file, 2);
+	my ($teaser) = split( '<!-- END TEASER -->', $source, 2);
 
-	$self->{body} = $body;
-	$self->{teaser} = $teaser;
+	# temporary until we introduce multiple filters
+	my $filter = Miril::Filter::Markdown->new;
+
+	$self->{body}   = $filter->to_xhtml($source);
+	$self->{teaser} = $filter->to_xhtml($teaser);
+	$self->{source} = $source;
 }
 
 1;

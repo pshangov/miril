@@ -43,9 +43,6 @@ sub publish {
 	for (@to_create, @to_update) {
 		my $post = $miril->store->get_post($_);
 		
-		$post->{body} = $miril->filter->to_xhtml($post->body);
-		$post->{teaser} = $miril->filter->to_xhtml($post->teaser);
-
 		my $output = $miril->tmpl->load(
 			name => $post->type->template, 
 			params => {

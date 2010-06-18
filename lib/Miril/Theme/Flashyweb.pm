@@ -101,8 +101,8 @@ my $edit = <<EndOfHTML;
 					</p>
 					</TMPL_IF>
 
-					<p class="edit" name="body">Body:<br>
-					<textarea name="body"<TMPL_IF NAME="invalid.body"> class="invalid"</TMPL_IF>><TMPL_VAR NAME="post.body"></textarea></p>
+					<p class="edit" name="source">Body:<br>
+					<textarea name="source"<TMPL_IF NAME="invalid.source"> class="invalid"</TMPL_IF>><TMPL_VAR NAME="post.source"></textarea></p>
 
 					<input type="hidden" name="old_id" value='<TMPL_VAR NAME="post.id">' />
 

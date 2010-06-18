@@ -61,8 +61,8 @@ sub get_post
 		);
 	};
 
-	my ($meta, $body) = split( /\n\n/, $post_file, 2);
-	my ($teaser)      = split( '<!-- END TEASER -->', $body, 2);
+	my ($meta, $source) = split( /\n\n/, $post_file, 2);
+	my ($teaser)      = split( '<!-- END TEASER -->', $source, 2);
     
 	my %meta = _parse_meta($meta);
 
@@ -72,8 +72,9 @@ sub get_post
 	return Miril::Store::File::Post->new(
 		id        => $id,
 		title     => $meta{'title'},
-		body      => $body,
-		teaser    => $teaser,
+		body      => $miril->filter->to_xhtml($source),
+		teaser    => $miril->filter->to_xhtml($teaser),
+		source    => $source,
 		out_path  => $util->inflate_out_path($id, $type),
 		in_path   => $filename,
 		modified  => Miril::DateTime->new($modified),
@@ -232,7 +233,7 @@ sub save
 				$_->{topics}    = $util->inflate_topics(list $post->topics);
 				$_->{published} = $util->inflate_date_published($_->published->epoch, $post->status);
 				$_->{status}    = $post->status;
-				$_->{body}      = $post->body;
+				$_->{source}    = $post->source;
 				last;
 			}
 		}
@@ -259,7 +260,7 @@ sub save
 			topics    => $util->inflate_topics($post->topics),
 			published => $util->inflate_date_published(undef, $post->status),
 			status    => $post->status,
-			body      => $post->body,
+			source    => $post->source,
 		);
 	}
 
@@ -289,7 +290,7 @@ sub save
 	$content .= "Type: " . $post->type->id . "\n";
 	$content .= "Published: " . $post->published->iso . "\n" if $post->published;
 	$content .= "Topics: " . join(" ", map { $_->id } list $post->topics) . "\n\n";
-	$content .= $post->body;
+	$content .= $post->source;
 
 	try
 	{

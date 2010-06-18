@@ -202,7 +202,7 @@ sub posts_edit {
 		$post = dao {
 			id       => $q->param('id'),
 			old_id   => $q->param('old_id'),
-			body     => $q->param('body'),
+			source   => $q->param('source'),
 			title    => $q->param('title'),
 			authors  => $self->_prepare_authors($q->param('author')),
 			topics   => $self->_prepare_topics(%cur_topics),
@@ -244,7 +244,7 @@ sub posts_update {
 		id      => 'text_id required',
 		author  => 'line_text',
 		status  => 'text_id',
-		body    => 'paragraph_text',
+		source  => 'paragraph_text',
 		title   => 'line_text required',
 		type    => 'text_id required',
 		old_id  => 'text_id',
@@ -260,7 +260,7 @@ sub posts_update {
 		'id'     => $q->param('id'),
 		'author' => ( $q->param('author') or undef ),
 		'status' => ( $q->param('status') or undef ),
-		'body'   => ( $q->param('body')   or undef ),
+		'source' => ( $q->param('source') or undef ),
 		'title'  => ( $q->param('title')  or undef ),
 		'type'   => ( $q->param('type')   or undef ),
 		'old_id' => ( $q->param('old_id') or undef ),
@@ -291,7 +291,7 @@ sub posts_view {
 
 	my $post = $self->miril->store->get_post($id);
 	if ($post) {
-		$post->{body} = $self->miril->filter->to_xhtml($post->body);
+		$post->{body} = $post->body;
 
 		my $tmpl = $self->view->load('view');
 		$tmpl->param('post', $post);
