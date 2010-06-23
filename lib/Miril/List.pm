@@ -68,32 +68,32 @@ sub group
 	elsif ($group_key eq 'm_year')
 	{
 		$obj_cb = sub { shift->modified };
-		$key_cb = sub { shift->modified->strftime('%y') };
+		$key_cb = sub { shift->modified->strftime('%Y') };
 	}
 	elsif ($group_key eq 'm_month')
 	{
 		$obj_cb = sub { shift->modified };
-		$key_cb = sub { shift->modified->strftime('%y%m') };
+		$key_cb = sub { shift->modified->strftime('%Y%m') };
 	}
 	elsif ($group_key eq 'm_date')
 	{
 		$obj_cb = sub { shift->modified };
-		$key_cb = sub { shift->modified->strftime('%y%m%d') };
+		$key_cb = sub { shift->modified->strftime('%Y%m%d') };
 	}
 	elsif ($group_key eq 'p_year')
 	{
 		$obj_cb = sub { shift->published };
-		$key_cb = sub { shift->published->strftime('%y') };
+		$key_cb = sub { shift->published->strftime('%Y') };
 	}
 	elsif ($group_key eq 'p_month')
 	{
 		$obj_cb = sub { shift->published };
-		$key_cb = sub { shift->published->strftime('%y%m') };
+		$key_cb = sub { shift->published->strftime('%Y%m') };
 	}
 	elsif ($group_key eq 'p_date')
 	{
 		$obj_cb = sub { shift->published };
-		$key_cb = sub { shift->published->strftime('%y%m%d') };
+		$key_cb = sub { shift->published->strftime('%Y%m%d') };
 	}
 	else
 	{
@@ -102,8 +102,15 @@ sub group
 
 	my (%groups, @groups);
 	
-	$groups{$key_cb->($_)}->[-1] = $_ for list $self->posts;
-	
+	foreach my $post (list $self->posts)
+	{
+		my $group_hash = $groups{$key_cb->($_)};
+		my @group;
+		@group = @{ $groups{$group_hash} } if $groups{$group_hash};
+		push @group, $post;
+		$groups{$group_hash} = \@group;
+	}
+
 	push @groups, Miril::List->new(
 		posts => $groups{$_},
 		key   => $obj_cb->($groups{$_}->[-1]),

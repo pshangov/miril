@@ -125,7 +125,7 @@ sub publish {
 				else
 				{	
 					$f_args = { 
-						year  => $list->key->strftime('%y'), 
+						year  => $list->key->strftime('%Y'), 
 						month => $list->key->strftime('%m'), 
 						date  => $list->key->strftime('%d'), 
 					};
