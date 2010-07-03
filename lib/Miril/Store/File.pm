@@ -207,7 +207,7 @@ sub get_posts
 		};
 	} 
 	
-	return sort { $a->published->epoch < $b->published->epoch } @posts;
+	return sort { $b->published->epoch <=> $a->published->epoch } @posts;
 }
 
 sub save 

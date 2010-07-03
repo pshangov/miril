@@ -104,7 +104,7 @@ sub group
 	
 	foreach my $post (list $self->posts)
 	{
-		my $group_hash = $groups{$key_cb->($_)};
+		my $group_hash = $key_cb->($post);
 		my @group;
 		@group = @{ $groups{$group_hash} } if $groups{$group_hash};
 		push @group, $post;
@@ -132,5 +132,7 @@ sub timestamp
 {
 	return Miril::DateTime->new(time());
 }
+
+
 
 1;

@@ -13,9 +13,10 @@ use Miril::Exception;
 use Miril::Config;
 use Miril::List;
 use Ref::List::AsObject qw(list);
-use File::Spec::Functions qw(catfile);
+use File::Spec::Functions qw(catfile splitpath);
 use Text::Sprintf::Named;
 use Miril::URL;
+use File::Path qw(make_path);
 
 our $VERSION = '0.007';
 
@@ -94,17 +95,17 @@ sub publish {
 		}
 
 		if ($list->group) {
+
 		
 			my $list_main = Miril::List->new( 
 				posts => \@posts, 
 				title => $list->name,
 			);
 			
-			foreach my $list_group ($list_main->group($list->group))
+			my $group_key = $list->group; 
+			foreach my $list_group ($list_main->group($group_key))
 			{
-				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
-
-				my $group_key = $list_group->group;
+				
 				my ($f_args, $tag_url_id);
 
 				if ($group_key eq 'topic')
@@ -125,12 +126,13 @@ sub publish {
 				else
 				{	
 					$f_args = { 
-						year  => $list->key->strftime('%Y'), 
-						month => $list->key->strftime('%m'), 
-						date  => $list->key->strftime('%d'), 
+						year  => $list_group->key->strftime('%Y'), 
+						month => $list_group->key->strftime('%m'), 
+						date  => $list_group->key->strftime('%d'), 
 					};
 				}
 
+				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
 				my $location = $formatter->format({args => $f_args});
 				$list_group->{url} = $miril->util->inflate_list_url($tag_url_id, $list->location);
 					
@@ -139,7 +141,7 @@ sub publish {
 					params => {
 						list  => $list_group,
 						cfg   => $cfg,
-						title => $list_group->name,
+						title => $list_group->title,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -175,7 +177,7 @@ sub publish {
 					params => {
 						list  => $list_page,
 						cfg   => $cfg,
-						title => $list_page->name,
+						title => $list_page->title,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -204,8 +206,11 @@ sub publish {
 
 sub _file_write {
 	my ($filename, $data) = @_;
+	my ($volume, $directories, $file) = splitpath($filename);
+	my $path = $volume . $directories;
 	try {
-		my $fh = IO::File->new($filename, "w");
+		make_path($path);
+		my $fh = IO::File->new($filename, "w") or die $!;
 		$fh->print($data);
 		$fh->close;
 	} catch {
