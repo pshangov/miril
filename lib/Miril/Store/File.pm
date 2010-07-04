@@ -11,7 +11,7 @@ use Try::Tiny qw(try catch);
 use IO::File;
 use File::Spec;
 use List::Util qw(first);
-use Ref::List::AsObject qw(list);
+use Ref::List qw(list);
 use Miril::DateTime;
 use Miril::DateTime::ISO::Simple qw(time2iso iso2time);
 use Miril::Exception;
@@ -114,7 +114,7 @@ sub get_posts
 		};
 		@posts = map {
 			my $type = $util->inflate_type($_->type);
-			my @topics = list $_->topics->topic if $_->topics;
+			my @topics = $_->topics->topic->list if $_->topics;
 			
 			Miril::Store::File::Post->new(
 				id        => $_->id,

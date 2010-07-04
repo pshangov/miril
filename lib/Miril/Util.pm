@@ -5,7 +5,6 @@ use warnings;
 use autodie;
 
 use File::Spec::Functions        qw(catfile);
-use Ref::List::AsObject          qw(list);
 use List::Util                   qw(first);
 use Miril::URL                   qw();
 use Miril::DateTime              qw();
@@ -63,7 +62,7 @@ sub inflate_out_path
 sub inflate_type
 {
 	my ($self, $id) = @_;
-	return first { $_->id eq $id } list $self->cfg->types;
+	return first { $_->id eq $id } $self->cfg->types->list;
 }
 
 sub inflate_author
@@ -76,7 +75,7 @@ sub inflate_topics
 {
 	my ($self, @topics) = @_;
 	my %topics_lookup = map {$_ => 1} @topics;
-	my @topic_objects = grep { $topics_lookup{$_->{id}} } list $self->cfg->topics;
+	my @topic_objects = grep { $topics_lookup{$_->{id}} } $self->cfg->topics->list;
 	return \@topic_objects;
 }
 

@@ -12,7 +12,7 @@ use Miril::Warning;
 use Miril::Exception;
 use Miril::Config;
 use Miril::List;
-use Ref::List::AsObject qw(list);
+use Ref::List qw(list);
 use File::Spec::Functions qw(catfile splitpath);
 use Text::Sprintf::Named;
 use Miril::URL;
@@ -55,14 +55,14 @@ sub publish {
 		_file_write($post->out_path, $output);
 	}
 
-	foreach my $list (list $cfg->lists) 
+	foreach my $list ($cfg->lists->list) 
 	{
 		my @posts;
 
 		# accept ids
 		if ( $list->match->id )
 		{
-			push @posts, $miril->store->get_post($_) for list $list->match->id;
+			push @posts, $miril->store->get_post($_) for $list->match->id->list;
 		}
 		else 
 		{

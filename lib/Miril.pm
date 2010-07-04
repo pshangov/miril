@@ -8,7 +8,7 @@ use Try::Tiny;
 use Exception::Class;
 use Carp;
 use Module::Load;
-use Ref::List::AsObject;
+use Ref::List qw(list);
 use Miril::Warning;
 use Miril::Exception;
 use Miril::Config;

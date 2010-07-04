@@ -8,7 +8,7 @@ use XML::TreePP;
 use Digest::MD5;
 use List::Util qw(first);
 use Data::AsObject qw(dao);
-use Ref::List::AsObject qw(list);
+use Ref::List qw(list);
 use Try::Tiny qw(try catch);
 use Miril::Exception;
 

@@ -5,7 +5,7 @@ use warnings;
 use autodie;
 
 use Carp qw(croak);
-use Ref::List::AsObject qw(list);
+use Ref::List qw(list);
 use List::Util qw(first);
 use Miril::DateTime;
 

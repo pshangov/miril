@@ -6,7 +6,7 @@ use autodie;
 
 use XML::TreePP;
 use Data::AsObject dao => { mode => 'silent' };
-use Ref::List::AsObject qw(list);
+use Ref::List qw(list);
 use File::Spec::Functions qw(catfile catdir);
 use Miril::Topic;
 use Miril::Type;

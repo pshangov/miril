@@ -16,7 +16,7 @@ use Module::Load;
 use File::Spec::Functions qw(catfile);
 use Data::AsObject qw(dao);
 use Data::Page;
-use Ref::List::AsObject qw(list);
+use Ref::List qw(list);
 use Miril;
 use Miril::Exception;
 use Miril::Theme::Flashyweb;
@@ -163,8 +163,8 @@ sub search {
 
 	$tmpl->param('statuses', $self->_prepare_statuses );
 	$tmpl->param('types',    $self->_prepare_types    );
-	$tmpl->param('topics',   $self->_prepare_topics   ) if list $cfg->topics;
-	$tmpl->param('authors',  $self->_prepare_authors  ) if list $cfg->authors;
+	$tmpl->param('topics',   $self->_prepare_topics   ) if $cfg->topics->list;
+	$tmpl->param('authors',  $self->_prepare_authors  ) if $cfg->authors->list;
 
 	return $tmpl->output;
 }
@@ -178,8 +178,8 @@ sub posts_create {
 
 	$empty_post->{statuses} = $self->_prepare_statuses;
 	$empty_post->{types}    = $self->_prepare_types;
-	$empty_post->{authors}  = $self->_prepare_authors if list $cfg->authors;
-	$empty_post->{topics}   = $self->_prepare_topics  if list $cfg->topics;
+	$empty_post->{authors}  = $self->_prepare_authors if $cfg->authors->list;
+	$empty_post->{topics}   = $self->_prepare_topics  if $cfg->topics->list;
 
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('post', $empty_post);
@@ -221,8 +221,8 @@ sub posts_edit {
 			%cur_topics = map {$_->id => 1} list $post->topics;
 		}
 	
-		$post->{authors}  = $self->_prepare_authors($post->author) if list $cfg->authors;
-		$post->{topics}   = $self->_prepare_topics(%cur_topics)    if list $cfg->topics;
+		$post->{authors}  = $self->_prepare_authors($post->author) if $cfg->authors->list;
+		$post->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->topics->list;
 		$post->{statuses} = $self->_prepare_statuses($post->status);
 		$post->{types}    = $self->_prepare_types($post->type);
 	}
@@ -491,9 +491,9 @@ sub _prepare_authors {
 	my $cfg = $self->miril->cfg;
 	my @authors;
 	if ($selected) {
-		@authors = map {{ name => $_, id => $_ , selected => $_ eq $selected }} list $cfg->authors;
+		@authors = map {{ name => $_, id => $_ , selected => $_ eq $selected }} $cfg->authors->list;
 	} else {
-		@authors = map {{ name => $_, id => $_  }} list $cfg->authors;
+		@authors = map {{ name => $_, id => $_  }} $cfg->authors->list;
 	}
 	return \@authors;
 }
@@ -504,11 +504,11 @@ sub _prepare_statuses {
 	my @statuses;
 	if ($selected)
 	{
-		@statuses = map {{ name => $_, id => $_, selected => $_ eq $selected }} list $cfg->statuses;
+		@statuses = map {{ name => $_, id => $_, selected => $_ eq $selected }} $cfg->statuses->list;
 	}
 	else
 	{
-		@statuses = map {{ name => $_, id => $_ }} list $cfg->statuses;
+		@statuses = map {{ name => $_, id => $_ }} $cfg->statuses->list;
 	}
 	return \@statuses;
 }
@@ -518,12 +518,12 @@ sub _prepare_topics {
 	my $cfg = $self->miril->cfg;
 	if (%selected)
 	{
-		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} list $cfg->topics;
+		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} $cfg->topics->list;
 		return \@topics;
 	}
 	else
 	{
-		my @topics = map {{ name => $_->name, id => $_->id, }} list $cfg->topics;
+		my @topics = map {{ name => $_->name, id => $_->id, }} $cfg->topics->list;
 		return \@topics;
 	}
 }
@@ -534,11 +534,11 @@ sub _prepare_types {
 	my @types;
 	if ($selected)
 	{
-		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected->id }} list $cfg->types;
+		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected->id }} $cfg->types->list;
 	}
 	else 
 	{
-		@types = map {{ name => $_->name, id => $_->id }} list $cfg->types;
+		@types = map {{ name => $_->name, id => $_->id }} $cfg->types->list;
 	}
 	return \@types;
 }
