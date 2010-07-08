@@ -39,8 +39,9 @@ sub new {
 	$cfg->{data_path}      = catdir($base_dir, 'data');
 	$cfg->{tmpl_path}      = catdir($base_dir, 'tmpl');
 
-	$cfg->{workflow}{status} = [qw(draft published)];
-	$cfg->{statuses} = [qw(draft published)];
+	$cfg->{statuses}       = [qw(draft published)];
+
+	$cfg->{sort} = 'published' if !$cfg->{sort} || $cfg->{sort} ne 'modified';
 
 	my @topics = map { 
 		Miril::Topic->new(
@@ -58,24 +59,12 @@ sub new {
 		)
 	} list $cfg->{types}{type};
 
-	my @lists = map {
-		{
-			id       => $_->{id},
-			name     => $_->{name},
-			match    => $_->{match},
-			template => $_->{template},
-			location => $_->{location},
-			title    => $_->{title},
-			group    => $_->{group},
-		}
-	} list $cfg->{lists}{list};
-
 	### SIMPLIFY THE HASHREF ###
 	
 	$cfg->{authors} = $cfg->{authors}{author} ? $cfg->{authors}{author} : [];
 	$cfg->{topics}  = \@topics;
 	$cfg->{types}   = \@types;
-	$cfg->{lists}   = \@lists;
+	$cfg->{lists}   = $cfg->{lists}{list};
 
 	return dao $cfg;
 }

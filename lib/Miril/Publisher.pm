@@ -100,6 +100,7 @@ sub publish {
 			my $list_main = Miril::List->new( 
 				posts => \@posts, 
 				title => $list->name,
+				sort  => $cfg->sort,
 			);
 			
 			my $group_key = $list->group; 
@@ -170,6 +171,7 @@ sub publish {
 					pager => $current_pager,
 					title => $list->name,
 					url   => $miril->util->inflate_list_url(undef, $cfg->domain, $cfg->http_dir, $location),
+					sort  => => $cfg->sort,
 				);
 
 				my $output = $miril->tmpl->load(
@@ -193,6 +195,7 @@ sub publish {
 						posts => \@posts,
 						title => $list->name,
 						url   => $miril->util->inflate_list_url($list->id, $cfg->domain, $cfg->http_dir, $list->location),
+						sort  => $cfg->sort,
 					),
 					cfg => $cfg,
 					title => $list->name,

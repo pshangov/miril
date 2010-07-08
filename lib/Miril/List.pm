@@ -17,6 +17,7 @@ use Object::Tiny qw(
 	count
 	title
 	url
+	sort
 );
 
 ### CONSTRUCTOR ###
@@ -26,14 +27,8 @@ sub new {
 	my %params = @_;
 	my $posts = $params{posts};
 
-	my $self = bless {}, $class;
-	
-	$self->{posts} = $params{posts};
+	my $self = bless \%params, $class;	
 	$self->{count} = list $params{posts};
-	$self->{key}   = $params{key};
-	$self->{pager} = $params{pager};
-	$self->{title} = $params{title};
-	$self->{url}   = $params{url};
 
 	return $self;
 }
@@ -65,36 +60,46 @@ sub group
 		$obj_cb = sub { shift->author };
 		$key_cb = sub { shift->author };
 	}
-	elsif ($group_key eq 'm_year')
+	elsif ($group_key eq 'year')
 	{
-		$obj_cb = sub { shift->modified };
-		$key_cb = sub { shift->modified->strftime('%Y') };
+		if ($self->sort eq 'modified')
+		{
+			$obj_cb = sub { shift->modified };
+			$key_cb = sub { shift->modified->strftime('%Y') };
+		}
+		else
+		{
+			$obj_cb = sub { shift->published };
+			$key_cb = sub { shift->published->strftime('%Y') };
+		}
 	}
-	elsif ($group_key eq 'm_month')
+	elsif ($group_key eq 'month')
 	{
-		$obj_cb = sub { shift->modified };
-		$key_cb = sub { shift->modified->strftime('%Y%m') };
+		if ($self->sort eq 'modified')
+		{
+			$obj_cb = sub { shift->modified };
+			$key_cb = sub { shift->modified->strftime('%Y%m') };
+		}
+		else
+		{
+			$obj_cb = sub { shift->published };
+			$key_cb = sub { shift->published->strftime('%Y%m') };
+		}
 	}
-	elsif ($group_key eq 'm_date')
+	elsif ($group_key eq 'date')
 	{
-		$obj_cb = sub { shift->modified };
-		$key_cb = sub { shift->modified->strftime('%Y%m%d') };
+		if ($self->sort eq 'modified')
+		{
+			$obj_cb = sub { shift->modified };
+			$key_cb = sub { shift->modified->strftime('%Y%m%d') };
+		}
+		else
+		{
+			$obj_cb = sub { shift->published };
+			$key_cb = sub { shift->published->strftime('%Y%m%d') };
+		}
 	}
-	elsif ($group_key eq 'p_year')
-	{
-		$obj_cb = sub { shift->published };
-		$key_cb = sub { shift->published->strftime('%Y') };
-	}
-	elsif ($group_key eq 'p_month')
-	{
-		$obj_cb = sub { shift->published };
-		$key_cb = sub { shift->published->strftime('%Y%m') };
-	}
-	elsif ($group_key eq 'p_date')
-	{
-		$obj_cb = sub { shift->published };
-		$key_cb = sub { shift->published->strftime('%Y%m%d') };
-	}
+
 	else
 	{
 		croak "Invalid key '" . $group_key . "' passed to group.";
@@ -115,6 +120,7 @@ sub group
 		posts => $groups{$_},
 		key   => $obj_cb->($groups{$_}->[-1]),
 		title => $self->title,
+		sort  => $self->sort,
 	) for sort keys %groups;
 
 	return @groups;

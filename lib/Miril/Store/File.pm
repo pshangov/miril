@@ -207,7 +207,14 @@ sub get_posts
 		};
 	} 
 	
-	return sort { $b->published->epoch <=> $a->published->epoch } @posts;
+	if ($cfg->sort eq 'modified')
+	{
+		return sort { $b->modified->epoch <=> $a->modified->epoch } @posts;
+	}
+	else
+	{
+		return sort { $b->published->epoch <=> $a->published->epoch } @posts;
+	}
 }
 
 sub save 
