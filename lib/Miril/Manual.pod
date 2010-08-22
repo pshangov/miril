@@ -12,11 +12,11 @@ Miril is written in perl and uses the L<CGI::Application> framework.
 
 =item * 
 
-Miril stores your data in a backend (text files, a database, etc.) and publishes it to static pages. Unlike homegrown static publishing solutions (e.g. scripts using the Template Toolkit), Miril provides a nice user interface for editing content.
+Miril stores your data in a backend (text files, a database, etc.) and publishes it to static pages. Unlike homegrown static publishing solutions (e.g. scripts using the Template Toolkit), Miril provides a nice user interface for editing content (web-based or via a command-line application).
 
 =item * 
 
-Miril has been designed from the very start to be extremely easy to deploy. The main distribution only has pure-perl dependencies. The immediate plans include bundling all prerequisites in a single file and shipping Miril as a standalone cgi script, to that installing on a typical shared host should be a no-brainer.
+Miril has been designed from the very start to be extremely easy to deploy. The main distribution has only pure-perl dependencies. Stable Miril versions will be available in a tarball with all dependencies bundled, so that installing on a typical shared host should be a no-brainer.
 
 =item * 
 
@@ -28,7 +28,7 @@ Miril has a user interface that has been deliberately kept extremely simple and 
 
 =item * 
 
-Miril is extensible. You can (or at least you will be able to in the near future) choose between different storage backends (or models), different templating systems, etc.
+Miril is extensible. You can choose between different storage backends (currently only a file-based backend is provided), different templating systems, etc.
 
 =back
 
@@ -54,24 +54,44 @@ Because Miril ultimately produces static content only, you can run it from your 
 
 =head1 INSTALLATION
 
-Currently Miril is installable only from C<CPAN>. Simply run C<install Miril> from your favourite C<CPAN> shell. 
+Currently Miril is installable only from C<CPAN>. Simply run C<install Miril> from your favourite C<CPAN> shell. The CPAN distribution comes with an example website you can build on to get started faster.
 
 =head1 CONFIGURATION
+
+=head2 Create required files and folders
+
+Miril requires that you have the following files and folders in place:
+
+  ~/miril - Base Miril directory
+  ~/miril/sites - Site configuration and data
+  ~/miril/sites/some_site/cache - Directory where Miril caches stuff
+  ~/miril/sites/some_site/data - Directory where Miril store data files
+  ~/miril/sites/some_site/tmpl - Directory where you keep the templates for building your site
+  ~/miril/sites/some_site/cfg/config.xml - Main configuration file
+  ~/miril/sites/some_site/cfg/users.xml - Usernames and passwords
+  ~/miril/sites/some_other_site - You can keep info about more than one site
+  ~/miril/lib - If you downloaded Miril with bundled dependencies, they will be here
+
+Of these, the two configuration files are the only ones that you need to create manually, and more information is provided below. All other stuff is written by Miril itself, but it does need the directories to exist first. You can just unpack the example site provided with the Miril distribution to get started faster.
 
 =head2 Create a cgi script
 
 Once you have installed Miril, create a cgi script named C<miril.pl> or C<miril.cgi> with the following content:
 
-  #!usr/bin/perl
+  #!/usr/bin/perl
   
   use strict;
   use warnings;
+  
   use Miril;
 
-  my $app = Miril->new( PARAMS => { cfg_file => 'miril.config' } );
+  my $app = Miril->new( PARAMS => { 
+      miril_dir => $path_to_base_miril_dir,
+      site      => $name_of_website,
+  });
   $app->run;
 
-Change the shebang line to wherever your C<perl> is located and change C<miril.config> to wherever you configuration file (see below) is located. The configuration file path can be relative to the location of the cgi script. If this option is not provided, Miril will try to load a file named C<miril.config> and located in the same directory as the cgi script itself. Put that script in your C<cgi-bin> directory.
+A single Miril installation can handle multiple websites. C<$path_to_base_miril_dir> should point to the base Miril directory, for example C<~/miril>. C<$name_of_website> is the name of the website that will be managed by this particlar Miril instance (e.g. C<some_site> or C<some_other_site>).
 
 =head2 Create a configuration file
 
