@@ -18,6 +18,7 @@ use Object::Tiny qw(
 	title
 	url
 	sort
+	id
 );
 
 ### CONSTRUCTOR ###
@@ -47,8 +48,11 @@ sub group
 	# must be perl 5.8-compatible so we can't use switch
 	if ($group_key eq 'topic')
 	{
-		$obj_cb = sub { shift->topic };
-		$key_cb = sub { shift->topic->id };
+		$obj_cb = sub { 
+			my ($post, $id) = @_;
+			return first {$_->id eq $id} list $post->topics;
+		};
+		$key_cb = sub { map {$_->id} list shift->topics };
 	}
 	elsif ($group_key eq 'type')
 	{
@@ -109,18 +113,22 @@ sub group
 	
 	foreach my $post (list $self->posts)
 	{
-		my $group_hash = $key_cb->($post);
-		my @group;
-		@group = @{ $groups{$group_hash} } if $groups{$group_hash};
-		push @group, $post;
-		$groups{$group_hash} = \@group;
+		my @group_hashes = $key_cb->($post);
+		foreach my $group_hash (@group_hashes)
+		{
+			my @group;
+			@group = @{ $groups{$group_hash} } if $groups{$group_hash};
+			push @group, $post;
+			$groups{$group_hash} = \@group;
+		}
 	}
 
 	push @groups, Miril::List->new(
 		posts => $groups{$_},
-		key   => $obj_cb->($groups{$_}->[-1]),
+		key   => $obj_cb->($groups{$_}->[-1], $_),
 		title => $self->title,
 		sort  => $self->sort,
+		id    => $self->id,
 	) for sort keys %groups;
 
 	return @groups;

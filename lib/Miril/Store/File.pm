@@ -68,6 +68,8 @@ sub get_post
 
 	my $modified = $util->inflate_date_modified($filename);
 	my $type = $util->inflate_type($meta{'type'});
+	
+	my $published = $meta{'published'} ? Miril::DateTime->new(iso2time($meta{'published'})) : undef;
 
 	return Miril::Store::File::Post->new(
 		id        => $id,
@@ -78,9 +80,9 @@ sub get_post
 		out_path  => $util->inflate_out_path($id, $type),
 		in_path   => $filename,
 		modified  => Miril::DateTime->new($modified),
-		published => $meta{'published'} ? Miril::DateTime->new(iso2time($meta{'published'})) : undef,
+		published => $published,
 		type      => $type,
-		url       => $util->inflate_post_url($id, $type),
+		url       => $published ? $util->inflate_post_url($id, $type, $published) : undef,
 		author    => $util->inflate_author($meta{'author'}),
 		topics    => $util->inflate_topics( list $meta{'topics'} ),
 	);
@@ -122,11 +124,11 @@ sub get_posts
 				in_path   => $util->inflate_in_path($_->id),
 				out_path  => $util->inflate_out_path($_->id, $type),
 				modified  => Miril::DateTime->new($_->modified),
-				published => Miril::DateTime->new($_->published),
+				published => $_->published ? Miril::DateTime->new($_->published) : undef,
 				type      => $type,
 				author    => $util->inflate_author($_->author),
 				topics    => $util->inflate_topics(@topics),
-				url       => $util->inflate_post_url($_->id, $type),
+				url       => $_->published ? $util->inflate_post_url($_->id, $type, Miril::DateTime->new($_->published)) : undef,
 			);
 		} dao list $tree->{xml}{post};
 	} else {
@@ -206,15 +208,30 @@ sub get_posts
 			}
 		};
 	} 
-	
+
 	if ($cfg->sort eq 'modified')
 	{
-		return sort { $b->modified->epoch <=> $a->modified->epoch } @posts;
+		@posts = sort { $b->modified->epoch <=> $a->modified->epoch } @posts;
 	}
 	else
 	{
-		return sort { $b->published->epoch <=> $a->published->epoch } @posts;
+		if ( first { !$_->published } @posts )
+		{
+			@posts = sort { $b->modified->epoch <=> $a->modified->epoch } @posts;
+		}
+		else
+		{
+			@posts = sort { $b->published->epoch <=> $a->published->epoch } @posts;
+		}
 	}
+	
+	if ($params{'last'})
+	{
+		my $count = ( $params{'last'} < @posts ? $params{'last'} : @posts );
+		splice @posts, $count;
+	}
+
+	return @posts;
 }
 
 sub save 
@@ -238,9 +255,12 @@ sub save
 				$_->{title}     = $post->title;
 				$_->{type}      = $util->inflate_type($post->type);
 				$_->{topics}    = $util->inflate_topics(list $post->topics);
-				$_->{published} = $util->inflate_date_published($_->published->epoch, $post->status);
 				$_->{status}    = $post->status;
 				$_->{source}    = $post->source;
+				if ($post->status eq 'published')
+				{
+					$_->{published} = $util->inflate_date_published($_->published, $post->status);
+				}
 				last;
 			}
 		}
@@ -259,9 +279,9 @@ sub save
 
 	} else {
 		# this is a new post
-		push @posts, Miril::Store::File::Post->new(
+		my $new_post = Miril::Store::File::Post->new(
 			id        => $post->id,
-			author    => $post->author,
+			author    => ($post->author or undef),
 			title     => $post->title,
 			type      => $util->inflate_type($post->type),
 			topics    => $util->inflate_topics($post->topics),
@@ -269,6 +289,7 @@ sub save
 			status    => $post->status,
 			source    => $post->source,
 		);
+		push @posts, $new_post;
 	}
 
 	# update the cache file
@@ -293,7 +314,8 @@ sub save
 	
 	$post = first { $_->id eq $post->id } @posts;
 
-	$content .= ucfirst $_ . ": " . $post->{$_} . "\n"  for qw(title author);
+	$content .= "Title: " . $post->title . "\n";
+	$content .= "Author: " . $post->author . "\n" if $post->author;
 	$content .= "Type: " . $post->type->id . "\n";
 	$content .= "Published: " . $post->published->iso . "\n" if $post->published;
 	$content .= "Topics: " . join(" ", map { $_->id } list $post->topics) . "\n\n";
@@ -301,7 +323,7 @@ sub save
 
 	try
 	{
-		my $fh = IO::File->new( catfile($cfg->data_path, $post->id), "w");
+		my $fh = IO::File->new( catfile($cfg->data_path, $post->id), "w") or die $!;
 		$fh->print($content);
 		$fh->close;
 	}

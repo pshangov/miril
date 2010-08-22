@@ -81,12 +81,12 @@ sub inflate_topics
 
 sub inflate_post_url 
 {
-	my ($self, $name, $type) = @_;
+	my ($self, $name, $type, $date) = @_;
 	my $cfg = $self->cfg;
 	my $url = Miril::URL->new(
 		abs => 'http://' . $cfg->domain . $cfg->http_dir . $type->location . $name . '.html',
 		rel => $cfg->http_dir . $type->location . $name . '.html',
-		tag => 'tag:' . $cfg->domain . ',/' . $name,
+		tag => 'tag:' . $cfg->domain . ',' . $date->strftime('%Y-%m-%d') . ':/' . $name,
 	);
 	return $url;
 }
@@ -95,10 +95,11 @@ sub inflate_list_url
 {
 	my ($self, $id, $location) = @_;
 	my $cfg = $self->cfg;
+	my $date = Miril::DateTime->new(time());
 	return Miril::URL->new(
 		abs => 'http://' . $cfg->domain . $cfg->http_dir . $location,
 		rel => $cfg->http_dir . $location,
-		tag => $id ? 'tag:' . $cfg->domain . ',/list/' . $id : undef,
+		tag => $id ? 'tag:' . $cfg->domain . ',' . $date->strftime('%Y-%m-%d') . ':/list/' . $id : undef,
 	);
 }
 

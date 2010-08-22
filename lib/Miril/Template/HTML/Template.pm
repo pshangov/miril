@@ -20,7 +20,7 @@ sub load {
 	try 
 	{
 		$tmpl = HTML::Template::Pluggable->new( 
-			filename          =>  catfile($self->tmpl_path, $options{name}), 
+			filename          => catfile($self->tmpl_path, $options{name}), 
 			path              => $self->{tmpl_path},
 			die_on_bad_params => 0,
 			global_vars       => 1,
@@ -37,7 +37,13 @@ sub load {
 
 	$tmpl->param( %{ $options{params} } );
 	
-	return $tmpl->output;
+	my $output = $tmpl->output;
+	# BOM's mess up with html, see: http://www.w3.org/International/questions/qa-utf8-bom
+	# this is a hack and will probably break UTF-16 and UTF-32
+	# I am not really sure why BOM's get added for UTF-8 files ...
+	$output =~ s/\xEF\xBB\xBF//g;
+
+	return $output;
 }
 
 1;

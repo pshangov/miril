@@ -18,6 +18,7 @@ use Text::Sprintf::Named;
 use Miril::URL;
 use File::Path qw(make_path);
 
+
 our $VERSION = '0.007';
 
 sub publish {
@@ -50,6 +51,7 @@ sub publish {
 				post  => $post,
 				cfg   => $cfg,
 				title => $post->title,
+				id    => $post->id,
 		});
 
 		_file_write($post->out_path, $output);
@@ -101,6 +103,7 @@ sub publish {
 				posts => \@posts, 
 				title => $list->name,
 				sort  => $cfg->sort,
+				id    => $list->id,
 			);
 			
 			my $group_key = $list->group; 
@@ -111,18 +114,18 @@ sub publish {
 
 				if ($group_key eq 'topic')
 				{
-					$f_args = { topic => $list->key->id };
-					$tag_url_id = $list->id . '/' . $list->key->id;
+					$f_args = { topic => $list_group->key->id };
+					$tag_url_id = $list->id . '/' . $list_group->key->id;
 				}
 				elsif ($group_key eq 'type')
 				{
-					$f_args = { type => $list->key->id };
-					$tag_url_id = $list->id . '/' . $list->key->id;
+					$f_args = { type => $list_group->key->id };
+					$tag_url_id = $list->id . '/' . $list_group->key->id;
 				}
 				elsif ($group_key eq 'author')
 				{
-					$f_args = { author => $list->key};
-					$tag_url_id = $list->id . '/' . $list->key;
+					$f_args = { author => $list_group->key};
+					$tag_url_id = $list->id . '/' . $list_group->key;
 				}
 				else
 				{	
@@ -143,6 +146,7 @@ sub publish {
 						list  => $list_group,
 						cfg   => $cfg,
 						title => $list_group->title,
+						id    => $list->id,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -170,8 +174,9 @@ sub publish {
 					posts => \@current_posts,
 					pager => $current_pager,
 					title => $list->name,
-					url   => $miril->util->inflate_list_url(undef, $cfg->domain, $cfg->http_dir, $location),
-					sort  => => $cfg->sort,
+					url   => $miril->util->inflate_list_url(undef, $location),
+					sort  => $cfg->sort,
+					id    => $list->id,
 				);
 
 				my $output = $miril->tmpl->load(
@@ -180,6 +185,7 @@ sub publish {
 						list  => $list_page,
 						cfg   => $cfg,
 						title => $list_page->title,
+						id    => $list->id,
 				});
 		
 				my $new_filename = catfile($cfg->output_path, $location);
@@ -194,12 +200,15 @@ sub publish {
 					list => Miril::List->new( 
 						posts => \@posts,
 						title => $list->name,
-						url   => $miril->util->inflate_list_url($list->id, $cfg->domain, $cfg->http_dir, $list->location),
+						url   => $miril->util->inflate_list_url($list->id, $list->location),
+						id    => $list->id,
 						sort  => $cfg->sort,
 					),
-					cfg => $cfg,
+					cfg   => $cfg,
 					title => $list->name,
-			});
+					id    => $list->id,
+				}
+			);
 		
 			my $new_filename = catfile($cfg->output_path, $list->location);
 			_file_write($new_filename, $output);
@@ -213,7 +222,7 @@ sub _file_write {
 	my $path = $volume . $directories;
 	try {
 		make_path($path);
-		my $fh = IO::File->new($filename, "w") or die $!;
+		my $fh = IO::File->new($filename, ">") or die $!;
 		$fh->print($data);
 		$fh->close;
 	} catch {
@@ -222,6 +231,11 @@ sub _file_write {
 			message  => 'Could not save information',
 		);
 	}
+	#my $post_fh = IO::File->new($filename, "<") or die $!;
+	#while (<$post_fh>)
+	#{
+#		warn "BOM before write!" if /\x{FEFF}/;
+	#}
 }
 
 1;

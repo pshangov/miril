@@ -66,6 +66,10 @@ sub new {
 	$cfg->{types}   = \@types;
 	$cfg->{lists}   = $cfg->{lists}{list};
 
+	### ADD BASE DIR INFO ###
+	
+	$cfg->{base_dir} = $cfg->{domain} . $cfg->{http_dir};
+
 	return dao $cfg;
 }
 

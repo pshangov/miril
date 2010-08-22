@@ -104,6 +104,7 @@ sub setup {
 	);
 
 	$self->{validator} = Miril::InputValidator->new;
+	$self->header_add( -type => 'text/html; charset=utf-8');
 
 }
 
@@ -209,6 +210,8 @@ sub posts_edit {
 			statuses => $self->_prepare_statuses($q->param('status')),
 			types    => $self->_prepare_types($q->param('type')),
 		};
+		use Data::Dumper;
+		warn Dumper $post;
 	} else {
 		#TODO check if $post is defined
 		$post = $self->miril->store->get_post($q->param('id'));
@@ -224,7 +227,7 @@ sub posts_edit {
 		$post->{authors}  = $self->_prepare_authors($post->author) if $cfg->authors->list;
 		$post->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->topics->list;
 		$post->{statuses} = $self->_prepare_statuses($post->status);
-		$post->{types}    = $self->_prepare_types($post->type);
+		$post->{types}    = $self->_prepare_types($post->type->id);
 	}
 
 	my $tmpl = $self->view->load('edit');
@@ -252,7 +255,6 @@ sub posts_update {
 	
 	if ($invalid) {
 		$self->param('invalid', $invalid);
-		warn join ',', keys %$invalid;
 		return $self->forward('edit', $q->param('old_id'));
 	}
 
@@ -534,7 +536,7 @@ sub _prepare_types {
 	my @types;
 	if ($selected)
 	{
-		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected->id }} $cfg->types->list;
+		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected }} $cfg->types->list;
 	}
 	else 
 	{

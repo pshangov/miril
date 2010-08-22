@@ -20,7 +20,7 @@ sub new {
 	$self->{validator_rx} = {
 		line_text 		=> qr/.*/,
 		paragraph_text 	=> qr/.*/m,
-		text_id 		=> qr/^\w{1,256}$/,
+		text_id 		=> qr/^[\w\-]{1,256}$/,
 		datetime 		=> qr/.*/,
 		integer 		=> qr/^\d{1,8}$/,
 	};
