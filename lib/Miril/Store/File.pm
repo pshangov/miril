@@ -19,7 +19,6 @@ use Miril::Store::File::Post;
 use File::Spec::Functions qw(catfile);
 use Miril::URL;
 use Syntax::Keyword::Gather qw(gather take);
-use Data::Dumper qw(Dumper);
 
 ### ACCESSORS ###
 

@@ -8,3 +8,4 @@
 ^MANIFEST\.SKIP$
 .git
 
+^MYMETA.yml$

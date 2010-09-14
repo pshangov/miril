@@ -23,7 +23,6 @@ use Miril::Theme::Flashyweb;
 use Miril::View;
 use Miril::InputValidator;
 use Miril::Publisher;
-use Data::Dumper qw(Dumper);
 use File::Copy qw(copy);
 use Number::Format qw(format_bytes);
 use POSIX qw(strftime);

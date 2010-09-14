@@ -14,7 +14,7 @@ use Miril::Exception;
 use Miril::Config;
 use Miril::Util;
 
-our $VERSION = '0.007';
+our $VERSION = '0.008';
 
 ### ACCESSORS ###
 
@@ -125,7 +125,7 @@ Miril - A Static Content Management System
 
 =head1 VERSION
 
-Version 0.007
+Version 0.008
 
 =head1 WARNING
 

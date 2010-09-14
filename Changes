@@ -1,5 +1,16 @@
 Revision history for Miril
 
+0.008   13/09/2010
+        * Comprehensive code refactoring
+		* New data file format
+		* New list API for flexible list publishing
+		* Form validatation
+		* PSGI support
+		* Bundled standalone server
+		* Command line publishing script
+		* Better exception handling
+		* Updated documentation
+
 0.007   26/11/2009
         * Miscellaneous bug fixes
 
