@@ -1,9 +1,0 @@
-#!perl
-
-use Plack::Runner;
-use App::PSGI::Miril;
-
-my $runner = Plack::Runner->new;
-$runner->parse_options(@ARGV);
-$runner->run(App::PSGI::Miril->app);
-
