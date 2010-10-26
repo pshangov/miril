@@ -7,6 +7,7 @@ use XML::TreePP;
 use Ref::List qw(list);
 use Miril::Topic;
 use Miril::Type;
+use File::Spec;
 
 use Mouse;
 extends 'Miril::Config';
@@ -28,6 +29,9 @@ around 'BUILDARGS' => sub
 		template
 		posts_per_page
 		sort
+		output_path
+		domain
+		http_dir
 	);
 
 	foreach my $option (@options)
@@ -63,9 +67,10 @@ around 'BUILDARGS' => sub
 	### ADD BASE DIR INFO ###
 	
 	$args{base_dir} = $cfg->{domain} . $cfg->{http_dir};
+	$args{site_dir} = File::Spec->updir($filename);
 
 	return $class->$orig(%args);
-}
+};
 
 1;
 

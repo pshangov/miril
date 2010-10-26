@@ -4,29 +4,12 @@ use strict;
 use warnings;
 
 use File::Spec ();
-
 use Mouse;
-
-has 'miril_dir' => 
-(
-	is       => 'ro',
-	required => 1,
-);
-
-has 'site' => 
-(
-	is       => 'ro',
-	required => 1,
-);
 
 has 'site_dir' => 
 (
-	is      => 'ro',
-	builder => sub 
-	{ 
-		my $self = shift;
-		File::Spec->catdir($self->miril_dir, 'sites', $self->site); 
-	},
+	is       => 'ro',
+	required => 1,
 );
 
 has 'store' => 
@@ -61,51 +44,31 @@ has 'posts_per_page' =>
 has 'cache_data' => 
 (
 	is      => 'ro',
-	builder => sub 
-	{ 
-		my $self = shift;
-		File::Spec->catfile($self->site_dir, 'cache', 'cache.xml'); 
-	},
+	builder => sub { File::Spec->catfile($_[0]->site_dir, 'cache', 'cache.xml') },
 );
 
 has 'latest_data' => 
 (
 	is      => 'ro',
-	builder => sub 
-	{ 
-		my $self = shift;
-		File::Spec->catfile($self->site_dir, 'cache', 'latest.xml'); 
-	},
+	builder => sub { File::Spec->catfile($_[0]->site_dir, 'cache', 'latest.xml') },
 );
 
 has 'users_data' => 
 (
 	is      => 'ro',
-	builder => sub 
-	{ 
-		my $self = shift;
-		File::Spec->catfile($self->site_dir, 'cfg', 'users.xml');
-	},
+	builder => sub { File::Spec->catfile($_[0]->site_dir, 'cfg', 'users.xml') },
 );
 
 has 'data_path' => 
 (
 	is      => 'ro',
-	builder => sub 
-	{ 
-		my $self = shift;
-		File::Spec->catdir($self->site_dir, 'data');
-	},
+	builder => sub { File::Spec->catdir($_[0]->site_dir, 'data') },
 );
 
 has 'tmpl_path' => 
 (
 	is      => 'ro',
-	builder => sub 
-	{ 
-		my $self = shift;
-		File::Spec->catdir($self->site_dir, 'tmpl');
-	},
+	builder => sub { File::Spec->catdir($_[0]->site_dir, 'tmpl') },
 );
 
 has 'statuses' => 
@@ -164,7 +127,7 @@ has 'output_path' =>
 has 'files_path' => 
 (
 	is      => 'ro',
-	default => sub { File::Spec->catdir( my $_[0]->output_path, 'files' ) },
+	default => sub { File::Spec->catdir( $_[0]->output_path, 'files' ) },
 );
 
 has 'domain' =>
@@ -182,7 +145,7 @@ has 'http_dir' =>
 has 'files_http_dir' =>
 (
 	is       => 'ro',
-	default => sub { File::Spec->catdir( my $_[0]->http_dir, 'files' ) },
+	default => sub { File::Spec->catdir( $_[0]->http_dir, 'files' ) },
 );
 
 has 'name' =>
