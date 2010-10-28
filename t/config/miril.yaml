@@ -10,77 +10,77 @@ secret: "Papa was a rolling stone!"
 types:
 
   - id: blog
-	name: Blog
-	location: blog/
-	template: item.tmpl
+    name: Blog
+    location: blog/
+    template: item.tmpl
 
   - id: page
-	name: Page
-	location: ""
-	template: page.tmpl
+    name: Page
+    location: ""
+    template: page.tmpl
 
 topics:
 
   - id: perl5
-	name: "Perl 5"
+    name: "Perl 5"
 
   - id: cpan
-	name: "Better CPAN"
+    name: "Better CPAN"
 
   - id: miril
-	name: "Miril"
+    name: "Miril"
 
   - id: crusade
-	name: "Perl Evangelism"
+    name: "Perl Evangelism"
 
   - id: modules
-	name: "Modules"
+    name: "Modules"
 
   - id: git
-	name: "Git and Github"
+    name: "Git and Github"
 
   - id: general
-	name: "Everything Else"
+    name: "Everything Else"
 
 ### LISTS ###
 
 lists:
   
   - id: front_page
-	name: "Front Page"
-	template: front_page.tmpl
-	location: index.html
-	match:
-	  - type: blog
-		last: 6
+    name: "Front Page"
+    template: front_page.tmpl
+    location: index.html
+    match:
+      - type: blog
+        last: 6
 
   - id: feed
-	name: "Atom Feed"
-	template: atom.tmpl
-	location: feed.xml
-	match:
-	  - type: blog
-		last: 10
+    name: "Atom Feed"
+    template: atom.tmpl
+    location: feed.xml
+    match:
+      - type: blog
+        last: 10
 
   - id: archive
-	name: "Article Archive"
-	template: archive.tmpl
-	location: archive.html
-	match:
-	  - type: blog
+    name: "Article Archive"
+    template: archive.tmpl
+    location: archive.html
+    match:
+      - type: blog
 
   - id: by_month
-	name: "Monthly Archive"
-	group: month
-	template: by_month.tmpl
-	location: "archive/%(year)d/%(month)02d.html"
-	match:
-	  - type blog
+    name: "Monthly Archive"
+    group: month
+    template: by_month.tmpl
+    location: "archive/%(year)d/%(month)02d.html"
+    match:
+      - type blog
 
   - id: by_topic
-	name: "Topics"
-	group: topic
-	template: by_month.tmpl
-	location: "topic/%(topic)s.html"
-	match:
-	  - type: blog
+    name: "Topics"
+    group: topic
+    template: by_month.tmpl
+    location: "topic/%(topic)s.html"
+    match:
+      - type: blog

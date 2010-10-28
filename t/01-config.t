@@ -5,22 +5,23 @@ use File::Spec;
 use Module::Load;
 use Data::Dumper;
 
-use Test::More tests => 1;
+use Test::More tests => 3;
 
-#my $miril_dir = File::Spec->catdir( $FindBin::Bin, '..', 'example' );
-#my $site = 'example.com';
-
-my $config_filename = File::Spec->catfile( 
-	$FindBin::Bin, 
-	'config',
-	'miril.conf',
+my %formats = (
+	conf => 'Config::General',
+	yaml => 'YAML',
+	xml  => 'XML',
 );
 
-foreach my $format (qw(Config::General))
+foreach my $format ( keys %formats )
 {
-	my $class = "Miril::Config::Format::$format";
+	my $class = "Miril::Config::Format::" . $formats{$format};
 	Module::Load::load($class);
+	my $config_filename = File::Spec->catfile( 
+		$FindBin::Bin, 
+		'config',
+		'miril.' . $format,
+	);
 	my $config = $class->new($config_filename);
-	print Dumper $config;
-	#isa_ok($config, 'Miril::Config');
+	isa_ok($config, 'Miril::Config');
 }

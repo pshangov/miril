@@ -16,32 +16,19 @@ around 'BUILDARGS' => sub
 {
 	my ($orig, $class, $filename) = @_;
 
-	$yaml = YAML::Tiny->read($filename);
+	my $yaml = YAML::Tiny->read($filename);
 	my %cfg = %{ $yaml->[0] };
-	
+
 	if ($cfg{topics})
 	{
-		my @topics = map { 
-			Miril::Topic->new( id => $_, %{ $cfg{topic}{$_} }) 
-		} keys %{ $cfg{topic} };
-		$cfg{topics}  = \@topics;
-		delete $cfg{topic};
+		my @topics = map { Miril::Topic->new(%{$_}) } list $cfg{topics};
+		$cfg{topics} = \@topics;
 	}
 
 	if ($cfg{types})
 	{
-		my @types = map { 
-			Miril::Type->new( id => $_, %{ $cfg{type}{$_} }) 
-		} keys %{ $cfg{type} };
+		my @types = map { Miril::Type->new(%{$_}) } list $cfg{types};
 		$cfg{types} = \@types;
-		delete $cfg{type};
-	}
-
-	if ($cfg{lists})
-	{
-		my @lists = map { { id => $_, %{ $cfg{list}{$_} } } }  keys %{ $cfg{list} };
-		$cfg{lists} = \@lists;
-		delete $cfg{list};
 	}
 
 	### ADD BASE DIR INFO ###
