@@ -2,18 +2,27 @@ package Miril::Type;
 
 use strict;
 use warnings;
-use autodie;
 
-use Object::Tiny qw(
-	id
-	name
-	location
-	template
+use Mouse;
+
+has 'id' =>
+(
+	is => 'ro',
 );
 
-sub new {
-	my $class = shift;
-	return bless { @_ }, $class;
-}
+has 'name' =>
+(
+	is => 'ro',
+);
+
+has 'location' =>
+(
+	is => 'ro',
+);
+
+has 'template' =>
+(
+	is => 'ro',
+);
 
 1;

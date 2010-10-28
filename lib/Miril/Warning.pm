@@ -2,8 +2,17 @@ package Miril::Warning;
 
 use strict;
 use warnings;
-use autodie;
 
-use Object::Tiny qw(errorvar message);
+use Mouse;
+
+has 'errorvar' =>
+(
+	is => 'ro',
+);
+
+has 'message' =>
+(
+	is => 'ro',
+);
 
 1;

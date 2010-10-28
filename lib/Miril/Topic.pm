@@ -2,16 +2,17 @@ package Miril::Topic;
 
 use strict;
 use warnings;
-use autodie;
 
-use Object::Tiny qw(
-	id
-	name
+use Mouse;
+
+has 'id' =>
+(
+	is => 'ro',
 );
 
-sub new {
-	my $class = shift;
-	return bless { @_ }, $class;
-}
+has 'name' =>
+(
+	is => 'ro',
+);
 
 1;

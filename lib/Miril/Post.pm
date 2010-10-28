@@ -2,34 +2,72 @@ package Miril::Post;
 
 use strict;
 use warnings;
-use autodie;
 
-### ACCESSORS ###
+use Mouse;
 
-use Object::Tiny qw(
-	id
-	title
-	body
-	teaser
-	source
-	url
-	author
-	published
-	modified
-	topics
-	type
-	out_path
-	tag_url
+has 'id' => 
+(
+	is => 'ro',
 );
 
+has 'title' => 
+(
+	is => 'ro',
+);
 
-### CONSTRUCTOR ###
+has 'body' => 
+(
+	is => 'ro',
+);
 
+has 'teaser' => 
+(
+	is => 'ro',
+);
 
-sub new 
-{
-	my $class = shift;
-	return bless { @_ }, $class;
-}
+has 'source' => 
+(
+	is => 'ro',
+);
+
+has 'url' => 
+(
+	is => 'ro',
+);
+
+has 'author' => 
+(
+	is => 'ro',
+);
+
+has 'published' => 
+(
+	is => 'ro',
+);
+
+has 'modified' => 
+(
+	is => 'ro',
+);
+
+has 'topics' => 
+(
+	is => 'ro',
+);
+
+has 'type' => 
+(
+	is => 'ro',
+);
+
+has 'out_path' => 
+(
+	is => 'ro',
+);
+	
+has 'tag_url' => 
+(
+	is => 'ro',
+);	
 
 1;

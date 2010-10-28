@@ -2,17 +2,22 @@ package Miril::URL;
 
 use strict;
 use warnings;
-use autodie;
 
-use Object::Tiny qw(
-	abs
-	rel
-	tag
+use Mouse;
+
+has 'abs' =>
+(
+	is => 'ro',
 );
 
-sub new {
-	my $class = shift;
-	return bless { @_ }, $class;
-}
+has 'rel' =>
+(
+	is => 'ro',
+);
+
+has 'tag' =>
+(
+	is => 'ro',
+);
 
 1;
