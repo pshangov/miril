@@ -20,20 +20,43 @@ use File::Spec::Functions qw(catfile);
 use Miril::URL;
 use Syntax::Keyword::Gather qw(gather take);
 
-### ACCESSORS ###
 
-use Object::Tiny qw(miril tpp tree);
+use Mouse;
+with 'Miril::Store';
 
-### CONSTRUCTOR ###
+has 'cfg' =>
+(
+	is       => 'ro',
+	isa      => 'Miril::Config',
+	required => 1,
+);
 
-sub new 
-{
-	my ($class, $miril) = @_;
+has 'util' =>
+(
+	is       => 'ro',
+	isa      => 'Miril::Util',
+	required => 1,
+);
 
-	my $self = bless {}, $class;
-	$self->{miril} = $miril;
-	return $self;
-}
+has 'filter' =>
+(
+	is       => 'ro',
+	isa      => 'Miril::Filter',
+	required => 1,
+);
+
+has 'tpp' =>
+(
+	is       => 'rw',
+	isa      => 'XML::TreePP',
+);
+
+has 'tree' =>
+(
+	is       => 'rw',
+	isa      => 'HashRef',
+);
+
 
 ### PUBLIC METHODS ###
 
@@ -41,9 +64,8 @@ sub get_post
 {
 	my ($self, $id) = @_;
 
-	my $miril = $self->miril;
-	my $cfg = $miril->cfg;
-	my $util = $miril->util;
+	my $cfg = $self->cfg;
+	my $util = $self->util;
 
 	my $filename = $util->inflate_in_path($id);
 	my $post_file;
@@ -61,7 +83,7 @@ sub get_post
 	};
 
 	my ($meta, $source) = split( /\n\n/, $post_file, 2);
-	my ($teaser)      = split( '<!-- BREAK -->', $source, 2);
+	my ($teaser)        = split( '<!-- BREAK -->', $source, 2);
     
 	my %meta = _parse_meta($meta);
 
@@ -73,8 +95,8 @@ sub get_post
 	return Miril::Store::File::Post->new(
 		id        => $id,
 		title     => $meta{'title'},
-		body      => $miril->filter->to_xhtml($source),
-		teaser    => $miril->filter->to_xhtml($teaser),
+		body      => $self->filter->to_xhtml($source),
+		teaser    => $self->filter->to_xhtml($teaser),
 		source    => $source,
 		out_path  => $util->inflate_out_path($id, $type),
 		in_path   => $filename,
@@ -91,9 +113,8 @@ sub get_posts
 {
 	my ($self, %params) = @_;
 
-	my $miril =  $self->miril;
-	my $cfg = $miril->cfg;
-	my $util = $miril->util;
+	my $cfg = $self->cfg;
+	my $util = $self->util;
 
 	# read and parse cache file
 	my $tpp = XML::TreePP->new();
@@ -238,9 +259,8 @@ sub save
 	my ($self, %post) = @_;
 
 	my $post = dao \%post;
-	my $miril = $self->miril;
-	my $cfg = $miril->cfg;
-	my $util = $miril->util;
+	my $cfg = $self->cfg;
+	my $util = $self->util;
 	
 	my @posts = $self->get_posts;
 	
@@ -341,7 +361,7 @@ sub delete
 
 	try
 	{
-		unlink catfile($self->miril->cfg->data_path, $id);
+		unlink catfile($self->cfg->data_path, $id);
 	}
 	catch
 	{
@@ -356,7 +376,7 @@ sub get_latest
 {
 	my ($self) = @_;
 	
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->cfg;
 
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['post'] );
@@ -386,7 +406,7 @@ sub add_to_latest
 {
 	my ($self, $id, $title) = @_;
 
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->cfg;
     my $tpp = XML::TreePP->new();
 	$tpp->set( force_array => ['post'] );
 	my $tree;

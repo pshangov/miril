@@ -9,21 +9,13 @@ use List::Util                   qw(first);
 use Miril::URL                   qw();
 use Miril::DateTime              qw();
 
-### ACCESSORS ###
+use Mouse;
 
-use Object::Tiny qw(cfg);
-
-### CONSTRUCTOR ###
-
-sub new 
-{
-	my ($class, $cfg) = @_;
-	my $self = bless {}, $class;
-	$self->{cfg} = $cfg;
-	return $self;
-}
-
-### PUBLIC METHODS ###
+has 'cfg' => 
+(
+	is       => 'ro',
+	required => 1,
+);
 
 sub inflate_date_published 
 {
