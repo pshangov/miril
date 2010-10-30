@@ -16,105 +16,75 @@ use Miril::Util;
 
 our $VERSION = '0.008';
 
-### ACCESSORS ###
-
-use Object::Tiny qw(
-	store
-	tmpl
-	cfg
-	filter
-	util
+has 'miril_dir' =>
+(
+	is       => 'ro',
+	required => 1,
 );
 
+has 'site' =>
+(
+	is       => 'ro',
+	required => 1,
+);
 
-### CONSTRUCTOR ###
+has 'cfg' =>
+(
+	is      => 'ro',
+	isa     => 'Miril::Config',
+	lazy    => 1,
+	builder => sub { 
+		Miril::Config->new( miril_dir => $_[0]->miril_dir, site => $_[0]->site );
+	},
+);
 
-sub new {
-	my $class = shift;
-	my $self = bless {}, $class;
-	my $miril_dir = shift;
-	my $site = shift;
+has 'util' =>
+(
+	is      => 'ro',
+	isa     => 'Miril::Util',
+	lazy    => 1,
+	builder => sub {
+		Miril::Util->new( cfg => $_[0]->cfg )
+	},
+);
 
-	
-	# load configuration
-	try {
-		my $cfg = Miril::Config->new($miril_dir, $site);
-		$self->{cfg} = $cfg;
-	} catch {
-		Miril::Exception->throw( 
-			errorvar => $_,
-			message  => 'Could not open configuration file',
-		);
-	};
-	return unless $self->cfg;
+has 'store' =>
+(
+	is      => 'ro',
+	isa     => 'Miril::Store',
+	lazy    => 1,
+	builder => sub 
+	{
+		my $self = shift;
+		my $store_name = "Miril::Store::" . $self->cfg->store;
+		Module::Load::load $store_name;
+		return $store_name->new( cfg => $_[0]->cfg, util => $_[0]->util );
+	},
+);
 
-	my $cfg = $self->cfg;
+has 'tmpl' =>
+(
+	is      => 'ro',
+	isa     => 'Miril::Template',
+	lazy    => 1,
+	builder => sub 
+	{
+		my $self = shift;
+		my $template_name = "Miril::Template::" . $self->cfg->template;
+		Module::Load::load $template_name;
+		return $template_name->new;
+	},
+);
 
-	# load store
-	try {
-		my $store_name = "Miril::Store::" . $cfg->store;
-		load $store_name;
-		my $store = $store_name->new($self);
-		$self->{store} = $store;
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not load store',
-		);
-	};
-	return unless $self->store;
-
-	# load temlate
-	try {
-		my $tmpl_name = "Miril::Template::" . $cfg->template;
-		load $tmpl_name;
-		$self->{tmpl} = $tmpl_name->new($self);
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not load template',
-		);
-	};
-
-	# load filter
-	try {
-		my $filter_name = "Miril::Filter::" . $cfg->filter;
-		load $filter_name;
-		$self->{filter} = $filter_name->new($cfg);
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not load filter',
-		);
-	};
-
-	# load utils
-	$self->{util} = Miril::Util->new($cfg);
-	
-	return $self;
-}
-
-### PUBLIC METHODS ###
-
-sub warnings 
+has 'warnings' =>
 {
-	my $self = shift;
-	return list $self->{warnings};
-}
-
-sub push_warning 
-{
-	my $self = shift;
-	my %params = @_;
-
-	my $warning = Miril::Warning->new(
-		message  => $params{'message'},
-		errorvar => $params{'errorvar'},
-	);
-
-	my @warnings_stack = $self->warnings;
-	push @warnings_stack, $warning;
-	$self->{warnings} = \@warnings_stack;
+	traits  => ['Array'],
+	is      => 'rw',
+	isa     => 'ArrayRef[Miril::Warning]',
+	default => sub { [] },
+	handles => {
+    	push_warning => 'push',
+	},
 }
 
 1;
