@@ -160,4 +160,10 @@ has 'secret' =>
 	default => 'Papa was a rolling stone!',
 );
 
+has 'groups' =>
+(
+	is  => 'ro',
+	isa => 'ArrayRef[WWW::Publisher::Static::Group]',
+);
+
 1;
