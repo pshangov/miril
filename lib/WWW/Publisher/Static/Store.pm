@@ -3,7 +3,7 @@ package WWW::Publisher::Static::Store;
 use strict;
 use warnings;
 
-use Mouse::Role;
+use Any::Moose::Role;
 
 requires 'get';
 

@@ -3,8 +3,12 @@ package Miril::Config;
 use strict;
 use warnings;
 
-use File::Spec ();
-use Mouse;
+use Path::Class qw(file dir);
+use List::Util qw(first);
+use WWW::Publisher::Static::Group;
+use Any::Moose;
+
+extends 'WWW::Publisher::Static::Config';
 
 has 'site_dir' => 
 (
@@ -44,31 +48,37 @@ has 'posts_per_page' =>
 has 'cache_data' => 
 (
 	is      => 'ro',
-	builder => sub { File::Spec->catfile($_[0]->site_dir, 'cache', 'cache.xml') },
+	isa     => 'Path::Class::File',
+	builder => sub { file( $_[0]->site_dir, 'cache', 'cache.xml' ) },
+	
 );
 
 has 'latest_data' => 
 (
 	is      => 'ro',
-	builder => sub { File::Spec->catfile($_[0]->site_dir, 'cache', 'latest.xml') },
+	isa     => 'Path::Class::File',
+	builder => sub { file( $_[0]->site_dir, 'cache', 'latest.xml' ) },
 );
 
 has 'users_data' => 
 (
 	is      => 'ro',
-	builder => sub { File::Spec->catfile($_[0]->site_dir, 'cfg', 'users.xml') },
+	isa     => 'Path::Class::File',
+	default => sub { file($_[0]->site_dir, 'cfg', 'users.xml') },
 );
 
 has 'data_path' => 
 (
 	is      => 'ro',
-	builder => sub { File::Spec->catdir($_[0]->site_dir, 'data') },
+	isa     => 'Path::Class::Dir',
+	default => sub { dir($_[0]->site_dir, 'data') },
 );
 
 has 'tmpl_path' => 
 (
 	is      => 'ro',
-	builder => sub { File::Spec->catdir($_[0]->site_dir, 'tmpl') },
+	isa     => 'Path::Class::Dir',
+	builder => sub { dir($_[0]->site_dir, 'tmpl') },
 );
 
 has 'statuses' => 
@@ -159,5 +169,49 @@ has 'secret' =>
 	is      => 'ro',
 	default => 'Papa was a rolling stone!',
 );
+
+has 'groups' =>
+(
+	is      => 'ro',
+	isa     => 'ArrayRef[WWW::Publisher::Static::Group]',
+	builder => '_build_groups',
+);
+
+sub _build_groups
+{
+	my @groups = map { WWW::Publisher::Static::Group->new(%$_) }
+	{
+		name          => 'topic',
+		identifier_cb => sub { first {$_[0]->id eq $_->[1]} list $_[0]->topics },
+		keys_cb       => sub { map {$_->id} list $_[0]->topics },
+	},
+	{
+		name          => 'type',
+		identifier_cb => sub { shift->type },
+		keys_cb       => sub { shift->type->id },
+	},
+	{
+		name          => 'author',
+		identifier_cb => sub { shift->author },
+		keys_cb       => sub { shift->author },
+	},
+	{
+		name          => 'year',
+		identifier_cb => sub { shift->published },
+		keys_cb       => sub { shift->published->strftime('%Y') },
+	},
+	{
+		name          => 'month',
+		identifier_cb => sub { shift->published },
+		keys_cb       => sub { shift->published->strftime('%Y%m') },
+	},
+	{
+		name          => 'date',
+		identifier_cb => sub { shift->published },
+		keys_cb       => sub { shift->published->strftime('%Y%m%d') },
+	};
+
+	return \@groups;
+}
 
 1;
