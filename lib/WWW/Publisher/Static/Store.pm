@@ -5,7 +5,7 @@ use warnings;
 
 use Any::Moose::Role;
 
-requires 'get';
+requires 'get_post_by_id';
 
 requires 'save';
 

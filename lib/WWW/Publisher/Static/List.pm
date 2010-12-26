@@ -34,6 +34,18 @@ sub new {
 	return $self;
 }
 
+has 'groups' =>
+(
+	is => 'ro',
+	isa => 'ArrayRef[Str]',
+	coerce => sub { 
+		my @groups = 
+			map { $self->_get_group_by_id($_) } 
+			split '.', $list_definition->group; 
+	},
+	predicate => 'is_grouped',
+);
+
 ### METHODS ###
 
 sub group 

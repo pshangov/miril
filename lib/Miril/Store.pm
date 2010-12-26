@@ -491,4 +491,40 @@ sub _generate_cache_hash
 	return \@cache_posts;
 }
 
+sub search {
+if ( $list->match->id )
+		{
+			push @posts, $miril->store->get_post($_) for $list->match->id->list;
+		}
+		else 	
+		{
+			my @params = qw(
+				author
+				type
+				status
+				topic
+				created_before
+				created_on
+				created_after
+				updated_before
+				updated_on
+				updated_after
+				published_before
+				published_on
+				published_after
+				last
+			);
+		
+			my %params;
+
+			foreach my $param (@params) {
+				if ( exists $list->match->{$param} ) {
+					$params{$param} = $list->match->{$param};
+				}
+			}
+
+			@posts = $miril->store->get_posts(%params);
+		}
+}
+
 1;

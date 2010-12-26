@@ -12,7 +12,7 @@ has 'name' =>
 	required => 1,
 );
 
-has 'keys_cb' =>
+has 'key_cb' =>
 (
 	is       => 'ro',
 	isa      => 'CodeRef',
@@ -22,13 +22,22 @@ has 'keys_cb' =>
 	
 );
 
-has 'identifier_cb' =>
+has 'key_as_object_cb' =>
 (
 	is       => 'ro',
 	isa      => 'CodeRef',
 	traits   => ['Code'],	
 	required => 1,
-	handles  => { get_identifier => 'execute' },
+	handles  => { get_key_as_object => 'execute' },
+);
+
+has 'key_as_hash_cb' =>
+(
+	is       => 'ro',
+	isa      => 'CodeRef',
+	traits   => ['Code'],	
+	required => 1,
+	handles  => { get_key_as_hash => 'execute' },
 );
 
 1;

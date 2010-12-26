@@ -21,6 +21,99 @@ use File::Path qw(make_path);
 
 our $VERSION = '0.007';
 
+has 'config';
+has 'store';
+has 'rebuild';
+
+# lazy
+has 'template';
+
+sub _is_new_or_modified
+{
+	my $post = shift;
+	return 1 unless 
+		-e $post->out_path 
+		&& $post->modified->epoch <= -M $post->out_path;
+}
+
+sub publish_posts
+{
+	my $self = shift;
+
+	my @posts = $self->store->search;
+	@posts = grep { _is_new_or_modified($_) } @posts if !$self->rebuild;
+
+	foreach my $post (@posts) 
+	{
+		my $output = $miril->tmpl->load(
+			name => $post->type->template, 
+			params => {
+				post  => $post,
+				cfg   => $cfg,
+				title => $post->title,
+				id    => $post->id,
+		});
+
+		_file_write($post->out_path, $output);
+	}
+}
+
+sub group_posts
+{
+	my @groups = @{ shift };
+	my @posts = @{ shift };
+
+	return unless @groups and @posts;
+
+	my $group = shfit @groups;
+	
+	my %grouped_posts;
+
+	foreach my $post (@posts)
+	{
+		my @keys = $group->get_keys($post);
+		### FIXME
+		push @{ $grouped_posts{$_} }, $post for @keys;
+	}
+
+	my @lists = gather 
+	{
+		foreach my $key ( sort keys %grouped_posts )
+		{
+			my @grouped_posts = list $grouped_posts{$key};
+			take WWW::Publisher::Static::List->new(
+				posts         => \@grouped_posts,
+				key_as_hash   => $group->get_key_as_hash($grouped_posts[0]),
+				key_as_object => $group->get_key_as_object($grouped_posts[0]),
+				lists         => group_posts(\@groups, \@grouped_posts),
+				groups        => \@groups,
+			);	
+		}
+	};
+
+	return \@lists;
+}
+
+sub publish_lists
+{
+	my $self = shift;
+
+	foreach my $list_definition ($self->config->lists->list) 
+	{
+		my @posts = $self->store->search($list_definition->match);
+		
+		my $list = WWW::Publisher::Static::List->new(
+			posts => \@posts,
+		);	
+		
+		if ($list_definition->is_grouped)
+		{
+			my @lists = 
+		}
+	}
+
+}
+
 sub publish {
 	my ($class, $miril, $rebuild) = @_;
 
@@ -66,7 +159,7 @@ sub publish {
 		{
 			push @posts, $miril->store->get_post($_) for $list->match->id->list;
 		}
-		else 
+		else 	
 		{
 			my @params = qw(
 				author
