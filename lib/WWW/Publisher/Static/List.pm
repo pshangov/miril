@@ -9,36 +9,46 @@ use Ref::List qw(list);
 use List::Util qw(first);
 use Miril::DateTime;
 
-### ACCESSORS ###
+use Mouse;
 
-use Object::Tiny qw(
-	posts
-	key
-	count
-	title
-	url
-	sort
-	id
+has 'posts' => 
+(
+	is      => 'ro',
+	isa     => 'ArrayRef[WWW::Publisher::Static::Post]',
+	traits  => ['Array'],
+	handles => { count => 'count' },
 );
 
-### CONSTRUCTOR ###
+has 'key' =>
+(
+	is  => 'ro',
+	isa => 'Str',
+);
 
-sub new {
-	my $class = shift;
-	my %params = @_;
-	my $posts = $params{posts};
+has 'title' =>
+(
+	is  => 'ro',
+	isa => 'Str',
+);
 
-	my $self = bless \%params, $class;	
-	$self->{count} = list $params{posts};
+has 'id' =>
+(
+	is  => 'ro',
+	isa => 'Str',
+);
 
-	return $self;
-}
+has 'url' =>
+(
+	is  => 'ro',
+	isa => 'Str',
+);
 
 has 'groups' =>
 (
-	is => 'ro',
-	isa => 'ArrayRef[Str]',
-	coerce => sub { 
+	is        => 'ro',
+	isa       => 'ArrayRef[Str]',
+	coerce    => sub 
+	{ 
 		my @groups = 
 			map { $self->_get_group_by_id($_) } 
 			split '.', $list_definition->group; 
@@ -46,107 +56,14 @@ has 'groups' =>
 	predicate => 'is_grouped',
 );
 
-### METHODS ###
+has 'timestamp' =>
+(
+	is      => 'ro',
+	isa     => 'Miril::DateTime',
+	default => sub { Miril::DateTime->new(time()) },
+);
 
-sub group 
-{
-	my $self = shift;
-	my $group_key = shift; 
-	return $self->{group_key} unless $group_key;
-	$self->{group_key} = $group_key;
-	
-	my ($obj_cb, $key_cb);
-
-	# must be perl 5.8-compatible so we can't use switch
-	if ($group_key eq 'topic')
-	{
-		$obj_cb = sub { 
-			my ($post, $id) = @_;
-			return first {$_->id eq $id} list $post->topics;
-		};
-		$key_cb = sub { map {$_->id} list shift->topics };
-	}
-	elsif ($group_key eq 'type')
-	{
-		$obj_cb = sub { shift->type };
-		$key_cb = sub { shift->type->id };
-	}
-	elsif ($group_key eq 'author')
-	{
-		$obj_cb = sub { shift->author };
-		$key_cb = sub { shift->author };
-	}
-	elsif ($group_key eq 'year')
-	{
-		if ($self->sort eq 'modified')
-		{
-			$obj_cb = sub { shift->modified };
-			$key_cb = sub { shift->modified->strftime('%Y') };
-		}
-		else
-		{
-			$obj_cb = sub { shift->published };
-			$key_cb = sub { shift->published->strftime('%Y') };
-		}
-	}
-	elsif ($group_key eq 'month')
-	{
-		if ($self->sort eq 'modified')
-		{
-			$obj_cb = sub { shift->modified };
-			$key_cb = sub { shift->modified->strftime('%Y%m') };
-		}
-		else
-		{
-			$obj_cb = sub { shift->published };
-			$key_cb = sub { shift->published->strftime('%Y%m') };
-		}
-	}
-	elsif ($group_key eq 'date')
-	{
-		if ($self->sort eq 'modified')
-		{
-			$obj_cb = sub { shift->modified };
-			$key_cb = sub { shift->modified->strftime('%Y%m%d') };
-		}
-		else
-		{
-			$obj_cb = sub { shift->published };
-			$key_cb = sub { shift->published->strftime('%Y%m%d') };
-		}
-	}
-
-	else
-	{
-		croak "Invalid key '" . $group_key . "' passed to group.";
-	}
-
-	my (%groups, @groups);
-	
-	foreach my $post (list $self->posts)
-	{
-		my @group_hashes = $key_cb->($post);
-		foreach my $group_hash (@group_hashes)
-		{
-			my @group;
-			@group = @{ $groups{$group_hash} } if $groups{$group_hash};
-			push @group, $post;
-			$groups{$group_hash} = \@group;
-		}
-	}
-
-	push @groups, Miril::List->new(
-		posts => $groups{$_},
-		key   => $obj_cb->($groups{$_}->[-1], $_),
-		title => $self->title,
-		sort  => $self->sort,
-		id    => $self->id,
-	) for sort keys %groups;
-
-	return @groups;
-}
-
-sub post_by_id
+sub get_post_by_id
 {
 	my $self = shift;
 	my $id = shift;
@@ -154,10 +71,7 @@ sub post_by_id
 	return first { $_ eq $id } list $self->posts;
 }
 
-sub timestamp
-{
-	return Miril::DateTime->new(time());
-}
+
 
 
 
