@@ -17,7 +17,7 @@ use File::Spec::Functions qw(catfile splitpath);
 use Text::Sprintf::Named;
 use Miril::URL;
 use File::Path qw(make_path);
-
+use Text::Sprintf::Named
 
 our $VERSION = '0.007';
 
@@ -27,14 +27,6 @@ has 'rebuild';
 
 # lazy
 has 'template';
-
-sub _is_new_or_modified
-{
-	my $post = shift;
-	return 1 unless 
-		-e $post->out_path 
-		&& $post->modified->epoch <= -M $post->out_path;
-}
 
 sub publish_posts
 {
@@ -58,18 +50,74 @@ sub publish_posts
 	}
 }
 
+sub publish_lists
+{
+	my $self = shift;
+
+	my @lists;
+
+	foreach my $list_definition ($self->config->lists->list) 
+	{
+		my @posts = $self->store->search($list_definition->match);
+		
+		if ($list_definition->is_grouped)
+		{
+			my @new_lists = $self->group_posts(
+				group => $list_definition->group,
+				posts => \@posts,
+				page  => $list_definition->page,
+			);
+
+			push @lists, @new_lists;
+
+			if ($list_definition->map)
+			{
+				push @lists,  WWW::Publisher::Static::List->new(
+					lists => \@new_lists,
+				);
+			}
+		}
+		elsif ($list_definition->is_paged)
+		{
+			my @new_lists = $self->page_posts(@posts);
+
+			push @lists, @new_lists;
+		}
+		else
+		{
+			push @lists, WWW::Publisher::Static::List->new(
+				id    => $list_definition->id,
+				posts => \@posts,
+			);
+			
+		}
+	}
+
+	foreach my $list (@lists)
+	{
+		my $output = $miril->tmpl->load(
+			name   => $list->template,
+			params => 
+			{
+				list  => $list,
+				stash => $cfg,
+			}
+		);
+		
+		my $new_filename = catfile($cfg->output_path, $list->location);
+		_file_write($new_filename, $output);
+	}
+}
+
 sub group_posts
 {
-	my @groups = @{ shift };
-	my @posts = @{ shift };
+	my ( $group, $posts, $page ) = @_;
 
-	return unless @groups and @posts;
+	return unless $group and $posts;
 
-	my $group = shfit @groups;
-	
 	my %grouped_posts;
 
-	foreach my $post (@posts)
+	foreach my $post (list $posts)
 	{
 		foreach my $key ($group->get_keys($post))
 		{
@@ -80,43 +128,62 @@ sub group_posts
 		}
 	}
 
-	my @lists = gather 
+	return gather 
 	{
 		foreach my $key ( sort keys %grouped_posts )
 		{
 			my @grouped_posts = list $grouped_posts{$key};
-			take WWW::Publisher::Static::List->new(
-				posts         => \@grouped_posts,
-				key_as_hash   => $group->get_key_as_hash($grouped_posts[0]),
-				key_as_object => $group->get_key_as_object($grouped_posts[0]),
-				lists         => group_posts(\@groups, \@grouped_posts),
-				groups        => \@groups,
-			);	
+			
+			if ($page)
+			{
+				take $self->page_posts(@grouped_posts);
+			}
+			else
+			{
+				take WWW::Publisher::Static::List->new(
+					posts         => \@grouped_posts,
+					key_as_hash   => $group->get_key_as_hash($grouped_posts[0]),
+					key_as_object => $group->get_key_as_object($grouped_posts[0]),
+					group         => $group,
+				);	
+			}
 		}
 	};
+
+}
+
+
+sub page_posts
+{
+	my ( $posts, $entries_per_page, $location, $title, $id ) = @_;
+
+	my $pager = Data::Page->new;
+	my $total_entries = scalar @posts;
+	$pager->total_entries($total_entries);
+	$pager->entries_per_page($entries_per_page);
+	my $formatter = Text::Sprintf::Named->new({fmt => $location});
+
+	foreach my $page_no ($pager->first_page .. $pager->last_page)
+	{
+		my $current_pager = Data::Page->new;
+		$current_pager->total_entries($total_entries);
+		$current_pager->entries_per_page($entries_per_page);
+		$current_pager->current_page($page_no);
+		my @current_posts = $pager->splice(\@posts);
+				
+		my $list_page = Miril::List->new(
+			posts => \@current_posts,
+			pager => $current_pager,
+			title => $title,
+			url   => $self->_inflate_list_url( undef, $formatter->format({args => { page => $page_no }}) ),
+			id    => $id,
+		);
+	}
 
 	return \@lists;
 }
 
-sub publish_lists
-{
-	my $self = shift;
-
-	foreach my $list_definition ($self->config->lists->list) 
-	{
-		my @posts = $self->store->search($list_definition->match);
-		
-		my $list = WWW::Publisher::Static::List->new(
-			posts => \@posts,
-		);	
-		
-		if ($list_definition->is_grouped)
-		{
-			my @lists = 
-		}
-	}
-
-}
+=pod
 
 sub publish {
 	my ($class, $miril, $rebuild) = @_;
@@ -313,6 +380,8 @@ sub publish {
 	}
 }
 
+=cut
+
 sub _file_write {
 	my ($filename, $data) = @_;
 	my ($volume, $directories, $file) = splitpath($filename);
@@ -335,7 +404,13 @@ sub _file_write {
 	#}
 }
 
+sub _is_new_or_modified
+{
+	my $post = shift;
+	return 1 unless 
+		-e $post->out_path 
+		&& $post->modified->epoch <= -M $post->out_path;
+}
+
 1;
-
-
 
