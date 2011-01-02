@@ -57,6 +57,19 @@ has 'timestamp' =>
 	default => sub { Miril::DateTime->new(time()) },
 );
 
+has 'page' =>
+(
+	is        => 'ro',
+	isa       => 'Int',
+	predicate => 'is_paged',
+);
+
+has 'location' =>
+(
+	is  => 'ro',
+	isa => 'Str',
+);
+
 sub get_post_by_id
 {
 	my $self = shift;

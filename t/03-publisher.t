@@ -46,6 +46,8 @@ my @list_definitions = map
 		template => $_->{template},
 		location => $_->{location},
 		match    => $_->{match},
+		posts    => $_->{posts},
+		page     => $_->{page},
 		#map      => $_->{map},
 		#group    => $_->{group},
 	);
@@ -58,6 +60,7 @@ my @list_definitions = map
 		location => 'list1.html',
 		map      => 'list1_map.html',
 		posts    => \@posts,
+		page     => 2,
 	},
 );
 
@@ -77,6 +80,16 @@ my $publisher = WWW::Publisher::Static::Publisher->new(
 	rebuild     => 1,
 );
 
-isa_ok($publisher, 'WWW::Publisher::Static::Publisher');
+isa_ok($publisher, 'WWW::Publisher::Static::Publisher', "publisher class");
+
+my @test_posts = $publisher->prepare_posts;
+isa_ok( $test_posts[0], 'WWW::Publisher::Static::Post', "post class" );
+
+my @post_ids = map {$_->id} @test_posts;
+is_deeply( \@post_ids, [qw(post1 post2 post3)], "post objects work" );
+
+my @test_lists = $publisher->prepare_lists;
+isa_ok( $test_lists[0], 'WWW::Publisher::Static::List', "list class" );
+is( scalar @test_lists, 2, "number of pages" );
 
 done_testing();

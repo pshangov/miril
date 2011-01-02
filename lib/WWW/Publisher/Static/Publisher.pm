@@ -13,7 +13,9 @@ use File::Path              qw();
 use File::Slurp             qw();
 use Text::Sprintf::Named    qw();
 use Syntax::Keyword::Gather qw(gather take);
-use Params::Util            qw(_INSTANCE _SCALAR _ARRAY _POSINT);
+use Params::Util            qw(_INSTANCE _ARRAY _POSINT _STRING);
+use Data::Page              qw();
+use Class::Load             qw();
 
 our $VERSION = '0.007';
 
@@ -60,6 +62,20 @@ has 'output_path' =>
 	required => 1,
 );
 
+has 'list_class' =>
+(
+	is       => 'ro',
+	isa      => 'Str',
+	required => 1,
+	default  => 'WWW::Publisher::Static::List',
+);
+
+sub BUILD
+{
+	my $self = _INSTANCE(shift, __PACKAGE__);
+	Class::Load::load_class($self->list_class);
+}
+
 sub prepare_posts
 {
 	my $self = _INSTANCE(shift, __PACKAGE__);
@@ -69,12 +85,13 @@ sub prepare_posts
 sub prepare_lists
 {
 	my $self = _INSTANCE(shift, __PACKAGE__);
+	my $list_class = $self->list_class;
 
 	return gather
 	{
 		foreach my $list_definition ($self->get_lists) 
 		{
-			my $posts = $self->list_definition->posts;
+			my $posts = $list_definition->posts;
 			
 			if ($list_definition->is_grouped)
 			{
@@ -88,21 +105,24 @@ sub prepare_lists
 
 				if ($list_definition->map)
 				{
-					take WWW::Publisher::Static::List->new(
+					take $list_class->new(
 						lists => \@new_lists,
 					);
 				}
 			}
 			elsif ($list_definition->is_paged)
 			{
-				take $self->page_posts($posts);
+				take $self->page_posts(
+					$posts,
+					$list_definition->page,
+					$list_definition->location,
+					$list_definition->title,
+					$list_definition->id,
+				);
 			}
 			else
 			{
-				take WWW::Publisher::Static::List->new(
-					id    => $list_definition->id,
-					posts => $posts,
-				);
+				take $list_definition;
 			}
 		}
 	}
@@ -116,6 +136,8 @@ sub group_posts
 	my $page  = _POSINT(shift);
 
 	return unless $group and $posts;
+
+	my $list_class = $self->list_class;
 
 	my %grouped_posts;
 
@@ -140,7 +162,7 @@ sub group_posts
 			}
 			else
 			{
-				take WWW::Publisher::Static::List->new(
+				take $list_class->new(
 					posts         => \@grouped_posts,
 					key_as_hash   => $group->get_key_as_hash($grouped_posts[0]),
 					key_as_object => $group->get_key_as_object($grouped_posts[0]),
@@ -149,7 +171,6 @@ sub group_posts
 			}
 		}
 	};
-
 }
 
 sub page_posts
@@ -157,9 +178,11 @@ sub page_posts
 	my $self              = _INSTANCE(shift, __PACKAGE__);
 	my $posts             = _ARRAY(shift);
 	my $entries_per_page  = _POSINT(shift);
-	my $location          = _SCALAR(shift);
-	my $title             = _SCALAR(shift);
-	my $id                = _SCALAR(shift);
+	my $location          = _STRING(shift);
+	my $title             = _STRING(shift);
+	my $id                = _STRING(shift);
+
+	my $list_class = $self->list_class;
 
 	my $pager = Data::Page->new;
 	my $total_entries = scalar @{$posts};
@@ -177,7 +200,7 @@ sub page_posts
 			$current_pager->current_page($page_no);
 			my @current_posts = $pager->splice($posts);
 					
-			take WW::Publisher::Static::List->new(
+			take $list_class->new(
 				posts => \@current_posts,
 				pager => $current_pager,
 				title => $title,
@@ -185,7 +208,7 @@ sub page_posts
 				id    => $id,
 			);
 		}
-	}
+	};
 }
 
 sub render
@@ -218,8 +241,8 @@ sub render
 sub write
 {
 	my $self     = _INSTANCE(shift, __PACKAGE__);
-	my $filename = _SCALAR(shift);
-	my $data     = _SCALAR(shift);
+	my $filename = _STRING(shift);
+	my $data     = _STRING(shift);
 
 	my ($volume, $directories, $file) = splitpath($filename);
 	my $path = $volume . $directories;
