@@ -3,71 +3,33 @@ package WWW::Publisher::Static::Post;
 use strict;
 use warnings;
 
-use Mouse;
+use Any::Moose;
 
-has 'id' => 
+has 'id' =>
 (
-	is => 'ro',
+	is  => 'ro',
+	isa => 'Str',
 );
 
-has 'title' => 
+
+has 'template' =>
 (
-	is => 'ro',
+	is  => 'ro',
+	isa => 'Str',
 );
 
-has 'body' => 
+has 'path' =>
 (
-	is => 'ro',
+	is  => 'ro',
+	isa => 'Str',
 );
 
-has 'teaser' => 
+has 'is_dirty' =>
 (
-	is => 'ro',
+	is  => 'ro',
+	isa => 'Bool',
 );
 
-has 'source' => 
-(
-	is => 'ro',
-);
-
-has 'url' => 
-(
-	is => 'ro',
-);
-
-has 'author' => 
-(
-	is => 'ro',
-);
-
-has 'published' => 
-(
-	is => 'ro',
-);
-
-has 'modified' => 
-(
-	is => 'ro',
-);
-
-has 'topics' => 
-(
-	is => 'ro',
-);
-
-has 'type' => 
-(
-	is => 'ro',
-);
-
-has 'out_path' => 
-(
-	is => 'ro',
-);
-	
-has 'tag_url' => 
-(
-	is => 'ro',
-);	
+no Any::Moose;
 
 1;

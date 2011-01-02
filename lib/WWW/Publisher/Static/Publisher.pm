@@ -2,116 +2,118 @@ package WWW::Publisher::Static::Publisher;
 
 use warnings;
 use strict;
-use autodie;
 
-use Try::Tiny;
-use Exception::Class;
-use Carp;
-use Module::Load;
-use Miril::Warning;
-use Miril::Exception;
-use Miril::Config;
-use Miril::List;
-use Ref::List qw(list);
-use File::Spec::Functions qw(catfile splitpath);
-use Text::Sprintf::Named;
-use Miril::URL;
-use File::Path qw(make_path);
-use Text::Sprintf::Named
+use Any::Moose;
+
+use Try::Tiny               qw(try catch);
+use Carp                    qw();
+use Ref::List               qw(list);
+use Path::Class             qw();
+use File::Path              qw();
+use File::Slurp             qw();
+use Text::Sprintf::Named    qw();
+use Syntax::Keyword::Gather qw(gather take);
+use Params::Util            qw(_INSTANCE _SCALAR _ARRAY _POSINT);
 
 our $VERSION = '0.007';
 
-has 'config';
-has 'store';
-has 'rebuild';
+has 'posts' => 
+(
+	is      => 'ro',
+	isa     => 'ArrayRef[WWW::Publisher::Static::Post]',
+	default => sub { [] },
+	traits  => ['Array'],
+	handles => { get_posts => 'elements' },
+);
 
-# lazy
-has 'template';
+has 'lists' => 
+(
+	is      => 'ro',
+	isa     => 'ArrayRef[WWW::Publisher::Static::List]',
+	default => sub { [] },
+	traits  => ['Array'],
+	handles => { get_lists => 'elements' },
+);
 
-sub publish_posts
+has 'template' => (
+	is       => 'ro',
+	isa      => 'Object',
+	required => 1,
+);
+
+has 'groups' =>
+(
+	is  => 'ro',
+	isa => 'ArrayRef[WWW::Publisher::Static::Group]',
+);
+
+has 'stash' =>
+(
+	is => 'ro',
+);
+
+has 'output_path' =>
+(
+	is       => 'ro',
+	isa      => 'Path::Class::Dir',
+	coerce   => 1,
+	required => 1,
+);
+
+sub prepare_posts
 {
-	my $self = shift;
-
-	my @posts = $self->store->search;
-	@posts = grep { _is_new_or_modified($_) } @posts if !$self->rebuild;
-
-	foreach my $post (@posts) 
-	{
-		my $output = $miril->tmpl->load(
-			name => $post->type->template, 
-			params => {
-				post  => $post,
-				cfg   => $cfg,
-				title => $post->title,
-				id    => $post->id,
-		});
-
-		_file_write($post->out_path, $output);
-	}
+	my $self = _INSTANCE(shift, __PACKAGE__);
+	return $self->get_posts;
 }
 
-sub publish_lists
+sub prepare_lists
 {
-	my $self = shift;
+	my $self = _INSTANCE(shift, __PACKAGE__);
 
-	my @lists;
-
-	foreach my $list_definition ($self->config->lists->list) 
+	return gather
 	{
-		my @posts = $self->store->search($list_definition->match);
-		
-		if ($list_definition->is_grouped)
+		foreach my $list_definition ($self->get_lists) 
 		{
-			my @new_lists = $self->group_posts(
-				group => $list_definition->group,
-				posts => \@posts,
-				page  => $list_definition->page,
-			);
-
-			push @lists, @new_lists;
-
-			if ($list_definition->map)
+			my $posts = $self->list_definition->posts;
+			
+			if ($list_definition->is_grouped)
 			{
-				push @lists,  WWW::Publisher::Static::List->new(
-					lists => \@new_lists,
+				my @new_lists = $self->group_posts(
+					group => $list_definition->group,
+					posts => $posts,
+					page  => $list_definition->page,
+				);
+
+				take @new_lists;
+
+				if ($list_definition->map)
+				{
+					take WWW::Publisher::Static::List->new(
+						lists => \@new_lists,
+					);
+				}
+			}
+			elsif ($list_definition->is_paged)
+			{
+				take $self->page_posts($posts);
+			}
+			else
+			{
+				take WWW::Publisher::Static::List->new(
+					id    => $list_definition->id,
+					posts => $posts,
 				);
 			}
 		}
-		elsif ($list_definition->is_paged)
-		{
-			my @new_lists = $self->page_posts(@posts);
-
-			push @lists, @new_lists;
-		}
-		else
-		{
-			push @lists, WWW::Publisher::Static::List->new(
-				id    => $list_definition->id,
-				posts => \@posts,
-			);
-			
-		}
-	}
-
-	foreach my $list (@lists)
-	{
-		my $output = $miril->tmpl->load(
-			name   => $list->template,
-			params => 
-			{
-				list  => $list,
-				stash => $cfg,
-			}
-		);
-		
-		my $new_filename = catfile($cfg->output_path, $list->location);
-		_file_write($new_filename, $output);
 	}
 }
 
 sub group_posts
 {
-	my ( $group, $posts, $page ) = @_;
+	my $self  = _INSTANCE(shift, __PACKAGE__);
+	my $group = _INSTANCE(shift, 'WWW::Publisher::Static::Group');
+	my $posts = _ARRAY(shift);
+	my $page  = _POSINT(shift);
 
 	return unless $group and $posts;
 
@@ -121,10 +123,8 @@ sub group_posts
 	{
 		foreach my $key ($group->get_keys($post))
 		{
-			my @grouped_posts;
-			@grouped_posts = @{ $grouped_posts{$_} } if $grouped_posts{$_};
-			push @grouped_posts, $post;
-			$grouped_posts{$_} = \@grouped_posts;
+			$grouped_posts{$key} = [] unless $grouped_posts{$key};
+			push @{$grouped_posts{$key}}, $post;
 		}
 	}
 
@@ -152,265 +152,94 @@ sub group_posts
 
 }
 
-
 sub page_posts
 {
-	my ( $posts, $entries_per_page, $location, $title, $id ) = @_;
+	my $self              = _INSTANCE(shift, __PACKAGE__);
+	my $posts             = _ARRAY(shift);
+	my $entries_per_page  = _POSINT(shift);
+	my $location          = _SCALAR(shift);
+	my $title             = _SCALAR(shift);
+	my $id                = _SCALAR(shift);
 
 	my $pager = Data::Page->new;
-	my $total_entries = scalar @posts;
+	my $total_entries = scalar @{$posts};
 	$pager->total_entries($total_entries);
 	$pager->entries_per_page($entries_per_page);
 	my $formatter = Text::Sprintf::Named->new({fmt => $location});
 
-	foreach my $page_no ($pager->first_page .. $pager->last_page)
+	return gather
 	{
-		my $current_pager = Data::Page->new;
-		$current_pager->total_entries($total_entries);
-		$current_pager->entries_per_page($entries_per_page);
-		$current_pager->current_page($page_no);
-		my @current_posts = $pager->splice(\@posts);
-				
-		my $list_page = Miril::List->new(
-			posts => \@current_posts,
-			pager => $current_pager,
-			title => $title,
-			url   => $self->_inflate_list_url( undef, $formatter->format({args => { page => $page_no }}) ),
-			id    => $id,
-		);
-	}
-
-	return \@lists;
-}
-
-=pod
-
-sub publish {
-	my ($class, $miril, $rebuild) = @_;
-
-	my $cfg = $miril->cfg;
-
-	my (@to_create, @to_update);
-
-	my @posts = $miril->store->get_posts;
-
-	foreach my $post (@posts) 
-	{
-		if (-x $post->out_path) {
-			# TODO - check if this is correct!
-			if ( $rebuild or ($post->modified->epoch > -M $post->out_path) ) {
-				push @to_update, $post->id;
-			}
-		} else {
-			push @to_create, $post->id;
-		}
-	}
-
-	for (@to_create, @to_update) {
-		my $post = $miril->store->get_post($_);
-		
-		my $output = $miril->tmpl->load(
-			name => $post->type->template, 
-			params => {
-				post  => $post,
-				cfg   => $cfg,
-				title => $post->title,
-				id    => $post->id,
-		});
-
-		_file_write($post->out_path, $output);
-	}
-
-	foreach my $list ($cfg->lists->list) 
-	{
-		my @posts;
-
-		# accept ids
-		if ( $list->match->id )
+		foreach my $page_no ($pager->first_page .. $pager->last_page)
 		{
-			push @posts, $miril->store->get_post($_) for $list->match->id->list;
-		}
-		else 	
-		{
-			my @params = qw(
-				author
-				type
-				status
-				topic
-				created_before
-				created_on
-				created_after
-				updated_before
-				updated_on
-				updated_after
-				published_before
-				published_on
-				published_after
-				last
-			);
-		
-			my %params;
-
-			foreach my $param (@params) {
-				if ( exists $list->match->{$param} ) {
-					$params{$param} = $list->match->{$param};
-				}
-			}
-
-			@posts = $miril->store->get_posts(%params);
-		}
-
-		if ($list->group) {
-
-		
-			my $list_main = Miril::List->new( 
-				posts => \@posts, 
-				title => $list->name,
-				sort  => $cfg->sort,
-				id    => $list->id,
-			);
-			
-			my $group_key = $list->group; 
-			foreach my $list_group ($list_main->group($group_key))
-			{
-				
-				my ($f_args, $tag_url_id);
-
-				if ($group_key eq 'topic')
-				{
-					$f_args = { topic => $list_group->key->id };
-					$tag_url_id = $list->id . '/' . $list_group->key->id;
-				}
-				elsif ($group_key eq 'type')
-				{
-					$f_args = { type => $list_group->key->id };
-					$tag_url_id = $list->id . '/' . $list_group->key->id;
-				}
-				elsif ($group_key eq 'author')
-				{
-					$f_args = { author => $list_group->key};
-					$tag_url_id = $list->id . '/' . $list_group->key;
-				}
-				else
-				{	
-					$f_args = { 
-						year  => $list_group->key->strftime('%Y'), 
-						month => $list_group->key->strftime('%m'), 
-						date  => $list_group->key->strftime('%d'), 
-					};
-				}
-
-				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
-				my $location = $formatter->format({args => $f_args});
-				$list_group->{url} = $miril->util->inflate_list_url($tag_url_id, $list->location);
+			my $current_pager = Data::Page->new;
+			$current_pager->total_entries($total_entries);
+			$current_pager->entries_per_page($entries_per_page);
+			$current_pager->current_page($page_no);
+			my @current_posts = $pager->splice($posts);
 					
-				my $output = $miril->tmpl->load(
-					name => $list->template,
-					params => {
-						list  => $list_group,
-						cfg   => $cfg,
-						title => $list_group->title,
-						id    => $list->id,
-				});
-		
-				my $new_filename = catfile($cfg->output_path, $location);
-				_file_write($new_filename, $output);
-			}
-		}
-		elsif ($list->page)
-		{
-			my $pager = Data::Page->new;
-			my $posts_no = scalar @posts;
-			$pager->total_entries($posts_no);
-			$pager->entries_per_page($list->page);
-			foreach my $page_no ($pager->first_page .. $pager->last_page)
-			{
-				my $current_pager = Data::Page->new;
-				$current_pager->total_entries($posts_no);
-				$current_pager->entries_per_page($list->page);
-				$current_pager->current_page($page_no);
-				my @current_posts = $pager->splice(\@posts);
-					
-				my $formatter = Text::Sprintf::Named->new({fmt => $list->location});
-				my $location = $formatter->format({args => { page => $page_no }});
-					
-				my $list_page = Miril::List->new(
-					posts => \@current_posts,
-					pager => $current_pager,
-					title => $list->name,
-					url   => $miril->util->inflate_list_url(undef, $location),
-					sort  => $cfg->sort,
-					id    => $list->id,
-				);
-
-				my $output = $miril->tmpl->load(
-					name => $list->template,
-					params => {
-						list  => $list_page,
-						cfg   => $cfg,
-						title => $list_page->title,
-						id    => $list->id,
-				});
-		
-				my $new_filename = catfile($cfg->output_path, $location);
-				_file_write($new_filename, $output);
-			}
-		}	
-		else
-		{
-			my $output = $miril->tmpl->load(
-				name => $list->template,
-				params => {
-					list => Miril::List->new( 
-						posts => \@posts,
-						title => $list->name,
-						url   => $miril->util->inflate_list_url($list->id, $list->location),
-						id    => $list->id,
-						sort  => $cfg->sort,
-					),
-					cfg   => $cfg,
-					title => $list->name,
-					id    => $list->id,
-				}
+			take WW::Publisher::Static::List->new(
+				posts => \@current_posts,
+				pager => $current_pager,
+				title => $title,
+				#url   => $self->_inflate_list_url( undef, $formatter->format({args => { page => $page_no }}) ),
+				id    => $id,
 			);
-		
-			my $new_filename = catfile($cfg->output_path, $list->location);
-			_file_write($new_filename, $output);
 		}
 	}
 }
 
-=cut
+sub render
+{
+	my $self = _INSTANCE(shift, __PACKAGE__);
+	my $item = _INSTANCE(shift, 'WWW::Publisher::Static::Post') or 
+	           _INSTANCE(shift, 'WWW::Publisher::Static::List');
 
-sub _file_write {
-	my ($filename, $data) = @_;
+	my %params = ( stash => $self->stash );
+
+	if ( $item->isa('WWW::Publisher::Static::Post') )
+	{
+		$params{post} = $item;
+	}
+	elsif ( $item->isa('WWW::Publisher::Static::List') )
+	{
+		$params{list} = $item;
+	}
+	else
+	{
+		die "Unknown object passed for rendering!";
+	}
+
+	return $self->template->load(
+		name => $item->template, 
+		params => \%params,
+	);
+}
+
+sub write
+{
+	my $self     = _INSTANCE(shift, __PACKAGE__);
+	my $filename = _SCALAR(shift);
+	my $data     = _SCALAR(shift);
+
 	my ($volume, $directories, $file) = splitpath($filename);
 	my $path = $volume . $directories;
-	try {
-		make_path($path);
-		my $fh = IO::File->new($filename, ">") or die $!;
-		$fh->print($data);
-		$fh->close;
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not save information',
-		);
-	}
-	#my $post_fh = IO::File->new($filename, "<") or die $!;
-	#while (<$post_fh>)
-	#{
-#		warn "BOM before write!" if /\x{FEFF}/;
-	#}
+
+	File::Path::make_path($path)              or die $!;
+	File::Slurp::write_file($filename, $data) or die $!;
 }
 
-sub _is_new_or_modified
+sub publish
 {
-	my $post = shift;
-	return 1 unless 
-		-e $post->out_path 
-		&& $post->modified->epoch <= -M $post->out_path;
+	my $self = _INSTANCE(shift, __PACKAGE__);
+
+	foreach my $item ($self->prepare_posts, $self->prepare_lists)
+	{
+		my $output = $self->render($item);
+		$self->write($item->location, $output)
+	}
 }
+
+no Any::Moose;
 
 1;
 

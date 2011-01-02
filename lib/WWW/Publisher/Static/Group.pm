@@ -12,32 +12,23 @@ has 'name' =>
 	required => 1,
 );
 
-has 'key_cb' =>
+has 'sort_key_cb' =>
 (
 	is       => 'ro',
 	isa      => 'CodeRef',
 	traits   => ['Code'],
 	required => 1,
-	handles  => { get_keys => 'execute' },
+	handles  => { get_sort_keys => 'execute' },
 	
 );
 
-has 'key_as_object_cb' =>
+has 'key_cb' =>
 (
 	is       => 'ro',
 	isa      => 'CodeRef',
 	traits   => ['Code'],	
 	required => 1,
-	handles  => { get_key_as_object => 'execute' },
-);
-
-has 'key_as_hash_cb' =>
-(
-	is       => 'ro',
-	isa      => 'CodeRef',
-	traits   => ['Code'],	
-	required => 1,
-	handles  => { get_key_as_hash => 'execute' },
+	handles  => { get_key => 'execute' },
 );
 
 1;
