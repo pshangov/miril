@@ -12,23 +12,13 @@ has 'name' =>
 	required => 1,
 );
 
-has 'sort_key_cb' =>
-(
-	is       => 'ro',
-	isa      => 'CodeRef',
-	traits   => ['Code'],
-	required => 1,
-	handles  => { get_sort_keys => 'execute' },
-	
-);
-
 has 'key_cb' =>
 (
 	is       => 'ro',
 	isa      => 'CodeRef',
 	traits   => ['Code'],	
 	required => 1,
-	handles  => { get_key => 'execute' },
+	handles  => { get_keys => 'execute' },
 );
 
 1;

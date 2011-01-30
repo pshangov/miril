@@ -22,7 +22,7 @@ has 'posts' =>
 has 'key' =>
 (
 	is  => 'ro',
-	isa => 'Str',
+	isa => 'HashRef',
 );
 
 has 'title' =>
@@ -65,6 +65,25 @@ has 'page' =>
 );
 
 has 'location' =>
+(
+	is  => 'ro',
+	isa => 'Str',
+);
+
+has 'map' =>
+(
+	is  => 'ro',
+	isa => 'Str',
+	predicate => 'has_map',
+);
+
+has 'path' =>
+(
+	is  => 'ro',
+	isa => 'Path::Class::File',
+);
+
+has 'template' =>
 (
 	is  => 'ro',
 	isa => 'Str',

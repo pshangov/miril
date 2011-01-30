@@ -5,13 +5,6 @@ use warnings;
 
 use Any::Moose;
 
-has 'id' =>
-(
-	is  => 'ro',
-	isa => 'Str',
-);
-
-
 has 'template' =>
 (
 	is  => 'ro',
@@ -21,13 +14,7 @@ has 'template' =>
 has 'path' =>
 (
 	is  => 'ro',
-	isa => 'Str',
-);
-
-has 'is_dirty' =>
-(
-	is  => 'ro',
-	isa => 'Bool',
+	isa => 'Path::Class::File',
 );
 
 no Any::Moose;

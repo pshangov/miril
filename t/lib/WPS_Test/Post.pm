@@ -10,8 +10,8 @@ extends 'WWW::Publisher::Static::Post';
 
 has 'id' =>
 (
-	is       => 'ro',
-	isa      => 'Str',
+	is  => 'ro',
+	isa => 'Str',
 	required => 1,
 );
 
@@ -21,25 +21,21 @@ has 'title' =>
 	isa => 'Str',
 );
 
-has 'template' =>
+has '+template' =>
 (
-	is      => 'ro',
-	isa     => 'Str',
 	default => 'test_template',
 );
 
-has 'path' =>
+has '+path' =>
 (
-	is      => 'ro',
-	isa     => 'Path::Class::File',
+	lazy    => 1,
 	default => sub { file( 'data', $_[0]->id . '.html' ) },
 );
 
-has 'is_dirty' =>
+has 'type' =>
 (
-	is      => 'ro',
-	isa     => 'Bool',
-	default => 1,
+	is       => 'ro',
+	isa      => 'Str',
 );
 
 no Any::Moose;
