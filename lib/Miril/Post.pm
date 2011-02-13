@@ -3,104 +3,158 @@ package Miril::Post;
 use strict;
 use warnings;
 
-use Mouse;
+use Any::Moose;
 
 with 'WWW::Publisher::Static::Post';
 
 has 'id' => 
 (
-	is => 'ro',
+	qw(:ro :required),
+	isa           => 'Str',
+	documentation => 'Unique text ID of the post',
 );
+
+### CONTENT ###
 
 has 'title' => 
 (
-	is => 'ro',
+	qw(:ro :required),
+	isa           => 'Str',
+	documentation => 'Post title',
 );
 
 has 'source' => 
 (
-	is => 'ro',
+	qw(:rw :lazy),
+	isa           => 'Str',
+	builder       => '_build_source',
+	documentation => 'Post body in the original markup format (e.g. Markdown, Textile)',
 );
 
-has 'url' => 
+has 'body' =>
 (
-	is => 'ro',
+	qw(:rw :lazy),
+	isa           => 'Str',
+	builder       => '_build_body',
+	documentation => 'Post body in processed HTML',
 );
+
+has 'teaser' =>
+(
+	qw(:rw :lazy),
+	isa           => 'Str',
+	builder       => '_build_teaser',
+	documentation => 'Post teaser in processed HTML',
+);
+
+### METADATA ###
 
 has 'author' => 
 (
-	is => 'ro',
-);
-
-has 'published' => 
-(
-	is => 'ro',
-);
-
-has 'modified' => 
-(
-	is => 'ro',
+	qw(:ro),
+	isa           => 'Str',
+	documentation => 'Post author',
 );
 
 has 'topics' => 
 (
-	is => 'ro',
+	qw(:ro :weak_ref),
+	isa           => 'ArrayRef[Miril::Topic]',
+	documentation => 'List of Miril::Topic objects for this post',
 );
 
 has 'type' => 
 (
-	is => 'ro',
+	qw(:ro :required :weak_ref),
+	isa           => 'Miril::Type',
+	handles       => { template => 'template' },
+	documentation => 'Type of the post',
 );
 
-has 'out_path' => 
+has 'status' =>
 (
-	is => 'ro',
+	qw(:rw :required),
+	isa           => 'Str',
+	default       => 'draft'
+	documentation => 'Post status: draft or published',
 );
-	
+
+has 'published' => 
+(
+	qw(:ro),
+	trigger       => sub { $_[0]->status('published') },
+	documentation => 'Time when the post was published',
+);
+
+has 'modified' => 
+(
+	qw(:ro :lazy :required),
+	builder       => '_build_modified',
+	documentation => 'Time when the post source post was last modified',
+);
+
+### PATHS AND URLS ###
+
+has 'source_path' =>
+(
+	qw(:ro),
+	documentation => 'Path to the source file for this post',
+);
+
+has 'path' =>
+(
+	qw(:ro),
+	documentation => 'Path to the location where the post should be published',
+);
+
+has 'url' => 
+(
+	qw(:ro),
+	documentation => 'The absolute URL of this post in the website',
+);
+
+
 has 'tag_url' => 
 (
-	is => 'ro',
+	qw(:ro),
+	documentation => 'Tag URL for this post, to be used e.g. in Atom feeds',
 );	
 
-has 'in_path' =>
-(
-	is => 'ro',
-);
+### LAZY LOADING OF SOURCE, BODY AND TEASER ###
 
-sub body {
+sub _build_body
+{
 	my $self = shift;
-
-	if ($self->{body}) {
-		return $self->{body};
-	} else {
-		$self->_populate;
-		return $self->{body};
-	}
+	my ($source, $body, $teaser) = $self->_populate;
+	$self->source($source);
+	$self->teaser($teaser);
+	return $body;
 }
 
-sub teaser {
+sub _build_source
+{
 	my $self = shift;
-
-	if ($self->{teaser}) {
-		return $self->{teaser};
-	} else {
-		$self->_populate;
-		return $self->{teaser};
-	}
+	my ($source, $body, $teaser) = $self->_populate;
+	$self->body($body);
+	$self->teaser($teaser);
+	return $source;
 }
 
-sub status {
+sub _build_teaser
+{
 	my $self = shift;
-	my $status = $self->published ? 'published' : 'draft';
-	return $status;
+	my ($source, $body, $teaser) = $self->_populate;
+	$self->source($source);
+	$self->body($body);
+	return $teaser;
 }
 
-sub _populate {
+sub _populate 
+{
 	my $self = shift;
 
-	my $post_file;
-	try {
-		$post_file = File::Slurp::read_file($self->in_path);
+	my $post_file = try {
+		File::Slurp::read_file($self->path);
 	} catch {
 		Miril::Exception->throw(
 			message => "Cannot load data file",
@@ -114,9 +168,7 @@ sub _populate {
 	# temporary until we introduce multiple filters
 	my $filter = Miril::Filter::Markdown->new;
 
-	$self->{body}   = $filter->to_xhtml($source);
-	$self->{teaser} = $filter->to_xhtml($teaser);
-	$self->{source} = $source;
+	return $filter->to_xhtml($source), $filter->to_xhtml($teaser), $source;
 }
 
 1;

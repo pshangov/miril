@@ -1,25 +1,10 @@
-package Moose::Store;
+package Miril::Store;
 
 use strict;
 use warnings;
-use autodie;
 
-use Data::AsObject dao => { mode => 'silent' };
 use File::Slurp;
-use XML::TreePP;
-use Try::Tiny qw(try catch);
-use IO::File;
-use File::Spec;
-use List::Util qw(first);
-use Ref::List qw(list);
-use Miril::DateTime;
-use Miril::DateTime::ISO::Simple qw(time2iso iso2time);
-use Miril::Exception;
-use Miril::Store::File::Post;
-use File::Spec::Functions qw(catfile);
-use Miril::URL;
 use Syntax::Keyword::Gather qw(gather take);
-
 
 use Mouse;
 with 'WWW::Publisher::Static::Store';
@@ -60,49 +45,57 @@ has 'tree' =>
 
 ### PUBLIC METHODS ###
 
-sub get_post 
+sub get_post_by_id
 {
 	my ($self, $id) = @_;
 
 	my $cfg = $self->cfg;
 	my $util = $self->util;
 
+	#TODO _inflate_source_path
 	my $filename = $util->inflate_in_path($id);
-	my $post_file;
 	
-	try
-	{
-		$post_file = File::Slurp::read_file($filename);
-	}
-	catch
-	{
+	my $post_file = File::Slurp::read_file($filename) or
 		Miril::Exception->throw(
 			message => "Could not read data file", 
 			errorvar => $_,
 		);
-	};
 
+	#TODO _post_parse_sections
 	my ($meta, $source) = split( /\n\n/, $post_file, 2);
 	my ($teaser)        = split( '<!-- BREAK -->', $source, 2);
     
+	#TODO _post_parse_meta
 	my %meta = _parse_meta($meta);
 
+	#TODO _build_date_modified
 	my $modified = $util->inflate_date_modified($filename);
+	#TODO _inflate_type_from_id
 	my $type = $util->inflate_type($meta{'type'});
 	
 	my $published = $meta{'published'} ? Miril::DateTime->new(iso2time($meta{'published'})) : undef;
 
+	Miril::Post->new_with_cfg(
+		id => $id,
+		source => $source, # optional
+		meta => $meta,
+		cfg => $cfg,
+	);
+
+	# OR:
+	
 	return Miril::Store::File::Post->new(
 		id        => $id,
 		title     => $meta{'title'},
 		body      => $self->filter->to_xhtml($source),
 		teaser    => $self->filter->to_xhtml($teaser),
 		source    => $source,
-		out_path  => $util->inflate_out_path($id, $type),
-		in_path   => $filename,
-		modified  => Miril::DateTime->new($modified),
+		path      => $util->inflate_out_path($id, $type),
+		source_path => $filename,
+		#modified  => Miril::DateTime->new($modified),
 		published => $published,
 		type      => $type,
+		#TODO _inflate_url
 		url       => $published ? $util->inflate_post_url($id, $type, $published) : undef,
 		author    => $util->inflate_author($meta{'author'}),
 		topics    => $util->inflate_topics( list $meta{'topics'} ),
@@ -116,52 +109,21 @@ sub get_posts
 	my $cfg = $self->cfg;
 	my $util = $self->util;
 
-	# read and parse cache file
-	my $tpp = XML::TreePP->new();
-	$tpp->set( force_array => ['post', 'topic'] );
-	$tpp->set( indent => 2 );
-	$self->{tpp} = $tpp;
-    
-	my ($tree, @posts, $dirty);
-	
-	if (-e $cfg->cache_data) {
-		try 
-		{ 
-			$tree = $tpp->parsefile( $cfg->cache_data );
-		} catch {
-			Miril::Exception->throw(
-				message => "Could not read cache file", 
-				erorvar => $_,
-			);
-		};
-		@posts = map {
-			my $type = $util->inflate_type($_->type);
-			my @topics = $_->topics->topic->list if $_->topics;
-			
-			Miril::Store::File::Post->new(
-				id        => $_->id,
-				title     => $_->title,
-				in_path   => $util->inflate_in_path($_->id),
-				out_path  => $util->inflate_out_path($_->id, $type),
-				modified  => Miril::DateTime->new($_->modified),
-				published => $_->published ? Miril::DateTime->new($_->published) : undef,
-				type      => $type,
-				author    => $util->inflate_author($_->author),
-				topics    => $util->inflate_topics(@topics),
-				url       => $_->published ? $util->inflate_post_url($_->id, $type, Miril::DateTime->new($_->published)) : undef,
-			);
-		} dao list $tree->{xml}{post};
-	} else {
-		# miril is run for the first time
-		$tree = {};
-	}
+	my $cache = Miril::Cache->new($cfg->cache_data);
+
+	if ($cache->is_full)
+	{
+		my @posts = map { ... } $cache->posts;
+	}  
 
 	my @post_ids;
 
+	#TODO $cache->check_state;
 	# for each post, check if the data in the cache is older than the data in the filesystem
 	foreach my $post (@posts) {
-		if ( -e $post->in_path ) {
+		if ( -e $post->source_path ) {
 			push @post_ids, $post->id;
+			
 			my $modified = $util->inflate_date_modified($post->in_path);
 			if ( $modified > $post->modified->epoch ) {
 				$post = $self->get_post($post->id);
@@ -176,8 +138,10 @@ sub get_posts
 	# clean up posts deleted from the cache
 	@posts = grep { defined } @posts;
 	
+	#TODO my $post = $self->get_post($_); push @posts, $cache->add_items($post) for $cache->posts_needing_update;
 	# check for entries missing from the cache
 	opendir(my $data_dir, $cfg->data_path);
+
 	while ( my $id = readdir($data_dir) ) {
 		next if -d $id;
 		unless ( first {$_ eq $id} @post_ids ) {
@@ -187,29 +151,9 @@ sub get_posts
 		}
 	}
 	
-	while ( my $id = readdir($data_dir) ) {
-		next if -d $id;
-		unless ( first {$_ eq $id} @post_ids ) {
-			my $post = $self->get_post($id);
-			push @posts, $post;
-			$dirty++;
-		}
-	}
 
 	# update cache file
-	if ($dirty) {
-		my $new_tree = $tree;
-		$new_tree->{xml}{post} = _generate_cache_hash(@posts);
-
-		try { 
-			$self->tpp->writefile($cfg->cache_data, $new_tree); 
-		} catch { 
-			Miril::Exception->throw(
-				message => "Cannot update cache file", 
-				errorvar => $_,
-			);
-		};
-	}
+	$self->cache->update;
 
 	# filter posts
 	if (%params)
@@ -474,22 +418,6 @@ sub _parse_meta
 	return %meta;
 }
 
-sub _generate_cache_hash
-{
-	my (@posts) = @_;
-
-	my @cache_posts = map {{
-		id        => $_->id,
-		title     => $_->title,
-		modified  => $_->modified ? $_->modified->epoch : Miril::DateTime->new(time)->epoch,
-		published => $_->published ? $_->published->epoch : undef,
-		type      => $_->type->id,
-		author    => $_->author,
-		topics    => { topic => [ map {$_->id} list $_->topics ] },
-	}} @posts;
-
-	return \@cache_posts;
-}
 
 sub search {
 if ( $list->match->id )
