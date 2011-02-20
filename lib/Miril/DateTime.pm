@@ -4,20 +4,20 @@ use strict;
 use warnings;
 
 use Mouse;
-use Try::Catch;
-use Time::Local  qw();
-use Date::Format qw();
-use Carp::Croak  qw();
+use Try::Tiny;
+use Time::Local  ();
+use Date::Format ();
+use Carp         ();
 
 use overload '0+' => \&as_epoch;
 
-has 'year'     => ();
-has 'month'    => ();
-has 'day'      => ();
-has 'hour'     => ();
-has 'minute'   => ();
-has 'second'   => ();
-has 'timezone' => ();
+has 'year'     => ( is => 'ro' );
+has 'month'    => ( is => 'ro' );
+has 'day'      => ( is => 'ro' );
+has 'hour'     => ( is => 'ro' );
+has 'minute'   => ( is => 'ro' );
+has 'second'   => ( is => 'ro' );
+has 'timezone' => ( is => 'ro' );
 
 ### CONSTRUCTORS ###
 
