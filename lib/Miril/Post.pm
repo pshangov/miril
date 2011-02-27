@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use Any::Moose;
 use Path::Class;
+use List::Util qw(first);
+use Miril::DateTime;
 
 ### ID ###
 
@@ -19,31 +21,35 @@ has 'id' =>
 
 has 'title' => 
 (
-	qw(:ro :required),
+	is            => 'ro',
 	isa           => 'Str',
+	required      => 1,
 	documentation => 'Post title',
 );
 
 has 'source' => 
 (
-	qw(:rw :lazy),
+	is            => 'rw',
 	isa           => 'Str',
+	lazy          => 1,
 	builder       => '_build_source',
 	documentation => 'Post body in the original markup format (e.g. Markdown, Textile)',
 );
 
 has 'body' =>
 (
-	qw(:rw :lazy),
+	is            => 'rw',
 	isa           => 'Str',
+	lazy          => 1,
 	builder       => '_build_body',
 	documentation => 'Post body in processed HTML',
 );
 
 has 'teaser' =>
 (
-	qw(:rw :lazy),
+	is            => 'rw',
 	isa           => 'Str',
+	lazy          => 1,
 	builder       => '_build_teaser',
 	documentation => 'Post teaser in processed HTML',
 );
@@ -52,44 +58,50 @@ has 'teaser' =>
 
 has 'author' => 
 (
-	qw(:ro),
+	is            => 'ro',
 	isa           => 'Str',
 	documentation => 'Post author',
 );
 
 has 'topics' => 
 (
-	qw(:ro :weak_ref),
+	is            => 'ro',
 	isa           => 'ArrayRef[Miril::Topic]',
+	weak_ref      => 1,
 	documentation => 'List of Miril::Topic objects for this post',
 );
 
 has 'type' => 
 (
-	qw(:ro :required :weak_ref),
+	is            => 'ro',
 	isa           => 'Miril::Type',
+	required      => 1,
+	weak_ref      => 1,
 	handles       => { template => 'template' },
 	documentation => 'Type of the post',
 );
 
 has 'status' =>
 (
-	qw(:rw :required),
+	is            => 'rw',
 	isa           => 'Str',
-	builder       => '_build_status'
+	required      => 1,
+	builder       => '_build_status',
 	documentation => 'Post status: draft or published',
 );
 
 has 'published' => 
 (
-	qw(:ro),
+	is            => 'ro',
 	trigger       => sub { $_[0]->status('published') },
 	documentation => 'Time when the post was published',
 );
 
 has 'modified' => 
 (
-	qw(:ro :lazy :required),
+	is            => 'ro',
+	required      => 1,
+	lazy          => 1,
 	builder       => '_build_modified',
 	documentation => 'Time when the post source post was last modified',
 );
@@ -98,66 +110,66 @@ has 'modified' =>
 
 has 'source_path' =>
 (
-	qw(:ro),
+	is            => 'ro',
 	documentation => 'Path to the source file for this post',
 );
 
 has 'path' =>
 (
-	qw(:ro),
+	is            => 'ro',
 	documentation => 'Path to the location where the post should be published',
 );
 
 has 'url' => 
 (
-	qw(:ro),
+	is            => 'ro',
 	documentation => 'The absolute URL of this post in the website',
 );
 
 
 has 'tag_url' => 
 (
-	qw(:ro),
+	is            => 'ro',
 	documentation => 'Tag URL for this post, to be used e.g. in Atom feeds',
 );	
 
 ### CONSTRUCTORS ###
 
-sub new_from_id
+# requires output_path, base_url, authors, topics and types
+sub new_from_file
 {
-	my ($class, $cfg, $id) = @_;
-
-	# get contents of source file
-	my $source_path = file(_inflate_source_path_from_id($id));
+	my ($class, $file) = @_;
+	my ($output_path, $base_url, $cfg_authors, $cfg_topics, $cfg_types);
 
 	# split sourcefile into sections
-	my ($body, $teaser, $source, $meta) = _parse_source_file($source_path);
+	my ($body, $teaser, $source, $meta) = _parse_source_file($file);
 
 	# parse metadata
 	my %meta = _parse_meta($meta);
 
 	# expand metadata into objects
-	my $author = _inflate_object_from_id('author', $cfg, $meta{type});
-	my $topics = _inflate_object_from_id('topics', $cfg, $meta{type});
-	my $type = _inflate_object_from_id('type', $cfg, $meta{type});
+	my $author = _inflate_object_from_id('author', $cfg_types,   $meta{type});
+	my $topics = _inflate_object_from_id('topics', $cfg_topics,  $meta{topics});
+	my $type   = _inflate_object_from_id('type',   $cfg_authors, $meta{author});
 	
 	# prepare the remaining attributes
-	my $title = $meta{title};
-	my $published = $meta{'published'} ? Miril::DateTime->new(iso2time($meta{'published'})) : undef;
-	my $url = $meta{'published'} ? _inflate_url($id, $type, $published) : undef,
-	my $path = _inflate_path_from_id($id, $type),
+	my $id        = $file->basename;
+	my $title     = $meta{title};
+	my $published = $meta{'published'} ? Miril::DateTime->new_from_string($meta{'published'}) : undef;
+	my $url       = $base_url . $type->id . "/$id.html";
+	my $path      = file($output_path, $type->location, $id . ".html");
 	
 	return $class->new(
 		id          => $id,
 		title       => $title,
-		author      => $author
+		author      => $author,
 		topics      => $topics,
 		type        => $type,
 		body        => $body,
 		teaser      => $teaser,
 		source      => $source,
 		path        => $path,
-		source_path => $filename,
+		source_path => $file,
 		url         => $url,
 		published   => $published,
 	);
@@ -165,39 +177,51 @@ sub new_from_id
 
 sub new_from_cache
 {
-	my ($class, $cfg, %cache) = @_;
+	my ($class, %cache) = @_;
+	my ($cfg_authors, $cfg_topics, $cfg_types);
 
-	my $author = _inflate_object_from_id('author', $cfg, $cache{type});
-	my $topics = _inflate_object_from_id('topics', $cfg, $cache{type});
-	my $type = _inflate_object_from_id('type', $cfg, $cache{type});
+	my $author = _inflate_object_from_id('author', $cfg_authors, $cache{author});
+	my $topics = _inflate_object_from_id('topics', $cfg_topics,  $cache{topics});
+	my $type   = _inflate_object_from_id('type',   $cfg_types,   $cache{type});
 
-	my $published = $cache{'published'} ? Miril::DateTime->new(iso2time($meta{'published'})) : undef;
-	my $url = $cache{'published'} ? _inflate_url($id, $type, $published) : undef,
+	my $published = $cache{'published'} ? Miril::DateTime->new_from_string($cache{'published'}) : undef;
 
 	return $class->new(
 		id          => $cache{id},
 		title       => $cache{title},
-		author      => $author
+		author      => $author,
 		topics      => $topics,
 		type        => $type,
 		path        => file($cache{path}),
 		source_path => file($cache{source_path}),
-		url         => $url,
+		url         => $cache{url},
 		published   => $published,
 	);
 }
 
 sub new_from_params
 {
-	my ($class, $cfg, %params) = @_;
+	my ($class, %params) = @_;
+	my ($cfg_authors, $cfg_topics, $cfg_types);
 
-	my $author = _inflate_object_from_id('author', $cfg, $params{type});
-	my $topics = _inflate_object_from_id('topics', $cfg, $params{type});
-	my $type = _inflate_object_from_id('type', $cfg, $params{type});
+	my $author = _inflate_object_from_id('author', $cfg_authors, $params{author});
+	my $topics = _inflate_object_from_id('topics', $cfg_topics,  $params{topics});
+	my $type   = _inflate_object_from_id('type',   $cfg_types,   $params{type});
 
-	my $published = _inflate_date_published($params{published}, $params{status});
+	my $published;
 
-	return $class ->new(
+	if ($params{status} eq 'published')
+	{
+		$published = $params{published} 
+			? Miril::DateTime->new($params{published}) 
+			: Miril::DateTime->now;
+	}
+	else
+	{
+		$published = undef;
+	}
+
+	return $class->new(
 		id        => $params{id},
 		title     => $params{title},
 		author    => $author,
@@ -283,5 +307,21 @@ sub _parse_meta
 	return %meta;
 }
 
+sub _inflate_object_from_id
+{
+	my ($type, $id, $list) = @_;
+
+	return undef unless defined $id;
+
+	if (!ref $id)
+	{
+		return first { $_->id eq $id } @$list;
+	}
+	elsif (ref $id eq 'ARRAY')
+	{
+		my @objects;
+		return \@objects;
+	}
+}
 
 1;
