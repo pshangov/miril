@@ -1,172 +1,96 @@
 package Miril::Cache;
 
-use Moose;
-use XML::TreePP;
-use Data::AsObject;
+use Mouse;
 use Miril::Post;
+use Storable ();
 
-has 'path' =>
-(
-	qw(:ro :required),
-	isa => 'File',
+has 'filename' => (
+	is  => 'ro',
+	isa => 'Path::Class::File',
 );
 
-has 'is_full' =>
-(
-	qw(:ro :lazy_build),
-	isa => 'Bool',
+has 'raw' => (
+	is      => 'ro',
+	isa     => 'HashRef',
+	lazy    => 1,
+	builder => '_build_raw',
+	traits  => ['Hash'],
+	handles => { cached_ids => 'values', get_cached_post => 'get' },
 );
 
-has 'requires_update' =>
-(
-	qw(:rw :lazy_build),
-	isa => 'Bool',
+has 'posts' => (
+	is      => 'ro',
+	isa     => 'HashRef[Miril::Post]',
+	lazy    => 1,
+	builder => '_build_posts',
+	traits  => ['Hash'],
+	handles => { post_ids => 'values', get_post_by_id => 'get' },
 );
 
-has 'entries' =>
-(
-	qw(:rw),
-	isa     => 'ArrayRef',
-	traits  => ['Array'],
-	handles => { elements => 'get_entries' },
-	builder => '_build_entries',
-);
+sub _build_raw
+{
+	return Storable::retrieve($_[0]->filename);
+}
 
-has 'tree' =>
-(
-	qw(:rw),
-	builder => '_build_tree',
-);
-
-has 'tpp' =>
-(
-	qw(:rw),
-	builder => '_build_tpp',
-);
-
-has 'ivalid_entries' =>
-(
-	qw(:rw),
-	isa    => 'ArrayRef',
-	traits => ['Array'],
-);
-
-sub _build_entries
+sub _build_posts
 {
 	my $self = shift;
+	my %posts;
 
-	my @posts = map 
+	foreach my $id ($self->cached_ids)
 	{
-		my $type = $util->inflate_type($_->type);
-		my @topics = $_->topics->topic->list if $_->topics;
-		
-		Miril::Post->new(
-			id        => $_->id,
-			title     => $_->title,
-			in_path   => $util->inflate_in_path($_->id),
-			out_path  => $util->inflate_out_path($_->id, $type),
-			modified  => Miril::DateTime->new($_->modified),
-			published => $_->published ? Miril::DateTime->new($_->published) : undef,
-			type      => $type,
-			author    => $util->inflate_author($_->author),
-			topics    => $util->inflate_topics(@topics),
-			url       => $_->published ? $util->inflate_post_url($_->id, $type, Miril::DateTime->new($_->published)) : undef,
-		);
-	} dao list $self->tree->{xml}{post};
+		my $cached = $self->get_cached_post($id);
+		$posts{$id} = Miril::Post->new_from_cache($cached);
+	}
 
-	# check for outdated stuff
-	foreach my $post (@posts) {
-		if ( -e $post->source_path ) {
-			push @post_ids, $post->id;
-			
-			my $modified = $util->inflate_date_modified($post->in_path);
-			if ( $modified > $post->modified->epoch ) {
-				$post = $self->get_post($post->id);
-				$dirty++;
-			}
-		} else {
-			undef $post;
-			$dirty++;
+	while ( my ($id, $post) = each %posts )
+	{
+		# post has been deleted
+		if ( ! -e $post{$id}->source_path )
+		{
+			$self->delete_post($id);
+		}
+		# post has been updated
+		elsif ( ( time - ( -M $post->source_path ) * 86400 ) > $post->modified->epoch )
+		{
+			$self->add_post(Miril::Post->new_from_id($id));
 		}
 	}
 
-	# clean up posts deleted from the cache
-	@posts = grep { defined } @posts;
-
-	# check for missing stuff
-	
-	while ( my $id = readdir($data_dir) ) {
+	while ( my $id = readdir($self->data_dir) ) 
+	{
 		next if -d $id;
-		unless ( first {$_ eq $id} @post_ids ) {
-			my $post = $self->get_post($id);
-			push @posts, $post;
-			$dirty++;
+		unless ( $self->exists_post($id) )
+		{
+			$self->add_post( Miril::Post->new_from_id($id) );
 		}
 	}
 
-	return @posts;
+	return \%posts;
 }
 
-sub _build_tpp
+sub serialize
 {
 	my $self = shift;
+	my %serialized;
 
-	my $tpp = XML::TreePP->new();
-	
-	$tpp->set( force_array => ['post', 'topic'] );
-	$tpp->set( indent => 2 );
-	return $tpp;
-}
-
-sub _build_tree
-{
-	my $self = shift;
-	
-	if (-e $self->path) 
+	foreach my $post ($self->get_posts)
 	{
-		return $self->tpp->parsefile( $self->path ) or
-			Miril::Exception->throw(
-				message => "Could not read cache file", 
-				erorvar => $!,
-			);
-	}
-	else
-	{
-		$self->posts([]);
-		return {};
+		$serialized{$post->id} = {
+			id        => $post->id,
+			title     => $post->title,
+			modified  => $post->modified->epoch,
+			published => $post->published ? $post->published->epoch : undef,
+			type      => $post->type->id,
+			author    => $post->author->id,
+			topics    => [ map { $_->id } $post->get_topics ],
+		};
 	}
 }
 
 sub update
 {
-	my $self = shift;
-
-	return unless $self->requires_update;
-
-	$self->tree->{xml}{post} = _generate_cache_hash($self->get_entries);
-
-	$self->tpp->writefile($self->path, $self->tree) or
-		Miril::Exception->throw(
-			message => "Cannot update cache file", 
-			errorvar => $!,
-		);
-}
-
-sub _generate_cache_hash
-{
-	my (@posts) = @_;
-
-	my @cache_posts = map {{
-		id        => $_->id,
-		title     => $_->title,
-		modified  => $_->modified ? $_->modified->epoch : Miril::DateTime->new(time)->epoch,
-		published => $_->published ? $_->published->epoch : undef,
-		type      => $_->type->id,
-		author    => $_->author,
-		topics    => { topic => [ map {$_->id} list $_->topics ] },
-	}} @posts;
-
-	return \@cache_posts;
+	Storable::store($_[0]->serialize, $_[0]->filename);
 }
 
 1;
