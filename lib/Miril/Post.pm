@@ -2,7 +2,9 @@ package Miril::Post;
 
 use strict;
 use warnings;
-use Any::Moose;
+
+use Mouse;
+use Miril::TypeLib qw(TextId Str Author ArrayRefOfTopic Type Status DateTime File Url TagUrl);
 use Path::Class;
 use List::Util qw(first);
 use Miril::DateTime;
@@ -12,7 +14,7 @@ use Miril::DateTime;
 has 'id' => 
 (
 	is            => 'ro',
-	isa           => 'Str',
+	isa           => TextId,
 	required      => 1,
 	documentation => 'Unique text ID of the post',
 );
@@ -22,7 +24,7 @@ has 'id' =>
 has 'title' => 
 (
 	is            => 'ro',
-	isa           => 'Str',
+	isa           => Str,
 	required      => 1,
 	documentation => 'Post title',
 );
@@ -30,7 +32,7 @@ has 'title' =>
 has 'source' => 
 (
 	is            => 'rw',
-	isa           => 'Str',
+	isa           => Str,
 	lazy          => 1,
 	builder       => '_build_source',
 	documentation => 'Post body in the original markup format (e.g. Markdown, Textile)',
@@ -39,7 +41,7 @@ has 'source' =>
 has 'body' =>
 (
 	is            => 'rw',
-	isa           => 'Str',
+	isa           => Str,
 	lazy          => 1,
 	builder       => '_build_body',
 	documentation => 'Post body in processed HTML',
@@ -48,7 +50,7 @@ has 'body' =>
 has 'teaser' =>
 (
 	is            => 'rw',
-	isa           => 'Str',
+	isa           => Str,
 	lazy          => 1,
 	builder       => '_build_teaser',
 	documentation => 'Post teaser in processed HTML',
@@ -59,14 +61,14 @@ has 'teaser' =>
 has 'author' => 
 (
 	is            => 'ro',
-	isa           => 'Str',
+	isa           => Author,
 	documentation => 'Post author',
 );
 
 has 'topics' => 
 (
 	is            => 'ro',
-	isa           => 'ArrayRef[Miril::Topic]',
+	isa           => ArrayRefOfTopic,
 	weak_ref      => 1,
 	documentation => 'List of Miril::Topic objects for this post',
 );
@@ -74,7 +76,7 @@ has 'topics' =>
 has 'type' => 
 (
 	is            => 'ro',
-	isa           => 'Miril::Type',
+	isa           => Type,
 	required      => 1,
 	weak_ref      => 1,
 	handles       => { template => 'template' },
@@ -84,7 +86,7 @@ has 'type' =>
 has 'status' =>
 (
 	is            => 'rw',
-	isa           => 'Str',
+	isa           => Status,
 	required      => 1,
 	builder       => '_build_status',
 	documentation => 'Post status: draft or published',
@@ -93,6 +95,7 @@ has 'status' =>
 has 'published' => 
 (
 	is            => 'ro',
+	isa           => DateTime,
 	trigger       => sub { $_[0]->status('published') },
 	documentation => 'Time when the post was published',
 );
@@ -100,6 +103,7 @@ has 'published' =>
 has 'modified' => 
 (
 	is            => 'ro',
+	isa           => DateTime,
 	required      => 1,
 	lazy          => 1,
 	builder       => '_build_modified',
@@ -111,18 +115,21 @@ has 'modified' =>
 has 'source_path' =>
 (
 	is            => 'ro',
+	isa           => File,
 	documentation => 'Path to the source file for this post',
 );
 
 has 'path' =>
 (
 	is            => 'ro',
+	isa           => File,
 	documentation => 'Path to the location where the post should be published',
 );
 
 has 'url' => 
 (
 	is            => 'ro',
+	isa           => Url,
 	documentation => 'The absolute URL of this post in the website',
 );
 
@@ -130,6 +137,7 @@ has 'url' =>
 has 'tag_url' => 
 (
 	is            => 'ro',
+	isa           => TagUrl,
 	documentation => 'Tag URL for this post, to be used e.g. in Atom feeds',
 );	
 

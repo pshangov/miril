@@ -1,4 +1,4 @@
-package Miril::Topic;
+package Miril::Author;
 
 use strict;
 use warnings;
