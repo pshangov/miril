@@ -8,6 +8,7 @@ use Miril::TypeLib qw(TextId Str Author ArrayRefOfTopic Type Status DateTime Fil
 use Path::Class;
 use List::Util qw(first);
 use Miril::DateTime;
+#use Miril::Filter::Markdown;
 
 ### ID ###
 
@@ -143,12 +144,10 @@ has 'tag_url' =>
 
 ### CONSTRUCTORS ###
 
-# requires output_path, base_url, authors, topics and types
 sub new_from_file
 {
-	my ($class, $file) = @_;
-	my ($output_path, $base_url, $cfg_authors, $cfg_topics, $cfg_types);
-
+	my ($class, $nomen, $file, $output_path, $base_url) = @_;
+	
 	# split sourcefile into sections
 	my ($body, $teaser, $source, $meta) = _parse_source_file($file);
 
@@ -156,9 +155,9 @@ sub new_from_file
 	my %meta = _parse_meta($meta);
 
 	# expand metadata into objects
-	my $author = _inflate_object_from_id('author', $cfg_types,   $meta{type});
-	my $topics = _inflate_object_from_id('topics', $cfg_topics,  $meta{topics});
-	my $type   = _inflate_object_from_id('type',   $cfg_authors, $meta{author});
+	my $author = _inflate_object_from_id('author', $$nomen{types},   $meta{type});
+	my $topics = _inflate_object_from_id('topics', $$nomen{topics},  $meta{topics});
+	my $type   = _inflate_object_from_id('type',   $$nomen{authors}, $meta{author});
 	
 	# prepare the remaining attributes
 	my $id        = $file->basename;
@@ -185,12 +184,11 @@ sub new_from_file
 
 sub new_from_cache
 {
-	my ($class, %cache) = @_;
-	my ($cfg_authors, $cfg_topics, $cfg_types);
-
-	my $author = _inflate_object_from_id('author', $cfg_authors, $cache{author});
-	my $topics = _inflate_object_from_id('topics', $cfg_topics,  $cache{topics});
-	my $type   = _inflate_object_from_id('type',   $cfg_types,   $cache{type});
+	my ($class, $nomen, %cache) = @_;
+	
+	my $author = _inflate_object_from_id('author', $$nomen{authors}, $cache{author});
+	my $topics = _inflate_object_from_id('topics', $$nomen{topics},  $cache{topics});
+	my $type   = _inflate_object_from_id('type',   $$nomen{types},   $cache{type});
 
 	my $published = $cache{'published'} ? Miril::DateTime->new_from_string($cache{'published'}) : undef;
 
@@ -209,12 +207,11 @@ sub new_from_cache
 
 sub new_from_params
 {
-	my ($class, %params) = @_;
-	my ($cfg_authors, $cfg_topics, $cfg_types);
+	my ($class, $nomen, %params) = @_;
 
-	my $author = _inflate_object_from_id('author', $cfg_authors, $params{author});
-	my $topics = _inflate_object_from_id('topics', $cfg_topics,  $params{topics});
-	my $type   = _inflate_object_from_id('type',   $cfg_types,   $params{type});
+	my $author = _inflate_object_from_id('author', $$nomen{authors}, $params{author});
+	my $topics = _inflate_object_from_id('topics', $$nomen{topics},  $params{topics});
+	my $type   = _inflate_object_from_id('type',   $$nomen{types},   $params{type});
 
 	my $published;
 
@@ -317,17 +314,21 @@ sub _parse_meta
 
 sub _inflate_object_from_id
 {
-	my ($type, $id, $list) = @_;
+	my ($ids, $list) = @_;
 
-	return undef unless defined $id;
+	return undef unless defined $ids;
 
-	if (!ref $id)
+	if (!ref $ids)
 	{
-		return first { $_->id eq $id } @$list;
+		return first { $_->id eq $ids } @$list;
 	}
-	elsif (ref $id eq 'ARRAY')
+	elsif (ref $ids eq 'ARRAY')
 	{
 		my @objects;
+		foreach my $id (@$ids)
+		{
+			push @objects, first { $_->id eq $id } @$list;
+		}
 		return \@objects;
 	}
 }
