@@ -3,14 +3,16 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 10;
+use Test::Most tests => 15;
+
+use Path::Class qw(file);
+use File::Temp  qw(tempdir);
 
 use Miril::Post;
 use Miril::Type;
 use Miril::Author;
 use Miril::Topic;
 use Miril::DateTime;
-use Path::Class;
 
 ### PREPARE ###
 
@@ -30,6 +32,8 @@ my $type = Miril::Type->new(
 	location => 'somewhere',
 	template => 'some_template',
 );
+
+my %nomen = ( authors => \@authors, topics => \@topics, types => [$type] );
 
 ### PRIVATE FUNCTIONS ###
 
@@ -57,27 +61,27 @@ is_deeply( $meta{topics}, [qw(perl python)], 'meta topics' );
 
 # _parse_source_file 
 
-=pod
-
 my $source_file = file('t\data\aenean_eu_lorem');
 my ($body, $teaser, $source, $meta) = 
 	Miril::Post::_parse_source_file($source_file);
 
-is( $body, <<EoBody, 'xhtml body from file' );
-
+eq_or_diff( $body, <<EoBody, 'xhtml body from file' );
+<p>Aenean eu lorem at odio placerat fringilla.
+<!-- BREAK -->
+Cras faucibus velit quis dui.</p>
 EoBody
 
-is( $teaser, <<EoTeaser, 'xhtml teaser from file' );
-
+eq_or_diff( $teaser, <<EoTeaser, 'xhtml teaser from file' );
+<p>Aenean eu lorem at odio placerat fringilla.</p>
 EoTeaser
 
-is( $source, <<EoSource, 'source from file' );
+eq_or_diff( $source, <<EoSource, 'source from file' );
 Aenean eu lorem at odio placerat fringilla.
 <!-- BREAK -->
 Cras faucibus velit quis dui.
 EoSource
 
-is( $meta, <<EoMeta, 'meta from file' );
+my $expected_meta = <<EoMeta;
 Title: Aenean Eu Lorem
 Author: larry
 Type: news
@@ -85,7 +89,9 @@ Published: 2010-05-26 18:22
 Topics: perl
 EoMeta
 
-=cut
+chomp $expected_meta;
+
+eq_or_diff( $meta, $expected_meta, 'meta from file' );
 
 ### CONSTRUCTORS ###
 
@@ -114,3 +120,12 @@ foreach my $attribute ( keys %attributes )
 }
 
 is($post->type->id, 'news', 'type');
+
+# new_from_file
+
+my $base_url = 'http://www.example.com/';
+my $output_path = tempdir( CLEANUP => 1 );
+
+my $post_from_file = Miril::Post->new_from_file(\%nomen, $source_file, $output_path, $base_url);
+
+isa_ok($post_from_file, 'Miril::Post');

@@ -5,10 +5,10 @@ use warnings;
 
 use Mouse;
 use Miril::TypeLib qw(TextId Str Author ArrayRefOfTopic Type Status DateTime File Url TagUrl);
-use Path::Class;
-use List::Util qw(first);
+use Path::Class    qw(file dir);
+use List::Util     qw(first);
+use Class::Load    qw(load_class);
 use Miril::DateTime;
-#use Miril::Filter::Markdown;
 
 ### ID ###
 
@@ -89,7 +89,7 @@ has 'status' =>
 	is            => 'rw',
 	isa           => Status,
 	required      => 1,
-	builder       => '_build_status',
+    default       => 'draft',
 	documentation => 'Post status: draft or published',
 );
 
@@ -155,18 +155,18 @@ sub new_from_file
 	my %meta = _parse_meta($meta);
 
 	# expand metadata into objects
-	my $author = _inflate_object_from_id('author', $$nomen{types},   $meta{type});
-	my $topics = _inflate_object_from_id('topics', $$nomen{topics},  $meta{topics});
-	my $type   = _inflate_object_from_id('type',   $$nomen{authors}, $meta{author});
-	
+	my $author = _inflate_object_from_id( $meta{author}, $$nomen{authors} );
+	my $topics = _inflate_object_from_id( $meta{topics}, $$nomen{topics}  );
+	my $type   = _inflate_object_from_id( $meta{type},   $$nomen{types}   );
+
 	# prepare the remaining attributes
 	my $id        = $file->basename;
 	my $title     = $meta{title};
-	my $published = $meta{'published'} ? Miril::DateTime->new_from_string($meta{'published'}) : undef;
+	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}, 'iso') : undef;
 	my $url       = $base_url . $type->id . "/$id.html";
 	my $path      = file($output_path, $type->location, $id . ".html");
 	
-	return $class->new(
+    my %attributes = (
 		id          => $id,
 		title       => $title,
 		author      => $author,
@@ -178,8 +178,11 @@ sub new_from_file
 		path        => $path,
 		source_path => $file,
 		url         => $url,
-		published   => $published,
-	);
+    );
+
+    $attributes{published} = $published if $published;
+
+	return $class->new(%attributes);
 }
 
 sub new_from_cache
@@ -268,21 +271,30 @@ sub _build_teaser
 
 ### PRIVATE UTILITY FUNCTIONS ###
 
+# NOTE: All the functions below should some day be refactored into a
+# proper standalone parser class ...
+
 sub _parse_source_file 
 {
-	my $source_path = shift;
+	my ($source_path, $format) = @_;
 
 	my $post_file = $source_path->slurp or Miril::Exception->throw(
-		message => "Cannot load data file",
+		message  => "Cannot load data file",
 		errorvar => $_,
 	);
 
 	my ($meta, $source) = split( /\n\n/, $post_file, 2);
 	my ($teaser) = split( '<!-- BREAK -->', $source, 2);
 
-	# temporary until we introduce multiple filters
-	my $filter = Miril::Filter::Markdown->new;
+    $format = 'markdown' unless $format;
 
+    my %format_map = (
+        markdown => 'Miril::Filter::Markdown',
+    );
+    
+    load_class($format_map{$format});
+
+    my $filter = $format_map{$format}->new;
 	return $filter->to_xhtml($source), $filter->to_xhtml($teaser), $source, $meta;
 }
 
@@ -293,13 +305,17 @@ sub _parse_meta
 	my @lines = split /\n/, $meta;
 	my %meta;
 	
-	foreach my $line (@lines) {
-		if ($line =~ /^(Published|Title|Type|Author|Status):\s+(.+)/) {
+	foreach my $line (@lines) 
+    {
+		if ($line =~ /^(Published|Title|Type|Author|Status):\s+(.+)/) 
+        {
 			my $name = lc $1;
 			my $value = $2;
 			$value  =~ s/\s+$//;
 			$meta{$name} = $value;
-		} elsif ($line =~ /Topics:\s+(.+)/) {
+		} 
+        elsif ($line =~ /Topics:\s+(.+)/) 
+        {
 			my $value = lc $1;
 			$value  =~ s/\s+$//;
 			my @values = split /\s+/, $value;

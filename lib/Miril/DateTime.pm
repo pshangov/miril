@@ -39,7 +39,9 @@ sub now
 
 sub from_string
 {
-	my ($class, $string, $format_type);
+	my ($class, $string, $format_type) = @_;
+
+    $format_type = 'default' unless $format_type;
 
 	if ($format_type eq 'default')
 	{
