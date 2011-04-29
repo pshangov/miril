@@ -27,7 +27,7 @@ sub now
 
 	my @t = localtime time;
 	
-	return $class->new(
+	$class->new(
 		year   => $t[5] + 1900,
 		month  => $t[4] + 1,
 		day    => $t[3],

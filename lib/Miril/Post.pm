@@ -4,10 +4,11 @@ use strict;
 use warnings;
 
 use Mouse;
-use Miril::TypeLib qw(TextId Str Author ArrayRefOfTopic Type Status DateTime File Url TagUrl);
-use Path::Class    qw(file dir);
-use List::Util     qw(first);
-use Class::Load    qw(load_class);
+use Miril::TypeLib  qw(TextId Str Author ArrayRefOfTopic Type Status DateTime File Url TagUrl);
+use Path::Class     qw(file dir);
+use List::Util      qw(first);
+use Class::Load     qw(load_class);
+use Hash::MoreUtils qw(slice_def);
 use Miril::DateTime;
 
 ### ID ###
@@ -162,12 +163,12 @@ sub new_from_file
 	# prepare the remaining attributes
 	my $id        = $file->basename;
 	my $title     = $meta{title};
-	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}, 'iso') : undef;
+	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}) : undef;
 	my $url       = $base_url . $type->id . "/$id.html";
 	my $path      = file($output_path, $type->location, $id . ".html");
-	
-    my %attributes = (
-		id          => $id,
+
+	return $class->new( slice_def {
+        id          => $id,
 		title       => $title,
 		author      => $author,
 		topics      => $topics,
@@ -178,11 +179,8 @@ sub new_from_file
 		path        => $path,
 		source_path => $file,
 		url         => $url,
-    );
-
-    $attributes{published} = $published if $published;
-
-	return $class->new(%attributes);
+        published   => $published,
+    } );
 }
 
 sub new_from_cache
