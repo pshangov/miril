@@ -63,7 +63,7 @@ sub from_ymdhm
 
 	unless ( $string =~ /^(\d\d\d\d)-(\d\d)-(\d\d)\s(\d\d):(\d\d)$/ ) 
 	{
-		Carp::croak("Invalid time format (does not match 'YYYY:MM:DD HH:MM')");
+		Carp::croak("Invalid time format (does not match 'YYYY-MM-DD HH:MM')");
 	}
 	
 	return $class->new(

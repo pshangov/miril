@@ -70,8 +70,8 @@ has 'author' =>
 has 'topics' => 
 (
 	is            => 'ro',
-	isa           => ArrayRefOfTopic,
-	weak_ref      => 1,
+    isa           => ArrayRefOfTopic,
+    #weak_ref      => 1,
 	documentation => 'List of Miril::Topic objects for this post',
 );
 
@@ -148,7 +148,7 @@ has 'tag_url' =>
 sub new_from_file
 {
 	my ($class, $nomen, $file, $output_path, $base_url) = @_;
-	
+
 	# split sourcefile into sections
 	my ($body, $teaser, $source, $meta) = _parse_source_file($file);
 
@@ -167,11 +167,11 @@ sub new_from_file
 	my $url       = $base_url . $type->id . "/$id.html";
 	my $path      = file($output_path, $type->location, $id . ".html");
 
-	return $class->new( slice_def {
+    return $class->new( slice_def {
         id          => $id,
 		title       => $title,
 		author      => $author,
-		topics      => $topics,
+        topics      => $topics,
 		type        => $type,
 		body        => $body,
 		teaser      => $teaser,
