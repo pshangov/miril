@@ -165,7 +165,8 @@ my %params = (
 
 my $post_from_params = Miril::Post->new_from_params(\%nomen, %params);
 
-my %posts_for_testing = ( 
+my %posts_for_testing = 
+(
     file   => $post_from_file,
     cache  => $post_from_cache,
     params => $post_from_params,
@@ -185,26 +186,27 @@ while ( my ( $from, $post ) = each %posts_for_testing )
     is( $post->author->id, $expected{author_id}, 'author' . " from $from" );
 
     is_deeply( [ map {$_->id} @{$post->topics} ],  [qw(perl)], "topics from $from" );
-
-    #is ($post->published->, 'Funky Stuff', 'title');
-    #is ($post->modified, 'TODO', 'modified');
     
     # source_path does not exist yet for newly-created posts from params
     is ( $post->source_path->stringify, $source_file, "source_path from $from" ) 
         unless $from eq 'params';
     
     # path, url and tag_url are only used during publishing and 
-    # therefore are supplied only to objects created with new_from file
+    # therefore are supplied only to objects created with new_from_file
     if ( $from eq 'file')
     {
-        my $expected_path = file($output_path, $post->type->location, $post->id . ".html")->stringify;
-        my $expected_url  = 'http://www.example.com/news/aenean_eu_lorem.html';
-        is ( $post->path, $expected_path, "path from $from" );
-        is ( $post->url,  $expected_url,  "url from $from"  );
-        
-        # diag $post->tag_url;
+        my $expected_path     = file($output_path, $post->type->location, $post->id . ".html")->stringify;
+        my $expected_url      = 'http://www.example.com/news/aenean_eu_lorem.html';
+        my $expected_tag_url  = 'tag:www.example.com,2010-05-26:/aenean_eu_lorem';
+
+        is ( $post->path,    $expected_path,    "path from $from"    );
+        is ( $post->url,     $expected_url,     "url from $from"     );
+        is ( $post->tag_url, $expected_tag_url, "tag_url from $from" );
     }
 
+    #diag $post->published->as_epoch;
+    #is ($post->published->, 'Funky Stuff', 'title');
+    #is ($post->modified, 'TODO', 'modified');
 }
 
 done_testing;

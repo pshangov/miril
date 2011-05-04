@@ -166,6 +166,21 @@ sub new_from_file
 	my $url       = $base_url . $type->id . "/$id.html";
 	my $path      = file($output_path, $type->location, $id . ".html");
 
+    my $tag_url; #tag:www.mechanicalrevolution.com,2011-05-02:/parameter_apocalypse_take_two
+
+    if ($published)
+    {
+        my $base_url_sans_protocol = $base_url;
+        $base_url_sans_protocol =~ s/^https?:\/\///;
+        $base_url_sans_protocol =~ s/\/$//;
+
+        $tag_url = sprintf('tag:%s,%s:/%s', 
+            $base_url_sans_protocol,
+            $published->as_strftime('%Y-%m-%d'),
+            $id,
+        );
+    }
+
     return $class->new( slice_def {
         id          => $id,
 		title       => $title,
@@ -178,6 +193,7 @@ sub new_from_file
 		path        => $path,
 		source_path => $file,
 		url         => $url,
+        tag_url     => $tag_url,
         published   => $published,
     } );
 }
