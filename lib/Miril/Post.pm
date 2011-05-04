@@ -35,8 +35,7 @@ has 'source' =>
 (
 	is            => 'rw',
 	isa           => Str,
-	lazy          => 1,
-	builder       => '_build_source',
+	lazy_build    => 1,
 	documentation => 'Post body in the original markup format (e.g. Markdown, Textile)',
 );
 
@@ -150,7 +149,7 @@ sub new_from_file
 	my ($class, $nomen, $file, $output_path, $base_url) = @_;
 
 	# split sourcefile into sections
-	my ($body, $teaser, $source, $meta) = _parse_source_file($file);
+	my ($source, $body, $teaser, $meta) = _parse_source($file);
 
 	# parse metadata
 	my %meta = _parse_meta($meta);
@@ -187,13 +186,13 @@ sub new_from_cache
 {
 	my ($class, $nomen, %cache) = @_;
 	
-	my $author = _inflate_object_from_id('author', $$nomen{authors}, $cache{author});
-	my $topics = _inflate_object_from_id('topics', $$nomen{topics},  $cache{topics});
-	my $type   = _inflate_object_from_id('type',   $$nomen{types},   $cache{type});
+	my $author = _inflate_object_from_id( $cache{author}, $$nomen{authors} );
+	my $topics = _inflate_object_from_id( $cache{topics}, $$nomen{topics}  );
+	my $type   = _inflate_object_from_id( $cache{type},   $$nomen{types}   );
 
-	my $published = $cache{'published'} ? Miril::DateTime->new_from_string($cache{'published'}) : undef;
+	my $published = $cache{'published'} ? Miril::DateTime->from_epoch($cache{'published'}) : undef;
 
-	return $class->new(
+	return $class->new( slice_def {
 		id          => $cache{id},
 		title       => $cache{title},
 		author      => $author,
@@ -201,18 +200,20 @@ sub new_from_cache
 		type        => $type,
 		path        => file($cache{path}),
 		source_path => file($cache{source_path}),
-		url         => $cache{url},
+        #url         => $cache{url},
 		published   => $published,
-	);
+    } );
 }
 
 sub new_from_params
 {
 	my ($class, $nomen, %params) = @_;
 
-	my $author = _inflate_object_from_id('author', $$nomen{authors}, $params{author});
-	my $topics = _inflate_object_from_id('topics', $$nomen{topics},  $params{topics});
-	my $type   = _inflate_object_from_id('type',   $$nomen{types},   $params{type});
+	my $author = _inflate_object_from_id( $params{author}, $$nomen{authors} );
+	my $topics = _inflate_object_from_id( $params{topics}, $$nomen{topics}  );
+	my $type   = _inflate_object_from_id( $params{type},   $$nomen{types}   );
+
+    use Devel::Dwarn;
 
 	my $published;
 
@@ -222,20 +223,20 @@ sub new_from_params
 			? Miril::DateTime->new($params{published}) 
 			: Miril::DateTime->now;
 	}
-	else
-	{
-		$published = undef;
-	}
 
-	return $class->new(
+    ( undef, my ($body, $teaser) ) = _parse_source($params{source});
+
+	return $class->new( slice_def {
 		id        => $params{id},
 		title     => $params{title},
 		author    => $author,
 		topics    => $topics,
 		type      => $type,
 		source    => $params{source},
+        body      => $body,
+        teaser    => $teaser,
 		published => $published,
-	);
+    } );
 }
 
 ### BUILDERS ###
@@ -243,7 +244,7 @@ sub new_from_params
 sub _build_body
 {
 	my $self = shift;
-	my ($source, $body, $teaser) = $self->_parse_source_file($self->source_path);
+	my ($source, $body, $teaser) = _parse_source($self->has_source ? $self->source : $self->source_path);
 	$self->source($source);
 	$self->teaser($teaser);
 	return $body;
@@ -252,7 +253,7 @@ sub _build_body
 sub _build_source
 {
 	my $self = shift;
-	my ($source, $body, $teaser) = $self->_parse_source_file($self->source_path);
+	my ($source, $body, $teaser) = _parse_source($self->has_source ? $self->source : $self->source_path);
 	$self->body($body);
 	$self->teaser($teaser);
 	return $source;
@@ -261,7 +262,7 @@ sub _build_source
 sub _build_teaser
 {
 	my $self = shift;
-	my ($source, $body, $teaser) = _parse_source_file($self->source_path);
+	my ($source, $body, $teaser) = _parse_source($self->has_source ? $self->source : $self->source_path);
 	$self->source($source);
 	$self->body($body);
 	return $teaser;
@@ -269,19 +270,31 @@ sub _build_teaser
 
 ### PRIVATE UTILITY FUNCTIONS ###
 
-# NOTE: All the functions below should some day be refactored into a
-# proper standalone parser class ...
+# NOTE: All the functions below are pretty messy and should some day 
+# be refactored into a proper standalone parser class ...
 
-sub _parse_source_file 
+sub _parse_source
 {
-	my ($source_path, $format) = @_;
+	my ($source_arg, $format) = @_;
 
-	my $post_file = $source_path->slurp or Miril::Exception->throw(
-		message  => "Cannot load data file",
-		errorvar => $_,
-	);
+    my ($source, $meta);
+    
+    # source_arg is a filename, barse meta and body
+    if (ref $source_arg)
+    {
+	    my $source_file = $source_arg->slurp or Miril::Exception->throw(
+		    message  => "Cannot load data file",
+		    errorvar => $_,
+	    );
 
-	my ($meta, $source) = split( /\n\n/, $post_file, 2);
+       	($meta, $source) = split( /\n\n/, $source_file, 2);
+    }
+    # source_arg is a string, parse just body, meta is undef
+    else
+    {
+        $source = $source_arg;
+    }
+
 	my ($teaser) = split( '<!-- BREAK -->', $source, 2);
 
     $format = 'markdown' unless $format;
@@ -293,7 +306,7 @@ sub _parse_source_file
     load_class($format_map{$format});
 
     my $filter = $format_map{$format}->new;
-	return $filter->to_xhtml($source), $filter->to_xhtml($teaser), $source, $meta;
+	return $source, $filter->to_xhtml($source), $filter->to_xhtml($teaser), $meta;
 }
 
 sub _parse_meta 
@@ -339,6 +352,7 @@ sub _inflate_object_from_id
 	elsif (ref $ids eq 'ARRAY')
 	{
 		my @objects;
+
 		foreach my $id (@$ids)
 		{
 			push @objects, first { $_->id eq $id } @$list;

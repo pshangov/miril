@@ -59,11 +59,11 @@ is( $meta{title}, 'Funky Stuff', 'meta title' );
 is( $meta{author}, 'damian', 'meta author' );
 is_deeply( $meta{topics}, [qw(perl python)], 'meta topics' );
 
-# _parse_source_file 
+# _parse_source
 
 my $source_file = file('t\data\aenean_eu_lorem');
-my ($body, $teaser, $source, $meta) = 
-	Miril::Post::_parse_source_file($source_file);
+my ($source, $body, $teaser, $meta) = 
+	Miril::Post::_parse_source($source_file);
 
 my %expected;
 
@@ -136,41 +136,75 @@ my $output_path = tempdir( CLEANUP => 1 );
 my $post_from_file = Miril::Post->new_from_file(\%nomen, $source_file, $output_path, $base_url);
 
 # new_from_cache
+
 my %cache = (
-    id        => $expected{id},
-    title     => $expected{title},
-    #modified  => file($filename)->stat->modified,
-    published => $post->published ? $post->published->epoch : undef,
-    type      => $post->type->id,
-    author    => $expected{author_id},
-    topics    => [qw(perl)],
+    id          => $expected{id},
+    title       => $expected{title},
+    modified    => $source_file->stat->mtime,
+    published   => $source_file->stat->mtime,
+    type        => $expected{type_id},
+    author      => $expected{author_id},
+    topics      => [qw(perl)],
+    source_path => $source_file->stringify,
+
 );
 
-#my $post_from_cache = Miril::Post->new_from_cache(\%nomen, %cache);
+my $post_from_cache = Miril::Post->new_from_cache(\%nomen, %cache);
+
+# new_from_params
+
+my %params = (
+    id        => $expected{id},
+    title     => $expected{title},
+    author    => $expected{author_id},
+    topics    => [qw(perl)],
+    type      => $expected{type_id},
+    source    => $expected{source},
+    status    => 'published',
+);
+
+my $post_from_params = Miril::Post->new_from_params(\%nomen, %params);
 
 my %posts_for_testing = ( 
-    file => $post_from_file,
+    file   => $post_from_file,
+    cache  => $post_from_cache,
+    params => $post_from_params,
 );
 
 while ( my ( $from, $post ) = each %posts_for_testing )
 {
     isa_ok( $post, 'Miril::Post' );
 
-    is( $post->id,         $expected{id},        "id from $from"        );
-    is( $post->title,      $expected{title},     "title from $from"     );
-    is( $post->teaser,     $expected{teaser},    "teaser from $from"    );
-    is( $post->body,       $expected{body},      "body from $from"      );
-    is( $post->source,     $expected{source},    "source from $from"    );
-    is( $post->status,     $expected{status},    "published from $from" );
-    is( $post->type->id,   $expected{type_id},   "type from $from"      );
-    is( $post->author->id, $expected{author_id}, "author from $from"    );
+    is( $post->id,         $expected{id},        'id'     . " from $from" );
+    is( $post->title,      $expected{title},     'title'  . " from $from" );
+    is( $post->teaser,     $expected{teaser},    'teaser' . " from $from" );
+    is( $post->body,       $expected{body},      'body'   . " from $from" );
+    is( $post->source,     $expected{source},    'source' . " from $from" );
+    is( $post->status,     $expected{status},    'status' . " from $from" );
+    is( $post->type->id,   $expected{type_id},   'type'   . " from $from" );
+    is( $post->author->id, $expected{author_id}, 'author' . " from $from" );
 
     is_deeply( [ map {$_->id} @{$post->topics} ],  [qw(perl)], "topics from $from" );
 
     #is ($post->published->, 'Funky Stuff', 'title');
     #is ($post->modified, 'TODO', 'modified');
     
-    # urls and paths ...
+    # source_path does not exist yet for newly-created posts from params
+    is ( $post->source_path->stringify, $source_file, "source_path from $from" ) 
+        unless $from eq 'params';
+    
+    # path, url and tag_url are only used during publishing and 
+    # therefore are supplied only to objects created with new_from file
+    if ( $from eq 'file')
+    {
+        my $expected_path = file($output_path, $post->type->location, $post->id . ".html")->stringify;
+        my $expected_url  = 'http://www.example.com/news/aenean_eu_lorem.html';
+        is ( $post->path, $expected_path, "path from $from" );
+        is ( $post->url,  $expected_url,  "url from $from"  );
+        
+        # diag $post->tag_url;
+    }
+
 }
 
 done_testing;
