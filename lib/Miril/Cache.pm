@@ -5,8 +5,9 @@ use Miril::Post;
 use Storable ();
 
 has 'filename' => (
-	is  => 'ro',
-	isa => 'Path::Class::File',
+	is       => 'ro',
+    isa      => 'Path::Class::File',
+    required => 1,
 );
 
 has 'raw' => (
@@ -15,7 +16,11 @@ has 'raw' => (
 	lazy    => 1,
 	builder => '_build_raw',
 	traits  => ['Hash'],
-	handles => { cached_ids => 'values', get_cached_post => 'get' },
+	handles => { 
+        cached_ids      => 'keys', 
+        get_cached_post => 'get',
+        exists_in_cache => 'exists',
+    },
 );
 
 has 'posts' => (
@@ -24,7 +29,17 @@ has 'posts' => (
 	lazy    => 1,
 	builder => '_build_posts',
 	traits  => ['Hash'],
-	handles => { post_ids => 'values', get_post_by_id => 'get' },
+	handles => { 
+        post_ids       => 'keys', 
+        get_posts      => 'values', 
+        get_post_by_id => 'get',
+    },
+);
+
+has 'data_dir' => (
+    is       => 'ro',
+    isa      => 'Path::Class::Dir',
+    required => 1,
 );
 
 sub _build_raw
@@ -40,29 +55,31 @@ sub _build_posts
 	foreach my $id ($self->cached_ids)
 	{
 		my $cached = $self->get_cached_post($id);
-		$posts{$id} = Miril::Post->new_from_cache($cached);
+		$posts{$id} = Miril::Post->new_from_cache(%$cached);
 	}
 
 	while ( my ($id, $post) = each %posts )
 	{
 		# post has been deleted
-		if ( ! -e $post{$id}->source_path )
+		if ( not -e $posts{$id}->source_path )
 		{
-			$self->delete_post($id);
+            warn "DELETING!";
+            #$self->delete_post($id);
 		}
 		# post has been updated
-		elsif ( ( time - ( -M $post->source_path ) * 86400 ) > $post->modified->epoch )
+		elsif ( $post->source_path->stat->mtime > $post->modified->as_epoch )
 		{
+            warn "UPDATING!";
 			$self->add_post(Miril::Post->new_from_id($id));
 		}
 	}
 
-	while ( my $id = readdir($self->data_dir) ) 
+    foreach my $id ( $self->data_dir->children( no_hidden => 1) ) 
 	{
 		next if -d $id;
-		unless ( $self->exists_post($id) )
+		unless ( $self->exists_in_cache($id->basename) )
 		{
-			$self->add_post( Miril::Post->new_from_id($id) );
+            $posts{$id} = Miril::Post->new_from_file($id);
 		}
 	}
 
@@ -77,20 +94,24 @@ sub serialize
 	foreach my $post ($self->get_posts)
 	{
 		$serialized{$post->id} = {
-			id        => $post->id,
-			title     => $post->title,
-			modified  => $post->modified->epoch,
-			published => $post->published ? $post->published->epoch : undef,
-			type      => $post->type->id,
-			author    => $post->author->id,
-			topics    => [ map { $_->id } $post->get_topics ],
+			id          => $post->id,
+			title       => $post->title,
+			modified    => $post->modified,
+			published   => $post->published,
+            type        => $post->type,
+            author      => $post->author,
+            topics      => $post->topics,
+            source_path => $post->source_path,
 		};
 	}
+
+    return \%serialized;
 }
 
 sub update
 {
-	Storable::store($_[0]->serialize, $_[0]->filename);
+    my $self = shift;
+	Storable::store($self->serialize, $self->filename);
 }
 
 1;

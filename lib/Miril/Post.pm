@@ -70,7 +70,9 @@ has 'topics' =>
 (
 	is            => 'ro',
     isa           => ArrayRefOfTopic,
-    #weak_ref      => 1,
+    #weak_ref     => 1,
+    traits        => ['Array'],
+    handles       => { get_topics => 'elements' },
 	documentation => 'List of Miril::Topic objects for this post',
 );
 
@@ -200,26 +202,9 @@ sub new_from_file
 
 sub new_from_cache
 {
-	my ($class, $nomen, %cache) = @_;
-	
-	my $author = _inflate_object_from_id( $cache{author}, $$nomen{authors} );
-	my $topics = _inflate_object_from_id( $cache{topics}, $$nomen{topics}  );
-	my $type   = _inflate_object_from_id( $cache{type},   $$nomen{types}   );
-
-	my $published = $cache{'published'} ? Miril::DateTime->from_epoch($cache{'published'}) : undef;
-    my $modified  = Miril::DateTime->from_epoch($cache{'modified'});
-
-	return $class->new( slice_def {
-		id          => $cache{id},
-		title       => $cache{title},
-		author      => $author,
-		topics      => $topics,
-		type        => $type,
-		path        => file($cache{path}),
-		source_path => file($cache{source_path}),
-		published   => $published,
-        modified    => $modified,
-    } );
+    use Devel::Dwarn;
+	my ($class, %cache) = @_;
+	return $class->new( slice_def \%cache );
 }
 
 sub new_from_params
