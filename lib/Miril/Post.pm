@@ -105,9 +105,6 @@ has 'modified' =>
 (
 	is            => 'ro',
 	isa           => DateTime,
-	required      => 1,
-	lazy          => 1,
-	builder       => '_build_modified',
 	documentation => 'Time when the post source post was last modified',
 );
 
@@ -163,10 +160,12 @@ sub new_from_file
 	my $id        = $file->basename;
 	my $title     = $meta{title};
 	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}) : undef;
+    my $modified  = Miril::DateTime->from_epoch($file->stat->mtime);
 	my $url       = $base_url . $type->id . "/$id.html";
 	my $path      = file($output_path, $type->location, $id . ".html");
 
-    my $tag_url; #tag:www.mechanicalrevolution.com,2011-05-02:/parameter_apocalypse_take_two
+    my $tag_url; 
+    #tag:www.mechanicalrevolution.com,2011-05-02:/parameter_apocalypse_take_two
 
     if ($published)
     {
@@ -195,6 +194,7 @@ sub new_from_file
 		url         => $url,
         tag_url     => $tag_url,
         published   => $published,
+        modified    => $modified,
     } );
 }
 
@@ -207,6 +207,7 @@ sub new_from_cache
 	my $type   = _inflate_object_from_id( $cache{type},   $$nomen{types}   );
 
 	my $published = $cache{'published'} ? Miril::DateTime->from_epoch($cache{'published'}) : undef;
+    my $modified  = Miril::DateTime->from_epoch($cache{'modified'});
 
 	return $class->new( slice_def {
 		id          => $cache{id},
@@ -216,8 +217,8 @@ sub new_from_cache
 		type        => $type,
 		path        => file($cache{path}),
 		source_path => file($cache{source_path}),
-        #url         => $cache{url},
 		published   => $published,
+        modified    => $modified,
     } );
 }
 
@@ -229,14 +230,12 @@ sub new_from_params
 	my $topics = _inflate_object_from_id( $params{topics}, $$nomen{topics}  );
 	my $type   = _inflate_object_from_id( $params{type},   $$nomen{types}   );
 
-    use Devel::Dwarn;
-
 	my $published;
 
 	if ($params{status} eq 'published')
 	{
 		$published = $params{published} 
-			? Miril::DateTime->new($params{published}) 
+			? Miril::DateTime->from_epoch($params{published}) 
 			: Miril::DateTime->now;
 	}
 
