@@ -145,7 +145,9 @@ has 'tag_url' =>
 
 sub new_from_file
 {
-	my ($class, $nomen, $file, $output_path, $base_url) = @_;
+	my ($class, $file, %options) = @_;
+    
+    my ($taxonomy, $output_path, $base_url) = @options{qw(taxonomy output_path base_url)};
 
 	# split sourcefile into sections
 	my ($source, $body, $teaser, $meta) = _parse_source($file);
@@ -154,9 +156,9 @@ sub new_from_file
 	my %meta = _parse_meta($meta);
 
 	# expand metadata into objects
-	my $author = _inflate_object_from_id( $meta{author}, $$nomen{authors} );
-	my $topics = _inflate_object_from_id( $meta{topics}, $$nomen{topics}  );
-	my $type   = _inflate_object_from_id( $meta{type},   $$nomen{types}   );
+	my $author = $taxonomy->get_author_by_id($meta{author});
+	my $topics = $taxonomy->get_topics_by_id($meta{topics});
+	my $type   = $taxonomy->get_type_by_id($meta{type});
 
 	# prepare the remaining attributes
 	my $id        = $file->basename;
@@ -202,18 +204,20 @@ sub new_from_file
 
 sub new_from_cache
 {
-    use Devel::Dwarn;
-	my ($class, %cache) = @_;
-	return $class->new( slice_def \%cache );
+	my ($class, $cache) = @_;
+	return $class->new( slice_def $cache );
 }
 
 sub new_from_params
 {
-	my ($class, $nomen, %params) = @_;
+	my ($class, $params, %options ) = @_;
 
-	my $author = _inflate_object_from_id( $params{author}, $$nomen{authors} );
-	my $topics = _inflate_object_from_id( $params{topics}, $$nomen{topics}  );
-	my $type   = _inflate_object_from_id( $params{type},   $$nomen{types}   );
+    my %params = %$params;
+    my $taxonomy = $options{taxonomy};
+
+    my $author = $taxonomy->get_author_by_id($params{author});
+	my $topics = $taxonomy->get_topics_by_id($params{topics});
+	my $type   = $taxonomy->get_type_by_id($params{type});
 
 	my $published;
 

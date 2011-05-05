@@ -48,7 +48,7 @@ my $test_topic = $taxonomy->get_topic_by_id('perl');
 isa_ok ($test_topic, 'Miril::Topic');
 is ($test_topic->name, 'Perl', 'topic' );
 
-my $test_topics = $taxonomy->get_topics_by_id(qw(perl python ruby));
+my $test_topics = $taxonomy->get_topics_by_id([qw(perl python ruby)]);
 cmp_deeply ( $test_topics, \@topics );
 
 done_testing;

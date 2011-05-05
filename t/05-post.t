@@ -13,6 +13,7 @@ use Miril::Type;
 use Miril::Author;
 use Miril::Topic;
 use Miril::DateTime;
+use Miril::Taxonomy;
 
 ### PREPARE ###
 
@@ -21,10 +22,14 @@ my @authors = map { Miril::Author->new(
 	name => $_->[1],
 )} [ larry => 'Larry Wall' ], [ damian => 'Damian Conway'];
 
+my %authors = map { $_->id => $_ } @authors;
+
 my @topics = map { Miril::Topic->new(
 	id   => $_->[0],
 	name => $_->[1],
 )} [ perl => 'Perl' ], [ python => 'Python'], [ ruby => 'Ruby' ];
+
+my %topics = map { $_->id => $_ } @topics;
 
 my $type = Miril::Type->new(
 	id       => 'news',
@@ -33,19 +38,13 @@ my $type = Miril::Type->new(
 	template => 'some_template',
 );
 
-my %nomen = ( authors => \@authors, topics => \@topics, types => [$type] );
+my $taxonomy = Miril::Taxonomy->new( 
+    authors => \%authors, 
+    topics  => \%topics, 
+    types   => { news => $type }, 
+);
 
 ### PRIVATE FUNCTIONS ###
-
-# _inflate_object_from_id
-
-my $larry = Miril::Post::_inflate_object_from_id('larry', \@authors);
-my $python_and_ruby = 
-	Miril::Post::_inflate_object_from_id([qw(python ruby)], \@topics);
-my @python_and_ruby = map { $_->id } @$python_and_ruby;
-
-is($larry->id, 'larry', 'inflate single object');
-is_deeply(\@python_and_ruby, [qw(python ruby)], 'inflate multiple objects');
 
 # _parse_meta
 
@@ -134,7 +133,11 @@ is($post->type->id, 'news', 'type');
 my $base_url = 'http://www.example.com/';
 my $output_path = tempdir( CLEANUP => 1 );
 
-my $post_from_file = Miril::Post->new_from_file(\%nomen, $source_file, $output_path, $base_url);
+my $post_from_file = Miril::Post->new_from_file($source_file, 
+    taxonomy    => $taxonomy,
+    output_path => $output_path, 
+    base_url    => $base_url,
+);
 
 # new_from_cache
 
@@ -143,16 +146,16 @@ my $modified_epoch = $source_file->stat->mtime;
 my %cache = (
     id          => $expected{id},
     title       => $expected{title},
-    modified    => $modified_epoch,
-    published   => $expected{published_epoch},
-    type        => $expected{type_id},
-    author      => $expected{author_id},
-    topics      => [qw(perl)],
-    source_path => $source_file->stringify,
+    modified    => Miril::DateTime->from_epoch($modified_epoch),
+    published   => Miril::DateTime->from_epoch($expected{published_epoch}),
+    type        => $type,
+    author      => $authors{larry},
+    topics      => [$topics{perl}],
+    source_path => $source_file,
 
 );
 
-my $post_from_cache = Miril::Post->new_from_cache(\%nomen, %cache);
+my $post_from_cache = Miril::Post->new_from_cache(\%cache);
 
 # new_from_params
 
@@ -167,7 +170,7 @@ my %params = (
     published => $expected{published_epoch},
 );
 
-my $post_from_params = Miril::Post->new_from_params(\%nomen, %params);
+my $post_from_params = Miril::Post->new_from_params(\%params, taxonomy => $taxonomy );
 
 my %posts_for_testing = 
 (

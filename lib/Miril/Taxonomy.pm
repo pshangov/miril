@@ -26,8 +26,8 @@ has 'topics' => (
 
 sub get_topics_by_id
 {
-    my ($self, @ids) = @_;
-    return arrayref $self->get_topic_by_id(@ids);
+    my ($self, $ids) = @_;
+    return arrayref $self->get_topic_by_id(@$ids);
 }
 
 1;

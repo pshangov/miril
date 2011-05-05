@@ -55,7 +55,7 @@ sub _build_posts
 	foreach my $id ($self->cached_ids)
 	{
 		my $cached = $self->get_cached_post($id);
-		$posts{$id} = Miril::Post->new_from_cache(%$cached);
+		$posts{$id} = Miril::Post->new_from_cache($cached);
 	}
 
 	while ( my ($id, $post) = each %posts )
