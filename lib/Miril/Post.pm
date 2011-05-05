@@ -150,7 +150,7 @@ sub new_from_file
     my ($taxonomy, $output_path, $base_url) = @options{qw(taxonomy output_path base_url)};
 
 	# split sourcefile into sections
-	my ($source, $body, $teaser, $meta) = _parse_source($file);
+	my ($source, $body, $teaser, $meta) = _parse_source_file($file);
 
 	# parse metadata
 	my %meta = _parse_meta($meta);
@@ -228,7 +228,7 @@ sub new_from_params
 			: Miril::DateTime->now;
 	}
 
-    ( undef, my ($body, $teaser) ) = _parse_source($params{source});
+    my ($body, $teaser) = _parse_source($params{source});
 
 	return $class->new( slice_def {
 		id        => $params{id},
@@ -245,29 +245,51 @@ sub new_from_params
 
 ### BUILDERS ###
 
-sub _build_body
-{
-	my $self = shift;
-	my ($source, $body, $teaser) = _parse_source($self->has_source ? $self->source : $self->source_path);
-	$self->source($source);
-	$self->teaser($teaser);
-	return $body;
-}
-
 sub _build_source
 {
 	my $self = shift;
-	my ($source, $body, $teaser) = _parse_source($self->has_source ? $self->source : $self->source_path);
+	my ($source, $body, $teaser) = _parse_source_file($self->source_path);
 	$self->body($body);
 	$self->teaser($teaser);
 	return $source;
 }
 
+sub _build_body
+{
+	my $self = shift;
+    my ($body, $teaser);
+
+    if ($self->has_source)
+    {
+        my ($body, $teaser) = _parse_source($self->source);
+    }
+    else
+    {
+        (my $source, $body, $teaser) = _parse_source_file($self->source_path);
+        $self->source($source);
+
+    }
+
+	$self->teaser($teaser);
+	return $body;
+}
+
 sub _build_teaser
 {
 	my $self = shift;
-	my ($source, $body, $teaser) = _parse_source($self->has_source ? $self->source : $self->source_path);
-	$self->source($source);
+    my ($body, $teaser);
+
+    if ($self->has_source)
+    {
+        my ($body, $teaser) = _parse_source($self->source);
+    }
+    else
+    {
+        (my $source, $body, $teaser) = _parse_source_file($self->source_path);
+        $self->source($source);
+
+    }
+
 	$self->body($body);
 	return $teaser;
 }
@@ -277,27 +299,24 @@ sub _build_teaser
 # NOTE: All the functions below are pretty messy and should some day 
 # be refactored into a proper standalone parser class ...
 
+sub _parse_source_file
+{
+    my ($file, $format) = @_;
+
+    my $source_file = $file->slurp or Miril::Exception->throw(
+        message  => "Cannot load data file",
+        errorvar => $_,
+    );
+
+    my ($meta, $source) = split( /\n\n/, $source_file, 2);
+    my ($body, $teaser) = _parse_source($source);
+    
+    return $source, $body, $teaser, $meta;
+}
+
 sub _parse_source
 {
-	my ($source_arg, $format) = @_;
-
-    my ($source, $meta);
-    
-    # source_arg is a filename, barse meta and body
-    if (ref $source_arg)
-    {
-	    my $source_file = $source_arg->slurp or Miril::Exception->throw(
-		    message  => "Cannot load data file",
-		    errorvar => $_,
-	    );
-
-       	($meta, $source) = split( /\n\n/, $source_file, 2);
-    }
-    # source_arg is a string, parse just body, meta is undef
-    else
-    {
-        $source = $source_arg;
-    }
+	my ($source, $format) = @_;
 
 	my ($teaser) = split( '<!-- BREAK -->', $source, 2);
 
@@ -310,7 +329,7 @@ sub _parse_source
     load_class($format_map{$format});
 
     my $filter = $format_map{$format}->new;
-	return $source, $filter->to_xhtml($source), $filter->to_xhtml($teaser), $meta;
+	return $filter->to_xhtml($source), $filter->to_xhtml($teaser);
 }
 
 sub _parse_meta 
@@ -341,28 +360,6 @@ sub _parse_meta
 	$meta{topics} = [] unless defined $meta{topics};
 
 	return %meta;
-}
-
-sub _inflate_object_from_id
-{
-	my ($ids, $list) = @_;
-
-	return undef unless defined $ids;
-
-	if (!ref $ids)
-	{
-		return first { $_->id eq $ids } @$list;
-	}
-	elsif (ref $ids eq 'ARRAY')
-	{
-		my @objects;
-
-		foreach my $id (@$ids)
-		{
-			push @objects, first { $_->id eq $id } @$list;
-		}
-		return \@objects;
-	}
 }
 
 1;

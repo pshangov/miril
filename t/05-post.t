@@ -58,11 +58,11 @@ is( $meta{title}, 'Funky Stuff', 'meta title' );
 is( $meta{author}, 'damian', 'meta author' );
 is_deeply( $meta{topics}, [qw(perl python)], 'meta topics' );
 
-# _parse_source
+# _parse_source_file
 
 my $source_file = file('t\data\aenean_eu_lorem');
 my ($source, $body, $teaser, $meta) = 
-	Miril::Post::_parse_source($source_file);
+	Miril::Post::_parse_source_file($source_file);
 
 my %expected;
 
@@ -96,6 +96,13 @@ eq_or_diff( $body,   $expected{body},   'xhtml body from file' );
 eq_or_diff( $teaser, $expected{teaser}, 'xhtml teaser from file' );
 eq_or_diff( $source, $expected{source}, 'source from file' );
 eq_or_diff( $meta,   $expected{meta},   'meta from file' );
+
+# _parse_source
+
+my ($body_from_source, $teaser_from_source) = Miril::Post::_parse_source($expected{source});
+
+eq_or_diff( $body_from_source,   $expected{body},   'xhtml body from source' );
+eq_or_diff( $teaser_from_source, $expected{teaser}, 'xhtml teaser from source' );
 
 ### CONSTRUCTORS ###
 
