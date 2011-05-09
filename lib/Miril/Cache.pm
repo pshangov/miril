@@ -63,13 +63,12 @@ sub _build_posts
 		# post has been deleted
 		if ( not -e $posts{$id}->source_path )
 		{
-            warn "DELETING!";
+            #TODO
             #$self->delete_post($id);
 		}
 		# post has been updated
 		elsif ( $post->source_path->stat->mtime > $post->modified->as_epoch )
 		{
-            warn "UPDATING!";
 			$self->add_post(Miril::Post->new_from_id($id));
 		}
 	}
