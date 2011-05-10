@@ -4,27 +4,29 @@ use strict;
 use warnings;
 
 use Syntax::Keyword::Gather;
+use List::Util qw(first);
 
 use Mouse;
 
-has 'posts' =>
-(
-	is       => 'rw',
-	isa      => 'HashRef[Miril::Post]',
-	traits   => ['Hash'],
-	handles  => 
-	{
-		get_post_by_id => 'get',
-		get_posts      => 'values',
-		add_post       => 'set',
-	},
-);
+#has 'posts' =>
+#(
+#	is       => 'rw',
+#	isa      => 'HashRef[Miril::Post]',
+#	traits   => ['Hash'],
+#	handles  => 
+#	{
+#		get_post_by_id => 'get',
+#		get_posts      => 'values',
+#		add_post       => 'set',
+#	},
+#);
 
 has 'cache' =>
 (
 	is       => 'ro',
     required => 1,
 	isa      => 'Miril::Cache',
+    handles  => [qw(posts get_posts post_ids add_post get_post_by_id)],
 );
 
 has 'sort' =>
@@ -56,10 +58,10 @@ sub search
 		foreach my $post ($self->get_posts)
 		{
 			my $title_rx = $params{'title'};
-			next if $params{'title'}  && $post->title    !~ /$title_rx/i;
-			next if $params{'author'} && $post->author   ne $params{'author'};
-			next if $params{'type'}   && $post->type->id ne $params{'type'};
-			next if $params{'status'} && $post->status   ne $params{'status'};
+			next if $params{'title'}  && $post->title      !~ /$title_rx/i;
+			next if $params{'author'} && $post->author->id ne $params{'author'};
+			next if $params{'type'}   && $post->type->id   ne $params{'type'};
+			next if $params{'status'} && $post->status     ne $params{'status'};
 			next if $params{'topic'}  && !first {$_->id eq $params{'topic'}} $post->get_topics;
 			take $post;
 		}
@@ -68,13 +70,13 @@ sub search
 	# sort
 	if ($self->sort eq 'modified')
 	{
-		@posts = sort { $b->modified->epoch <=> $a->modified->epoch } @posts;
+		@posts = sort { $b->modified->as_epoch <=> $a->modified->as_epoch } @posts;
 	}
 	else
 	{
 		if ( first { !$_->published } @posts )
 		{
-			@posts = sort { $b->modified->epoch <=> $a->modified->epoch } @posts;
+			@posts = sort { $b->modified->as_epoch <=> $a->modified->as_epoch } @posts;
 		}
 		else
 		{
@@ -83,9 +85,9 @@ sub search
 	}
 	
 	# limit
-	if ($params{'last'})
+	if ($params{'limit'})
 	{
-		my $count = ( $params{'last'} < @posts ? $params{'last'} : @posts );
+		my $count = ( $params{'limit'} < @posts ? $params{'limit'} : @posts );
 		splice @posts, $count;
 	}
 

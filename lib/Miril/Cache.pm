@@ -33,6 +33,7 @@ has 'posts' => (
         post_ids       => 'keys', 
         get_posts      => 'values', 
         get_post_by_id => 'get',
+        add_post       => 'set',
     },
 );
 
@@ -73,7 +74,7 @@ sub _build_posts
 		}
 	}
 
-    foreach my $id ( $self->data_dir->children( no_hidden => 1) ) 
+    foreach my $id ( $self->data_dir->children( no_hidden => 1 ) ) 
 	{
 		next if -d $id;
 		unless ( $self->exists_in_cache($id->basename) )
