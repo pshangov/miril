@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Path::Class qw(file dir);
+use File::Temp  qw(tempdir);
 
 use Miril::Author;
 use Miril::Topic;
@@ -79,9 +80,12 @@ my $cache = Miril::Cache->new(
 
 ### STORE ###
 
+my $data_dir = dir( tempdir( CLEANUP => 1 ) );
+
 my $store = Miril::Store->new(
     cache    => $cache,
     taxonomy => $taxonomy,
+    data_dir => $data_dir,
 );
 
 #########
@@ -130,12 +134,92 @@ is_deeply ( \@results_not_found, [],                                      'searc
 
 is ( scalar @results_limit, 1, 'limit search' );
 
+### CONTENT ###
+
+my $source = <<EndOfSource;
+Aenean eu lorem at odio placerat fringilla.
+<!-- BREAK -->
+Cras faucibus velit quis dui.
+EndOfSource
+
+my $date_published = $now->as_ymdhm;
+
+my $expected_content = <<EndOfSource;
+Title: Aenean Eu Lorem
+Type: news
+Author: larry
+Published: $date_published
+Topics: perl
+
+Aenean eu lorem at odio placerat fringilla.
+<!-- BREAK -->
+Cras faucibus velit quis dui.
+EndOfSource
+
+my $post_content = Miril::Post->new(
+    id          => 'aenean_eu_lorem',
+    title       => 'Aenean Eu Lorem',
+    modified    => $now,
+    published   => $now,
+    type        => $type,
+    author      => $authors{larry},
+    topics      => [$topics{perl}],
+    source_path => $dummy_file, 
+    source      => $source,
+);
+
+my $content = Miril::Store::_generate_content($post_content);
+
+eq_or_diff($content, $expected_content, 'generate content');
+
 ### SAVE ###
 
+my $source_save = <<EndOfSource;
+Etiam rhoncus.
+<!-- BREAK -->
+Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum.
+EndOfSource
+
+my $id_to_save = 'etiam_rhoncus';
+
+my %params = (
+    id     => $id_to_save,
+    title  => 'Etiam Rhoncus',
+    author => 'larry',
+    topics => ['perl'],
+    type   => 'news',
+    status => 'published',
+    source => $source_save,
+);
+
+ok ( $store->save(%params), 'save' );
+
+
+my $new_post = $store->get_post_by_id($id_to_save);
+my $saved_file = file($data_dir, $id_to_save);
+my $saved_file_content = $saved_file->slurp;
+my $date_saved = $new_post->published->as_ymdhm;
+
+my $expected_file_content = <<EndOfContent;
+Title: Etiam Rhoncus
+Type: news
+Author: larry
+Published: $date_saved
+Topics: perl
+
+Etiam rhoncus.
+<!-- BREAK -->
+Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum.
+EndOfContent
+
+isa_ok ( $new_post, 'Miril::Post' );
+is ($new_post->title, 'Etiam Rhoncus', 'saved post title' );
+eq_or_diff ( $saved_file_content, $expected_file_content, 'saved post content' );
 
 ### DELETE ###
 
-
-### CONTENT ###
+ok ( $store->delete($id_to_save),           'delete post' );
+ok ( ! $store->get_post_by_id($id_to_save), 'deleted post not in store' );
+ok ( ! -e $saved_file->stringify,           'deleted post not in file system' );
 
 done_testing;

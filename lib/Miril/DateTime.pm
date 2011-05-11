@@ -189,4 +189,10 @@ sub as_epoch
     );
 }
 
+sub as_ymdhm
+{
+    my $self = shift;
+    return POSIX::strftime("%Y-%m-%d %H:%M", localtime $self->as_epoch);
+}
+
 1;

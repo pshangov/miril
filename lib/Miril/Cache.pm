@@ -34,6 +34,7 @@ has 'posts' => (
         get_posts      => 'values', 
         get_post_by_id => 'get',
         add_post       => 'set',
+        delete_post    => 'delete',
     },
 );
 

@@ -219,6 +219,8 @@ sub new_from_params
 	my $topics = $taxonomy->get_topics_by_id($params{topics});
 	my $type   = $taxonomy->get_type_by_id($params{type});
 
+    my $source_path = file($options{data_dir}, $params{id});
+
 	my $published;
 
 	if ($params{status} eq 'published')
@@ -231,15 +233,16 @@ sub new_from_params
     my ($body, $teaser) = _parse_source($params{source});
 
 	return $class->new( slice_def {
-		id        => $params{id},
-		title     => $params{title},
-		author    => $author,
-		topics    => $topics,
-		type      => $type,
-		source    => $params{source},
-        body      => $body,
-        teaser    => $teaser,
-		published => $published,
+		id          => $params{id},
+		title       => $params{title},
+		author      => $author,
+		topics      => $topics,
+		type        => $type,
+		source      => $params{source},
+        body        => $body,
+        teaser      => $teaser,
+		published   => $published,
+        source_path => $source_path,
     } );
 }
 

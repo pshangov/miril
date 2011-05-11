@@ -3,10 +3,10 @@ package Miril::Store;
 use strict;
 use warnings;
 
-use Syntax::Keyword::Gather;
-use List::Util qw(first);
-
 use Mouse;
+use Syntax::Keyword::Gather qw(gather take);
+use List::Util              qw(first);
+use Path::Class             qw(file);
 
 #has 'posts' =>
 #(
@@ -26,7 +26,7 @@ has 'cache' =>
 	is       => 'ro',
     required => 1,
 	isa      => 'Miril::Cache',
-    handles  => [qw(posts get_posts post_ids add_post get_post_by_id)],
+    handles  => [qw(posts get_posts post_ids add_post delete_post get_post_by_id)],
 );
 
 has 'sort' =>
@@ -42,6 +42,13 @@ has 'taxonomy' =>
     isa      => 'Miril::Taxonomy',
     required => 1,
     default  => 'modified',
+);
+
+has 'data_dir' =>
+(
+    is       => 'ro',
+    isa      => 'Path::Class::Dir',
+    required => 1,
 );
 
 ### PUBLIC METHODS ###
@@ -98,7 +105,10 @@ sub save
 {
 	my ($self, %params) = @_;
 
-	my $post = Miril::Post->new_from_params( \%params, taxonomy => $self->taxonomy );
+	my $post = Miril::Post->new_from_params( \%params, 
+        taxonomy => $self->taxonomy,
+        data_dir => $self->data_dir,
+    );
 	$self->add_post($post->id => $post);
 
 	# delete the old file if we have changed the id
@@ -118,10 +128,8 @@ sub save
 sub delete
 {
 	my ($self, $id) = @_;
-
-	my $post = $self->get_post_by_id($id);
-	$post->remove or die $!;
-	$self->posts->delete($id);
+    file( $self->data_dir, $id )->remove or die $!;
+	$self->delete_post($id);
 }
 
 ### PRIVATE FUNCTIONS ###
@@ -133,8 +141,8 @@ sub _generate_content
 
 	$content .= "Title: "     . $post->title          . "\n";
 	$content .= "Type: "      . $post->type->id       . "\n";
-	$content .= "Author: "    . $post->author         . "\n" if $post->author;
-	$content .= "Published: " . $post->published->iso . "\n" if $post->published;
+	$content .= "Author: "    . $post->author->id     . "\n" if $post->author;
+	$content .= "Published: " . $post->published->as_ymdhm . "\n" if $post->published;
 	$content .= "Topics: "    . join( " ", map { $_->id } $post->get_topics ) . "\n\n";
 
 	$content .= $post->source;
