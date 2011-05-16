@@ -1,14 +1,21 @@
 #!perl
 
-use WWW::Publisher::Static::Group;
+use strict;
+use warnings;
 
-use Data::Dumper;
-#use Test::More tests => 1;
+use Test::Most;
 
-my $group = WWW::Publisher::Static::Group->new(
-	name          => 'test',
-	identifier_cb => sub { 'test_identifier' },
-	keys_cb       => sub { qw( key1 key2 ) },
+use Miril::Group;
+
+my $group = Miril::Group->new(
+	name   => 'test',
+	key_cb => sub { qw( key1 key2 ) },
 );
 
-print Dumper $group;
+isa_ok( $group, 'Miril::Group' );
+
+my @keys = $group->get_keys;
+
+is_deeply ( \@keys, [qw(key1 key2)], 'expected keys' );
+
+done_testing;

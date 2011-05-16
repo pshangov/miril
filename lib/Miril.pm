@@ -14,6 +14,8 @@ use Miril::Exception;
 use Miril::Config;
 use Miril::Util;
 
+use Mouse;
+
 our $VERSION = '0.008';
 
 has 'miril_dir' =>
@@ -77,7 +79,7 @@ has 'tmpl' =>
 );
 
 has 'warnings' =>
-{
+(
 	traits  => ['Array'],
 	is      => 'rw',
 	isa     => 'ArrayRef[Miril::Warning]',
@@ -85,7 +87,7 @@ has 'warnings' =>
 	handles => {
     	push_warning => 'push',
 	},
-}
+);
 
 1;
 

@@ -5,10 +5,8 @@ use warnings;
 
 use Path::Class qw(file dir);
 use List::Util qw(first);
-use WWW::Publisher::Static::Group;
-use Any::Moose;
-
-extends 'WWW::Publisher::Static::Config';
+use Miril::Group;
+use Mouse;
 
 has 'site_dir' => 
 (
@@ -137,7 +135,8 @@ has 'output_path' =>
 has 'files_path' => 
 (
 	is      => 'ro',
-	default => sub { File::Spec->catdir( $_[0]->output_path, 'files' ) },
+    isa     => 'Path::Class::Dir',
+	default => sub { dir( $_[0]->output_path, 'files' ) },
 );
 
 has 'domain' =>
@@ -155,7 +154,8 @@ has 'http_dir' =>
 has 'files_http_dir' =>
 (
 	is       => 'ro',
-	default => sub { File::Spec->catdir( $_[0]->http_dir, 'files' ) },
+    isa     => 'Path::Class::Dir',
+	default => sub { dir( $_[0]->http_dir, 'files' ) },
 );
 
 has 'name' =>
@@ -173,42 +173,42 @@ has 'secret' =>
 has 'groups' =>
 (
 	is      => 'ro',
-	isa     => 'ArrayRef[WWW::Publisher::Static::Group]',
+	isa     => 'ArrayRef[Miril::Group]',
 	builder => '_build_groups',
 );
 
 sub _build_groups
 {
-	my @groups = map { WWW::Publisher::Static::Group->new(%$_) }
+	my @groups = map { Miril::Group->new(%$_) }
 	{
 		name          => 'topic',
 		identifier_cb => sub { first {$_[0]->id eq $_->[1]} list $_[0]->topics },
-		keys_cb       => sub { map {$_->id} list $_[0]->topics },
+		key_cb        => sub { map {$_->id} list $_[0]->topics },
 	},
 	{
 		name          => 'type',
 		identifier_cb => sub { shift->type },
-		keys_cb       => sub { shift->type->id },
+		key_cb        => sub { shift->type->id },
 	},
 	{
 		name          => 'author',
 		identifier_cb => sub { shift->author },
-		keys_cb       => sub { shift->author },
+		key_cb        => sub { shift->author },
 	},
 	{
 		name          => 'year',
 		identifier_cb => sub { shift->published },
-		keys_cb       => sub { shift->published->strftime('%Y') },
+		key_cb        => sub { shift->published->strftime('%Y') },
 	},
 	{
 		name          => 'month',
 		identifier_cb => sub { shift->published },
-		keys_cb       => sub { shift->published->strftime('%Y%m') },
+		key_cb        => sub { shift->published->strftime('%Y%m') },
 	},
 	{
 		name          => 'date',
 		identifier_cb => sub { shift->published },
-		keys_cb       => sub { shift->published->strftime('%Y%m%d') },
+		key_cb        => sub { shift->published->strftime('%Y%m%d') },
 	};
 
 	return \@groups;

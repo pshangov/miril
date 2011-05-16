@@ -8,40 +8,55 @@ use Path::Class;
 use Data::Dumper::Concise qw(Dumper);
 use List::MoreUtils qw(true);
 use File::Temp qw(tempdir);
-use WWW::Publisher::Static::List;
-use WWW::Publisher::Static::Group;
-use WWW::Publisher::Static::Publisher;
-use WPS_Test::Post;
+use Miril::Post;
+use Miril::List;
+use Miril::Group;
+use Miril::Publisher;
+use Miril::Type;
 use WPS_Test::Template;
 
 ### SETUP ###
 
 my $dir = dir( tempdir(CLEANUP => 1) );
-#my $dir = dir( tempdir() );
+
+my $type1 = Miril::Type->new( 
+    id       => 'type1', 
+    name     => 'Type I',  
+    location => 'type1', 
+    template => 'type1.tmpl'
+);
+
+my $type2 = Miril::Type->new( 
+    id       => 'type2', 
+    name     => 'Type II', 
+    location => 'type2', 
+    template => 'type2.tmpl'
+);
 
 my @posts = map
 {
-	WPS_Test::Post->new(
+	Miril::Post->new(
 		id    => $_->{id},
 		title => $_->{title},
 		type  => $_->{type},
+        path  => file( 'data', $_->{id} . '.html' ),
 	);
 }
 (
 	{ 
 		id    => 'post1',
 		title => 'Title One',
-		type  => 'type1',
+		type  => $type1,
 	},
 	{ 
 		id    => 'post2',
 		title => 'Title Two',
-		type  => 'type1',
+		type  => $type1,
 	},
 	{ 
 		id    => 'post3',
 		title => 'Title Three',
-		type  => 'type2',
+		type  => $type2,
 	},
 );
 
@@ -52,34 +67,34 @@ my %list_options = (
 	posts    => \@posts,
 );
 
-my $ordinary_list = WWW::Publisher::Static::List->new(
+my $ordinary_list = Miril::List->new(
 	%list_options,
 	location => 'list.html',
 );
 
-my $paged_list = WWW::Publisher::Static::List->new(
+my $paged_list = Miril::List->new(
 	%list_options,
 	page     => 2,
 	location => 'page/%(page)d/index.html',
 );
 
-my $grouped_list = WWW::Publisher::Static::List->new(
+my $grouped_list = Miril::List->new(
 	%list_options,
 	group    => 'type',
 	location => 'type/%(type)s.html',
 	map      => 'list1_map.html',
 );
 
-my $paged_and_grouped_list = WWW::Publisher::Static::List->new(
+my $paged_and_grouped_list = Miril::List->new(
 	%list_options,
 	group    => 'type',
 	page     => 1,
 	location => 'type/%(type)s/%(page)d/index.html',
 );
 
-my $group = WWW::Publisher::Static::Group->new(
+my $group = Miril::Group->new(
 	name        => 'type',
-	key_cb      => sub { $_[0]->type, { type => $_[0]->type } },
+	key_cb      => sub { $_[0]->type->id, { type => $_[0]->type } },
 );
 
 my %publisher_options = (
@@ -90,23 +105,23 @@ my %publisher_options = (
 	rebuild     => 1,
 );
 
-my $publisher_ordinary_list = WWW::Publisher::Static::Publisher->new(
+my $publisher_ordinary_list = Miril::Publisher->new(
 	%publisher_options,
 	lists => [$ordinary_list],
 );
 
-my $publisher_paged_list = WWW::Publisher::Static::Publisher->new(
+my $publisher_paged_list = Miril::Publisher->new(
 	%publisher_options,
 	lists => [$paged_list],
 );
 
-my $publisher_grouped_list = WWW::Publisher::Static::Publisher->new(
+my $publisher_grouped_list = Miril::Publisher->new(
 	%publisher_options,
 	lists  => [$grouped_list],
 	groups => [$group],
 );
 
-my $publisher_paged_and_grouped_list = WWW::Publisher::Static::Publisher->new(
+my $publisher_paged_and_grouped_list = Miril::Publisher->new(
 	%publisher_options,
 	lists  => [$paged_and_grouped_list],
 	groups => [$group],
@@ -116,12 +131,12 @@ my $publisher_paged_and_grouped_list = WWW::Publisher::Static::Publisher->new(
 ### TESTING ###
 ###############
 
-isa_ok($publisher_ordinary_list, 'WWW::Publisher::Static::Publisher', "publisher class");
+isa_ok($publisher_ordinary_list, 'Miril::Publisher', "publisher class");
 
 # POSTS #
 
 my @test_posts = $publisher_ordinary_list->prepare_posts;
-ok( List::MoreUtils::all( sub {$_->isa('WWW::Publisher::Static::Post')}, @test_posts ), "post class" );
+ok( List::MoreUtils::all( sub {$_->isa('Miril::Post')}, @test_posts ), "post class" );
 
 my @post_ids = map {$_->id} @test_posts;
 is_deeply( \@post_ids, [qw(post1 post2 post3)], "post objects work" );
@@ -133,7 +148,7 @@ is_deeply( \@post_paths, \@expected_post_paths, "post paths");
 # SIMPLE LIST #
 
 my @test_ordinary_lists = $publisher_ordinary_list->prepare_lists;
-isa_ok( $test_ordinary_lists[0], 'WWW::Publisher::Static::List', "list class" );
+isa_ok( $test_ordinary_lists[0], 'Miril::List', "list class" );
 
 is_deeply( [map {$_->path} @test_ordinary_lists], ['list.html'], "ordinary list path");
 
@@ -169,9 +184,6 @@ my @expected_grouped_and_paged_paths = map { file $_ }
 
 is( scalar @test_grouped_and_paged_lists, 3, "number of grouped and paged pages");
 is_deeply( \@grouped_and_paged_paths, \@expected_grouped_and_paged_paths, "paged and grouped paths");
-
-#$publisher_ordinary_list->publish;
-#exec("start " . $dir->stringify);
 
 done_testing();
 

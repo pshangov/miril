@@ -54,7 +54,7 @@ has 'timestamp' =>
 (
 	is      => 'ro',
 	isa     => 'Miril::DateTime',
-	default => sub { Miril::DateTime->new(time()) },
+	default => sub { Miril::DateTime->now },
 );
 
 has 'page' =>

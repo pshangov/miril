@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use rlib;
 
-use Miril::TypeLib qw(is_TextId);
+use Test::Most;
 
-warn unless is_TextId('sdfsd sdf sd');
+ok 1;
+
+done_testing;
