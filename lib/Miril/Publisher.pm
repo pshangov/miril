@@ -13,7 +13,6 @@ use File::Path              qw();
 use File::Slurp             qw();
 use Text::Sprintf::Named    qw();
 use Syntax::Keyword::Gather qw(gather take);
-use Params::Util            qw(_INSTANCE _ARRAY _HASH _POSINT _STRING);
 use Data::Page              qw();
 use Class::Load             qw();
 use Data::Dumper::Concise   qw(Dumper);
