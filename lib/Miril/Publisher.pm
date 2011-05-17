@@ -18,6 +18,7 @@ use Data::Page              qw();
 use Class::Load             qw();
 use Data::Dumper::Concise   qw(Dumper);
 use List::Util              qw(first);
+use Miril::List;
 
 our $VERSION = '0.007';
 
@@ -27,7 +28,10 @@ has 'posts' =>
 	isa     => 'ArrayRef[Miril::Post]',
 	default => sub { [] },
 	traits  => ['Array'],
-	handles => { get_posts => 'elements' },
+	handles => { 
+        get_posts     => 'elements',
+        prepare_posts => 'elements',
+    },
 );
 
 has 'lists' => 
@@ -67,29 +71,9 @@ has 'output_path' =>
 	required => 1,
 );
 
-has 'list_class' =>
-(
-	is       => 'ro',
-	isa      => 'Str',
-	required => 1,
-	default  => 'Miril::List',
-);
-
-sub BUILD
-{
-	my $self = _INSTANCE(shift, __PACKAGE__);
-	Class::Load::load_class($self->list_class);
-}
-
-sub prepare_posts
-{
-	my $self = _INSTANCE(shift, __PACKAGE__);
-	return $self->get_posts;
-}
-
 sub prepare_lists
 {
-	my $self = _INSTANCE(shift, __PACKAGE__);
+	my $self = shift;
 
 	return gather
 	{
@@ -114,12 +98,12 @@ sub prepare_lists
 
 				if ($list_definition->has_map)
 				{
-					take $self->list_class->new(
+					take ( Miril::List->new(
 						lists => \@new_lists,
 						path  => file($list_definition->map),
 						title => $list_definition->title,
 						id    => $list_definition->id,
-					);
+					) );
 				}
 			}
 			elsif ($list_definition->is_paged)
@@ -135,12 +119,12 @@ sub prepare_lists
 			}
 			else
 			{
-				take $self->list_class->new(
+				take ( Miril::List->new(
 					posts => $list_definition->posts,
 					path  => file($list_definition->location),
 					title => $list_definition->title,
 					id    => $list_definition->id,
-				);
+				) );
 			}
 		}
 	}
@@ -148,13 +132,7 @@ sub prepare_lists
 
 sub group_posts
 {
-	my $self      = _INSTANCE(shift, __PACKAGE__);
-	my $posts     = _ARRAY(shift);
-	my $group     = _INSTANCE(shift, 'Miril::Group');
-	my $title     = _STRING(shift);
-	my $id        = _STRING(shift);
-	my $formatter = _INSTANCE(shift, 'Text::Sprintf::Named');
-	my $page      = _POSINT(shift);
+    my ($self, $posts, $group, $title, $id, $formatter, $page) = @_;
 
 	return unless $group and $posts;
 
@@ -190,14 +168,14 @@ sub group_posts
 			}
 			else
 			{
-				take $self->list_class->new(
+				take ( Miril::List->new(
 					posts => \@grouped_posts,
 					key   => $keys{$key},
 					group => $group->name,
 					path  => file( $formatter->format({ args => $keys{$key} }) ),
 					title => $title,
 					id    => $id,
-				);	
+				) );	
 			}
 		}
 	};
@@ -205,19 +183,12 @@ sub group_posts
 
 sub page_posts
 {
-	my $self              = _INSTANCE(shift, __PACKAGE__);
-	my $posts             = _ARRAY(shift);
-	my $entries_per_page  = _POSINT(shift);
-	my $title             = _STRING(shift);
-	my $id                = _STRING(shift);
-	my $formatter         = _INSTANCE(shift, 'Text::Sprintf::Named');
-	my $formatter_args    = _HASH(shift);
+    my ($self, $posts, $entries_per_page, $title, $id, $formatter, $formatter_args) = @_;
 
 	my $pager = Data::Page->new;
 	my $total_entries = scalar @{$posts};
 	$pager->total_entries($total_entries);
 	$pager->entries_per_page($entries_per_page);
-	
 
 	return gather
 	{
@@ -230,32 +201,28 @@ sub page_posts
 			my @current_posts = $pager->splice($posts);
 			$formatter_args->{page} = $page_no;
 
-			take $self->list_class->new(
+			take ( Miril::List->new(
 				posts => \@current_posts,
 				pager => $current_pager,
 				title => $title,
 				id    => $id,
 				path  => file( $formatter->format({ args => $formatter_args }) ),
-			);
+			) );
 		}
 	};
 }
 
 sub render
 {
-	my $self = _INSTANCE(shift, __PACKAGE__);
-	#my $item = _INSTANCE($_[0], 'WWW::Publisher::Static::Post') or 
-	#           _INSTANCE($_[0], 'WWW::Publisher::Static::List');
-
-	my $item = shift;
+	my ( $self, $item ) = @_;
 
 	my %params = ( stash => $self->stash );
 
-	if ( $item->isa('WWW::Publisher::Static::Post') )
+	if ( $item->isa('Miril::Post') )
 	{
 		$params{post} = $item;
 	}
-	elsif ( $item->isa('WWW::Publisher::Static::List') )
+	elsif ( $item->isa('Miril::List') )
 	{
 		$params{list} = $item;
 	}
@@ -272,9 +239,7 @@ sub render
 
 sub write
 {
-	my $self     = _INSTANCE(shift, __PACKAGE__);
-	my $filename = _INSTANCE($_[0], 'Path::Class::File') or die "Not a filename: " . $_[0];
-	my $data     = _STRING($_[1]);
+    my ($self, $filename, $data) = @_;
 
 	$filename = file( $self->output_path, $filename ) unless $filename->is_absolute;
 	my $path = $filename->dir->stringify;
@@ -284,7 +249,7 @@ sub write
 
 sub publish
 {
-	my $self = _INSTANCE(shift, __PACKAGE__);
+	my $self = shift;
 
 	foreach my $item ($self->prepare_posts, $self->prepare_lists)
 	{
