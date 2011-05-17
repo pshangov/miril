@@ -150,7 +150,7 @@ sub group_posts
 {
 	my $self      = _INSTANCE(shift, __PACKAGE__);
 	my $posts     = _ARRAY(shift);
-	my $group     = _INSTANCE(shift, 'WWW::Publisher::Static::Group');
+	my $group     = _INSTANCE(shift, 'Miril::Group');
 	my $title     = _STRING(shift);
 	my $id        = _STRING(shift);
 	my $formatter = _INSTANCE(shift, 'Text::Sprintf::Named');

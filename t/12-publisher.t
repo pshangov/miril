@@ -94,7 +94,7 @@ my $paged_and_grouped_list = Miril::List->new(
 
 my $group = Miril::Group->new(
 	name        => 'type',
-	key_cb      => sub { $_[0]->type->id, { type => $_[0]->type } },
+	key_cb      => sub { $_[0]->type->id, { type => $_[0]->type->id } },
 );
 
 my %publisher_options = (
