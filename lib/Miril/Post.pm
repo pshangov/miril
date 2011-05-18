@@ -148,7 +148,7 @@ sub new_from_file
 	my ($class, $file, %options) = @_;
     
     my ($taxonomy, $output_path, $base_url) = @options{qw(taxonomy output_path base_url)};
-
+    
 	# split sourcefile into sections
 	my ($source, $body, $teaser, $meta) = _parse_source_file($file);
 

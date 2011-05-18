@@ -44,9 +44,40 @@ has 'data_dir' => (
     required => 1,
 );
 
+has 'taxonomy' => 
+(
+    is       => 'ro',
+    isa      => 'Miril::Taxonomy',
+    required => 1,    
+);
+
+has 'output_path' =>
+(
+    is       => 'ro',
+    isa      => 'Path::Class::Dir',
+    required => 1,
+);
+
+has 'base_url' =>
+(
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+);
+
 sub _build_raw
 {
-	return Storable::retrieve($_[0]->filename);
+    my $self = shift;
+    my $filename = $self->filename;
+
+    if ( -e $filename)
+    {
+	    return Storable::retrieve($filename);
+    }
+    else
+    {
+        return {};
+    }
 }
 
 sub _build_posts
@@ -71,7 +102,12 @@ sub _build_posts
 		# post has been updated
 		elsif ( $post->source_path->stat->mtime > $post->modified->as_epoch )
 		{
-			$self->add_post(Miril::Post->new_from_id($id));
+            #FIXME
+			$self->add_post( Miril::Post->new_from_file( $id,
+                taxonomy    => $self->taxonomy, 
+                output_path => $self->output_path,
+                base_url    => $self->base_url,
+            ));
 		}
 	}
 
@@ -80,7 +116,11 @@ sub _build_posts
 		next if -d $id;
 		unless ( $self->exists_in_cache($id->basename) )
 		{
-            $posts{$id} = Miril::Post->new_from_file($id);
+            $posts{$id} = Miril::Post->new_from_file( $id,
+                taxonomy    => $self->taxonomy, 
+                output_path => $self->output_path,
+                base_url    => $self->base_url,
+            );
 		}
 	}
 

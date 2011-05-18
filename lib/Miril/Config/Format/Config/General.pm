@@ -46,7 +46,7 @@ around 'BUILDARGS' => sub
 	### ADD BASE DIR INFO ###
 	
 	$cfg{base_dir} = $cfg{domain} . $cfg{http_dir};
-	$cfg{site_dir} = File::Spec->updir($filename);
+	$cfg{site_dir} = $filename->dir;
 
 	return $class->$orig(%cfg);
 };

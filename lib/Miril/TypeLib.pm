@@ -3,7 +3,8 @@ package Miril::TypeLib;
 use strict;
 use warnings;
 
-use MouseX::Types; 
+use MouseX::Types;
+use Ref::Explicit qw(hashref);
 
 subtype TextId
 	=> as      Str
@@ -16,7 +17,6 @@ class_type Type       => { class => 'Miril::Type' };
 class_type Post       => { class => 'Miril::Post' };
 class_type DateTime   => { class => 'Miril::DateTime' };
 
-subtype ArrayRefOfTopic => as 'ArrayRef[Topic]';
 
 class_type File => { class => 'Path::Class::File' };
 class_type Dir  => { class => 'Path::Class::Dir' };
@@ -25,6 +25,26 @@ subtype Url    => as 'Str';
 subtype TagUrl => as 'Str';
 
 enum Status => qw(draft published);
+
+subtype ArrayRefOfAuthor => as 'ArrayRef[Author]';
+subtype ArrayRefOfTopic  => as 'ArrayRef[Topic]';
+subtype ArrayRefOfType   => as 'ArrayRef[Type]';
+
+subtype HashRefOfAuthor => as 'HashRef[Author]';
+subtype HashRefOfTopic  => as 'HashRef[Topic]';
+subtype HashRefOfType   => as 'HashRef[Type]';
+
+coerce HashRefOfAuthor
+    => from ArrayRefOfAuthor
+    => via { hashref map { $_->id => $_ } @$_ };
+
+coerce HashRefOfTopic
+    => from ArrayRefOfTopic
+    => via { hashref map { $_->id => $_ } @$_ };
+
+coerce HashRefOfType
+    => from ArrayRefOfType
+    => via { hashref map { $_->id => $_ } @$_ };
 
 ### EXPORT SUBTYPES DEFINED HERE PLUS BUILT-IN MOUSE TYPES ###
 
@@ -43,12 +63,17 @@ sub type_storage
 		Type
 		Post
 		DateTime
-		ArrayRefOfTopic
 		File
 		Dir
 		Url
 		TagUrl
 		Status
+		ArrayRefOfAuthor
+		ArrayRefOfTopic
+		ArrayRefOfType
+        HashRefOfAuthor
+        HashRefOfTopic
+        HashRefOfType
 	);
 	return \%types;
 }	

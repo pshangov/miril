@@ -20,12 +20,6 @@ has 'store' =>
 	default => 'File',
 );
 
-has 'user_manager' => 
-(
-	is      => 'ro',
-	default => 'XMLTPP',
-);
-
 has 'filter' => (
 	is      => 'ro',
 	default => 'Markdown',
@@ -43,12 +37,11 @@ has 'posts_per_page' =>
 	default => 10,
 );
 
-has 'cache_data' => 
+has 'cache_path' => 
 (
 	is      => 'ro',
 	isa     => 'Path::Class::File',
-	builder => sub { file( $_[0]->site_dir, 'cache', 'cache.xml' ) },
-	
+	builder => sub { file( $_[0]->site_dir, '.cache' ) },
 );
 
 has 'latest_data' => 
@@ -69,7 +62,7 @@ has 'data_path' =>
 (
 	is      => 'ro',
 	isa     => 'Path::Class::Dir',
-	default => sub { dir($_[0]->site_dir, 'data') },
+	default => sub { dir($_[0]->site_dir, 'posts') },
 );
 
 has 'tmpl_path' => 
@@ -121,6 +114,12 @@ has 'lists' =>
 );
 
 has 'base_dir' => 
+(
+	is       => 'ro',
+	required => 1,
+);
+
+has 'base_url' => 
 (
 	is       => 'ro',
 	required => 1,
@@ -183,7 +182,7 @@ sub _build_groups
 	{
 		name          => 'topic',
 		identifier_cb => sub { first {$_[0]->id eq $_->[1]} list $_[0]->topics },
-		key_cb        => sub { map {$_->id} list $_[0]->topics },
+		key_cb        => sub { map { $_->id } list $_[0]->topics },
 	},
 	{
 		name          => 'type',

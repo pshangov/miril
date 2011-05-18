@@ -9,59 +9,54 @@ use Exception::Class;
 use Carp;
 use Module::Load;
 use Ref::List qw(list);
+use Path::Class qw(file dir);
 use Miril::Warning;
 use Miril::Exception;
 use Miril::Config;
+use Miril::Taxonomy;
+use Miril::Cache;
+use Miril::Store;
 use Miril::Util;
+use Class::Load qw(load_class);
+use Hash::MoreUtils qw(slice_def);
 
 use Mouse;
 
 our $VERSION = '0.008';
 
-has 'miril_dir' =>
+has 'base_dir' =>
 (
-	is       => 'ro',
-	required => 1,
+    is         => 'ro',
+    isa        => 'Path::Class::Dir',
+    lazy_build => 1,
 );
 
-has 'site' =>
+has 'config' =>
 (
-	is       => 'ro',
-	required => 1,
+	is         => 'ro',
+	isa        => 'Miril::Config',
+	lazy_build => 1,
 );
 
-has 'cfg' =>
+has 'cache' =>
 (
-	is      => 'ro',
-	isa     => 'Miril::Config',
-	lazy    => 1,
-	builder => sub { 
-		Miril::Config->new( miril_dir => $_[0]->miril_dir, site => $_[0]->site );
-	},
+	is         => 'ro',
+	isa        => 'Miril::Cache',
+	lazy_build => 1,
 );
 
-has 'util' =>
+has 'taxonomy' =>
 (
-	is      => 'ro',
-	isa     => 'Miril::Util',
-	lazy    => 1,
-	builder => sub {
-		Miril::Util->new( cfg => $_[0]->cfg )
-	},
+    is         => 'ro',
+	isa        => 'Miril::Taxonomy',
+	lazy_build => 1,
 );
 
 has 'store' =>
 (
-	is      => 'ro',
-	isa     => 'Miril::Store',
-	lazy    => 1,
-	builder => sub 
-	{
-		my $self = shift;
-		my $store_name = "Miril::Store::" . $self->cfg->store;
-		Module::Load::load $store_name;
-		return $store_name->new( cfg => $_[0]->cfg, util => $_[0]->util );
-	},
+	is         => 'ro',
+	isa        => 'Miril::Store',
+	lazy_build => 1,
 );
 
 has 'tmpl' =>
@@ -88,6 +83,66 @@ has 'warnings' =>
     	push_warning => 'push',
 	},
 );
+
+sub _build_base_dir
+{
+    return dir('.');
+}
+
+sub _build_config
+{
+    my $self = shift;
+
+    my %extensions = (
+        'miril.xml'  => 'Miril::Config::Format::XML',
+        'miril.conf' => 'Miril::Config::Format::Config::General',
+        'miril.yaml' => 'Miril::Config::Format::YAML',
+    );
+
+    my @files = grep { -e } map { file($self->base_dir, $_) } keys %extensions;
+
+    my $config_filename = shift @files;
+    warn "Multiple configuration files found!" if @files;
+
+    my $class = $extensions{$config_filename->basename};
+    load_class $class;
+    return $class->new($config_filename);
+}
+
+sub _build_store
+{
+    my $self = shift;
+
+    return Miril::Store->new( 
+        taxonomy => $self->taxonomy,
+        cache    => $self->cache,
+        data_dir => $self->config->data_path,
+    );
+}
+
+sub _build_taxonomy
+{
+    my $self = shift;
+
+    return Miril::Taxonomy->new( slice_def {
+        authors => $self->config->authors, 
+        topics  => $self->config->topics, 
+        types   => $self->config->types,
+    } );
+}
+
+sub _build_cache
+{
+    my $self = shift;
+    
+    return Miril::Cache->new(
+        filename    => $self->config->cache_path, 
+        data_dir    => $self->config->data_path,
+        output_path => dir($self->config->output_path),
+        taxonomy    => $self->taxonomy,
+        base_url    => $self->config->base_url,
+    );
+}
 
 1;
 
