@@ -73,9 +73,12 @@ my %posts = (
 );
     
 my $cache = Miril::Cache->new(
-    filename => $dummy_file, 
-    data_dir => $dummy_dir,
-    posts    => \%posts,
+    filename    => $dummy_file, 
+    data_dir    => $dummy_dir,
+    posts       => \%posts,
+    taxonomy    => $taxonomy,
+    base_url    => 'example.com',
+    output_path => dir('.'),
 );
 
 ### STORE ###

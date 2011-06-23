@@ -260,15 +260,15 @@ sub _build_source
 sub _build_body
 {
 	my $self = shift;
-    my ($body, $teaser);
+    my ($source, $body, $teaser);
 
     if ($self->has_source)
     {
-        my ($body, $teaser) = _parse_source($self->source);
+        ($body, $teaser) = _parse_source($self->source);
     }
     else
     {
-        (my $source, $body, $teaser) = _parse_source_file($self->source_path);
+        ($source, $body, $teaser) = _parse_source_file($self->source_path);
         $self->source($source);
 
     }

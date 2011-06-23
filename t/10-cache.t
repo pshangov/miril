@@ -9,6 +9,7 @@ use Miril::DateTime qw();
 use Miril::Type     qw();
 use Miril::Author   qw();
 use Miril::Topic    qw();
+use Miril::Taxonomy qw();
 use Path::Class     qw(file dir);
 use File::Temp      qw(tempfile);
 use Devel::Dwarn    qw(Dwarn);
@@ -32,6 +33,12 @@ my $author = Miril::Author->new( id => 'larry', name => 'Larry Wall' );
 my $topic = Miril::Topic->new( id => 'perl', name => 'Perl' );
 my $now = Miril::DateTime->now;
 
+my $taxonomy = Miril::Taxonomy->new(
+    authors => { larry => $author },
+    topics  => { perl  => $topic  },
+    types   => { news  => $type   },
+);
+
 my $post = Miril::Post->new(
     id          => 'aenean_eu_lorem',
     title       => 'Aenean Eu Lorem',
@@ -46,9 +53,12 @@ my $post = Miril::Post->new(
 ### FRESH CACHE ###
 
 my $cache = Miril::Cache->new( 
-    filename => file($filename),
-    data_dir => $data_dir,
-    posts    => { aenean_eu_lorem => $post },
+    filename    => file($filename),
+    data_dir    => $data_dir,
+    posts       => { aenean_eu_lorem => $post },
+    taxonomy    => $taxonomy,
+    base_url    => 'example.com',
+    output_path => dir('.'),
 );
 
 isa_ok ( $cache, 'Miril::Cache' );
@@ -81,7 +91,10 @@ ok ( $cache->update, "update" );
 
 my $retrieved = Miril::Cache->new(
     filename => file($filename), 
-    data_dir => $data_dir 
+    data_dir => $data_dir,
+    taxonomy    => $taxonomy,
+    base_url    => 'example.com',
+    output_path => dir('.'),
 );
 
 isa_ok ( $retrieved, 'Miril::Cache' );

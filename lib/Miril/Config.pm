@@ -122,7 +122,7 @@ has 'base_dir' =>
 has 'base_url' => 
 (
 	is       => 'ro',
-	required => 1,
+    #required => 1,
 );
 
 has 'output_path' => 
