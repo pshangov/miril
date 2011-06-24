@@ -3,7 +3,7 @@ MIRIL TODO
 
 1. Refactoring and testing of Miril app
    - DONE - add Miril::Template with TT backend, tests
-2. Command line application ('test' command)
+2. DONE - Command line application ('test' command)
 3. Web interface
    - refactor CGI::Application code
    - make input validator definitions work as arrays rather than strings

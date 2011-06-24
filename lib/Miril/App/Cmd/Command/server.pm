@@ -15,8 +15,6 @@ sub opt_spec
 	return (
 		[ 'host|h=s',    "host address to bind to",    { default => 'localhost' }   ],
 		[ 'port|p=i',    "port to listen on",          { default => 8080 }          ],
-		[ 'dir|d=s',     "miril base dir",             { default => 'example' }     ],
-		[ 'site|s=s',    "website",                    { default => 'example.com' } ],
 	);
 }
 
@@ -29,9 +27,7 @@ sub execute
 	Plack::Loader->auto(
 		host => $opt->host,
 		port => $opt->port,
-	)->run(
-		Miril::App::PSGI->app($opt->dir, $opt->site)
-	);
+	)->run( Miril::App::PSGI->app($self->miril)	);
 }
 
 1;
