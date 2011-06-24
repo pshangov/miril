@@ -1,4 +1,4 @@
-package Miril::Theme::Flashyweb::Stylesheet;
+package Miril::CGI::Application::Theme::Flashyweb::Stylesheet;
 
 use strict;
 use warnings;

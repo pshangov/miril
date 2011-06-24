@@ -33,9 +33,16 @@ has 'base_dir' =>
 
 has 'config' =>
 (
-	is         => 'ro',
-	isa        => 'Miril::Config',
-	lazy_build => 1,
+	is       => 'ro',
+	isa      => 'Miril::Config',
+	required => 1,
+    builder  => '_build_config',
+);
+
+has 'config_filename' =>
+(
+	is  => 'rw',
+	isa => 'Path::Class::File',
 );
 
 has 'cache' =>
@@ -106,6 +113,8 @@ sub _build_config
 
     my $class = $extensions{$config_filename->basename};
     load_class $class;
+    $self->config_filename(file($config_filename));
+
     return $class->new($config_filename);
 }
 

@@ -19,9 +19,9 @@ use Data::Page;
 use Ref::List qw(list);
 use Miril;
 use Miril::Exception;
-use Miril::Theme::Flashyweb;
-use Miril::View;
-use Miril::InputValidator;
+use Miril::CGI::Application::Theme::Flashyweb;
+use Miril::CGI::Application::View;
+use Miril::CGI::Application::InputValidator;
 use Miril::Publisher;
 use File::Copy qw(copy);
 use Number::Format qw(format_bytes);
@@ -68,14 +68,15 @@ sub setup {
 	# setup miril
 	my $miril_dir = $self->param('miril_dir');
 	my $site = $self->param('site');
-	$self->{miril}= Miril->new($miril_dir, $site);
+	$self->{miril}= $self->param('miril');
 	
 	# configure authentication
 	try {
-		my $user_manager_name = "Miril::UserManager::" . $self->miril->cfg->user_manager;
+		my $user_manager_name = "Miril::CGI::Application::UserManager::XMLTPP";
 		load $user_manager_name;
 		$self->{user_manager} = $user_manager_name->new($self->miril);
 	} catch {
+        warn $_;
 		Miril::Exception->throw(
 			errorvar => $_,
 			message  => 'Could not load user manager',
@@ -87,23 +88,23 @@ sub setup {
 		LOGIN_RUNMODE  => 'login',
 		LOGOUT_RUNMODE => 'logout',
 		CREDENTIALS    => [ 'authen_username', 'authen_password' ],
-		STORE          => [ 'Cookie', SECRET => $self->miril->cfg->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
+		STORE          => [ 'Cookie', SECRET => $self->miril->config->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
 	);
 
 	$self->authen->protected_runmodes(':all');
 
 
 	# load view
-	$self->{view} = Miril::View->new(
-		theme            => Miril::Theme::Flashyweb->new,
+	$self->{view} = Miril::CGI::Application::View->new(
+		theme            => Miril::CGI::Application::Theme::Flashyweb->new,
 		is_authenticated => $self->authen->is_authenticated,
 		latest           => $self->miril->store->get_latest,
 		miril            => $self->miril,
 
 	);
 
-	$self->{validator} = Miril::InputValidator->new;
-	$self->header_add( -type => 'text/html; charset=utf-8');
+	$self->{validator} = Miril::CGI::ApplicationInputValidator->new;
+	$self->header_add( -type => 'text/html; set=utf-8');
 
 }
 
@@ -157,7 +158,7 @@ sub posts_list {
 sub search {
 	my $self = shift;
 
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 
 	my $tmpl = $self->view->load('search');
 
@@ -172,7 +173,7 @@ sub search {
 sub posts_create {
 	my $self = shift;
 
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 
 	my $empty_post;
 
@@ -190,7 +191,7 @@ sub posts_create {
 sub posts_edit {
 	my ($self, $invalid_id) = @_;
 
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 	my $q = $self->query;
 	my $post;
 
@@ -365,7 +366,7 @@ sub account
 sub files_list {
 	my $self = shift;
 
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 
 	my $files_path = $cfg->files_path;
 	my $files_http_dir = $cfg->files_http_dir;
@@ -408,7 +409,7 @@ sub files_list {
 sub files_upload {
 	my $self = shift;
 	my $q = $self->query;
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 
 	if ( $q->param('file') or $q->upload('file') ) {
 	
@@ -445,7 +446,7 @@ sub files_upload {
 
 sub files_delete {
 	my $self = shift;	
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 	my $q = $self->query;
 
 	my @filenames = $q->param('file');
@@ -489,7 +490,7 @@ sub posts_publish {
 
 sub _prepare_authors {
 	my ($self, $selected) = @_;
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 	my @authors;
 	if ($selected) {
 		@authors = map {{ name => $_, id => $_ , selected => $_ eq $selected }} $cfg->authors->list;
@@ -501,7 +502,7 @@ sub _prepare_authors {
 
 sub _prepare_statuses {
 	my ($self, $selected) = @_;
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 	my @statuses;
 	if ($selected)
 	{
@@ -516,7 +517,7 @@ sub _prepare_statuses {
 
 sub _prepare_topics {
 	my ($self, %selected) = @_;
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 	if (%selected)
 	{
 		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} $cfg->topics->list;
@@ -531,7 +532,7 @@ sub _prepare_topics {
 
 sub _prepare_types {
 	my ($self, $selected) = @_;
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 	my @types;
 	if ($selected)
 	{
@@ -550,7 +551,7 @@ sub _paginate {
 	my $self = shift;
 	my @posts = @_;
 	
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 
 	return unless @posts;
 

@@ -1,4 +1,4 @@
-package Miril::UserManager::XMLTPP;
+package Miril::CGI::Application::UserManager::XMLTPP;
 
 use strict;
 use warnings;
@@ -19,7 +19,7 @@ sub new {
 	my $self = bless {}, $class;
 
 	$self->{miril} = $miril;
-	my $cfg = $miril->cfg;
+	my $cfg = $miril->config;
 
 
 	my $tpp = XML::TreePP->new();

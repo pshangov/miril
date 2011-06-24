@@ -1,10 +1,10 @@
-package Miril::Theme::Flashyweb;
+package Miril::CGI::Application::Theme::Flashyweb;
 
 use strict;
 use warnings;
 use autodie;
 
-use Miril::Theme::Flashyweb::Stylesheet;
+use Miril::CGI::Application::Theme::Flashyweb::Stylesheet;
 
 ### TEMPLATES ###
 

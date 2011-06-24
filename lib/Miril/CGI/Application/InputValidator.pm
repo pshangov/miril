@@ -1,4 +1,4 @@
-package Miril::InputValidator;
+package Miril::CGI::Application::InputValidator;
 
 use strict;
 use warnings;
