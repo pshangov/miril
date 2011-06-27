@@ -6,10 +6,20 @@ use Mouse;
 use Digest::MD5;
 use Try::Tiny qw(try catch);
 
-sub BUILDARGS
+around 'BUILDARGS' => sub
 {
-    return { data_file => $_[0] } if @_ == 1;
-}
+    my $orig  = shift;
+    my $class = shift;
+
+    if ( @_ == 1 ) 
+    {
+        return $class->$orig( data_file => $_[0] );
+    }
+    else 
+    {
+        return $class->$orig(@_);
+    }
+};
 
 has 'data_file' =>
 (
@@ -20,15 +30,17 @@ has 'data_file' =>
 
 has 'users' =>
 (
-    is         => 'rw',
-    isa        => 'HashRef',
-    lazy_build => 1,
-    traits     => ['Hash'],
-    handles    => 
+    is       => 'rw',
+    isa      => 'HashRef',
+    required => 1,
+    builder  => 'read_data_file',
+    traits   => ['Hash'],
+    handles  => 
     { 
-        get_user    => 'get', 
-        set_user    => 'set', 
-        delete_user => 'delete',
+        get_user      => 'get', 
+        set_user      => 'set', 
+        delete_user   => 'delete',
+        get_usernames => 'keys',
     },
 );
 
@@ -36,12 +48,47 @@ after [qw(set_user delete_user)] => \&write_data_file;
 
 sub read_data_file
 {
+    my $self = shift;
 
+    my $fh = $self->data_file->open or die $!;
+
+    my %users;
+
+    while ( my $line = $fh->getline )
+    {
+        chomp $line;
+
+        my ($username, $password, $name) = split /:/, $line;
+
+        $users{$username} = {
+            name     => $name,
+            password => $password,
+        };
+    }
+
+    $fh->close or die $!;
+
+    return \%users;
 }
 
 sub write_data_file
 {
+    my $self = shift;
+    
+    my @records;
 
+    foreach my $username ( sort $self->get_usernames )
+    {
+        my $user = $self->get_user($username);
+        my $record = join ':', $username, $user->{password}, $user->{name};
+        push @records, $record;
+    }
+
+    my $content = join "\n", @records;
+    
+    my $fh = $self->data_file->open('w') or die $!;
+    $fh->print($content)                 or die $!;
+    $fh->close                           or die $!;
 }
 
 sub verification_callback 

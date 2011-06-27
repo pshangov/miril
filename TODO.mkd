@@ -5,6 +5,7 @@ MIRIL TODO
    - DONE - add Miril::Template with TT backend, tests
 2. DONE - Command line application ('test' command)
 3. Web interface
+   - IN PROGRESS - Refactoring and tests for user manager
    - refactor CGI::Application code
    - make input validator definitions work as arrays rather than strings
    - switch to Template::Declare
