@@ -38,26 +38,30 @@ sub load {
 	$header->param('authenticated', $self->is_authenticated ? 1 : 0);
 	$header->param('css', $css->output);
 
-	if ($self->miril->warnings or $self->fatal) {
+	if (!$self->miril->has_no_warnings or $self->fatal) {
 		$header->param('has_error', 1 );
-		$header->param('warnings', [$self->miril->warnings] ) if $self->miril->warnings;
+		$header->param('warnings', [$self->miril->warnings] ) unless $self->miril->has_no_warnings;
 		$header->param('fatals', [$self->fatal] ) if $self->fatal;
 	}
-
+    
 	# get sidebar
-	my $sidebar_text = $self->theme->get('sidebar');
-	my $sidebar = HTML::Template::Pluggable->new( scalarref => \$sidebar_text, die_on_bad_params => 0 );
-	$sidebar->param('latest', $self->miril->store->get_latest);
+    # my $sidebar_text = $self->theme->get('sidebar');
+    # my $sidebar = HTML::Template::Pluggable->new( scalarref => \$sidebar_text, die_on_bad_params => 0 );
+    # $sidebar->param('latest', $self->miril->store->get_latest);
 
 	# get footer
 	my $footer_text = $self->theme->get('footer');
 	my $footer = HTML::Template::Pluggable->new( scalarref => \$footer_text, die_on_bad_params => 0 );
 	$footer->param('authenticated', $self->is_authenticated ? 1 : 0);
-	$footer->param('sidebar', $sidebar->output);
+    # $footer->param('sidebar', $sidebar->output);
 	
 	my $tmpl = HTML::Template::Pluggable->new( scalarref => \$text, die_on_bad_params => 0, case_sensitive => 1);
 	$tmpl->param('authenticated', $self->is_authenticated ? 1 : 0);
-	$tmpl->param('header' => $header->output, 'footer' => $footer->output );
+
+    my $header_output = $header->output;
+    my $footer_output = $footer->output;
+
+	$tmpl->param('header' => $header_output, 'footer' => $footer_output );
 
 	if ($self->pager) {
 

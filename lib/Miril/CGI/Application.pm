@@ -22,11 +22,13 @@ use Miril::Exception;
 use Miril::CGI::Application::Theme::Flashyweb;
 use Miril::CGI::Application::View;
 use Miril::CGI::Application::InputValidator;
+use Miril::CGI::Application::UserManager;
 use Miril::Publisher;
 use File::Copy qw(copy);
 use Number::Format qw(format_bytes);
 use POSIX qw(strftime);
 use Syntax::Keyword::Gather qw(gather take);
+use Data::Printer;
 
 ### ACCESSORS ###
 
@@ -71,17 +73,7 @@ sub setup {
 	$self->{miril}= $self->param('miril');
 	
 	# configure authentication
-	try {
-		my $user_manager_name = "Miril::CGI::Application::UserManager::XMLTPP";
-		load $user_manager_name;
-		$self->{user_manager} = $user_manager_name->new($self->miril);
-	} catch {
-        warn $_;
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not load user manager',
-		);
-	};
+	$self->{user_manager} = Miril::CGI::Application::UserManager->new($self->miril->config->users_data);
 
 	$self->authen->config( 
 		DRIVER         => [ 'Generic', $self->user_manager->verification_callback ],
@@ -93,17 +85,15 @@ sub setup {
 
 	$self->authen->protected_runmodes(':all');
 
-
 	# load view
 	$self->{view} = Miril::CGI::Application::View->new(
 		theme            => Miril::CGI::Application::Theme::Flashyweb->new,
 		is_authenticated => $self->authen->is_authenticated,
-		latest           => $self->miril->store->get_latest,
 		miril            => $self->miril,
 
 	);
 
-	$self->{validator} = Miril::CGI::ApplicationInputValidator->new;
+	$self->{validator} = Miril::CGI::Application::InputValidator->new;
 	$self->header_add( -type => 'text/html; set=utf-8');
 
 }
@@ -139,7 +129,7 @@ sub posts_list {
 	my $self = shift;
 	my $q = $self->query;
 
-	my @posts = $self->miril->store->get_posts(
+	my @posts = $self->miril->store->search(
 		author => ( $q->param('author') or undef ),
 		title  => ( $q->param('title' ) or undef ),
 		type   => ( $q->param('type'  ) or undef ),
@@ -214,7 +204,7 @@ sub posts_edit {
 		warn Dumper $post;
 	} else {
 		#TODO check if $post is defined
-		$post = $self->miril->store->get_post($q->param('id'));
+		$post = $self->miril->store->get_post_by_id($q->param('id'));
 	
 		my %cur_topics;
 
@@ -288,10 +278,14 @@ sub posts_delete {
 sub posts_view {
 	my $self = shift;
 	
+    warn "ENTERING POSTS VIEW ACTION";
+
 	my $q = $self->query;
 	my $id = $q->param('old_id') ? $q->param('old_id') : $q->param('id');
 
-	my $post = $self->miril->store->get_post($id);
+    my @ids = $self->miril->store->posts;
+    p @ids;
+	my $post = $self->miril->store->get_post_by_id($id);
 	if ($post) {
 		$post->{body} = $post->body;
 

@@ -116,7 +116,7 @@ sub _build_posts
 		next if -d $id;
 		unless ( $self->exists_in_cache($id->basename) )
 		{
-            $posts{$id} = Miril::Post->new_from_file( $id,
+            $posts{$id->basename} = Miril::Post->new_from_file( $id,
                 taxonomy    => $self->taxonomy, 
                 output_path => $self->output_path,
                 base_url    => $self->base_url,

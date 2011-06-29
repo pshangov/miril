@@ -284,7 +284,7 @@ my $list = <<EndOfHTML;
 			<h3><span class="dingbat">&#8226;</span><a href='?action=view&id=<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.title"></a></h3>
 			<p class="item-desc">
 				<b>Status:</b> <TMPL_VAR NAME="this.status">,&nbsp; 
-				<b>Modified:</b> <TMPL_VAR NAME="this.modified.strftime('%d/%m/%Y %H:%M')">
+				<b>Modified:</b> <TMPL_VAR NAME="this.modified.as_strftime('%d/%m/%Y %H:%M')">
 			</p>
 		</TMPL_LOOP>
 
@@ -505,7 +505,7 @@ sub get {
 	my $self = shift;
 	my $name = shift;
 
-	$name eq "css"      && return Miril::Theme::Flashyweb::Stylesheet::get();
+	$name eq "css"      && return Miril::CGI::Application::Theme::Flashyweb::Stylesheet::get();
 
 	$name eq "account"  && return $account;
 	$name eq "edit"     && return $edit;

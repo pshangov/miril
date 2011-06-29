@@ -55,7 +55,7 @@ has 'users_data' =>
 (
 	is      => 'ro',
 	isa     => 'Path::Class::File',
-	default => sub { file($_[0]->site_dir, 'cfg', 'users.xml') },
+	default => sub { file($_[0]->site_dir, 'users') },
 );
 
 has 'data_path' => 

@@ -8,19 +8,6 @@ use Syntax::Keyword::Gather qw(gather take);
 use List::Util              qw(first);
 use Path::Class             qw(file);
 
-#has 'posts' =>
-#(
-#	is       => 'rw',
-#	isa      => 'HashRef[Miril::Post]',
-#	traits   => ['Hash'],
-#	handles  => 
-#	{
-#		get_post_by_id => 'get',
-#		get_posts      => 'values',
-#		add_post       => 'set',
-#	},
-#);
-
 has 'cache' =>
 (
 	is       => 'ro',

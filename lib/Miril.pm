@@ -82,12 +82,13 @@ has 'tmpl' =>
 
 has 'warnings' =>
 (
-	traits  => ['Array'],
-	is      => 'rw',
-	isa     => 'ArrayRef[Miril::Warning]',
-	default => sub { [] },
-	handles => {
-    	push_warning => 'push',
+	traits    => ['Array'],
+	is        => 'rw',
+	isa       => 'ArrayRef[Miril::Warning]',
+	default   => sub { [] },
+	handles   => {
+    	push_warning    => 'push',
+    	has_no_warnings => 'is_empty',
 	},
 );
 
