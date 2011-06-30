@@ -71,6 +71,7 @@ has 'topics' =>
 	is            => 'ro',
     isa           => ArrayRefOfTopic,
     #weak_ref     => 1,
+    default       => sub { [] },
     traits        => ['Array'],
     handles       => { get_topics => 'elements' },
 	documentation => 'List of Miril::Topic objects for this post',
@@ -107,6 +108,7 @@ has 'modified' =>
 (
 	is            => 'ro',
 	isa           => DateTime,
+    default       => sub { Miril::DateTime->now }, # for newly created posts
 	documentation => 'Time when the post source post was last modified',
 );
 
@@ -156,9 +158,9 @@ sub new_from_file
 	my %meta = _parse_meta($meta);
 
 	# expand metadata into objects
-	my $author = $taxonomy->get_author_by_id($meta{author});
-	my $topics = $taxonomy->get_topics_by_id($meta{topics});
-	my $type   = $taxonomy->get_type_by_id($meta{type});
+	my $author = $taxonomy->get_author_by_id($meta{author}) if $meta{author};
+	my $topics = $taxonomy->get_topics_by_id($meta{topics}) if $meta{topics};
+	my $type   = $taxonomy->get_type_by_id($meta{type})     if $meta{type};
 
 	# prepare the remaining attributes
 	my $id        = $file->basename;
@@ -215,9 +217,9 @@ sub new_from_params
     my %params = %$params;
     my $taxonomy = $options{taxonomy};
 
-    my $author = $taxonomy->get_author_by_id($params{author});
-	my $topics = $taxonomy->get_topics_by_id($params{topics});
-	my $type   = $taxonomy->get_type_by_id($params{type});
+    my $author = $taxonomy->get_author_by_id($params{author}) if $params{author};
+	my $topics = $taxonomy->get_topics_by_id($params{topics}) if $params{topics};
+	my $type   = $taxonomy->get_type_by_id($params{type})     if $params{type};
 
     my $source_path = file($options{data_dir}, $params{id});
 

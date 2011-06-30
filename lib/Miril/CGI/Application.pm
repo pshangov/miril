@@ -154,8 +154,8 @@ sub search {
 
 	$tmpl->param('statuses', $self->_prepare_statuses );
 	$tmpl->param('types',    $self->_prepare_types    );
-	$tmpl->param('topics',   $self->_prepare_topics   ) if $cfg->topics->list;
-	$tmpl->param('authors',  $self->_prepare_authors  ) if $cfg->authors->list;
+	$tmpl->param('topics',   $self->_prepare_topics   ) if $cfg->get_topics;
+	$tmpl->param('authors',  $self->_prepare_authors  ) if $cfg->get_authors;
 
 	return $tmpl->output;
 }
@@ -169,8 +169,8 @@ sub posts_create {
 
 	$empty_post->{statuses} = $self->_prepare_statuses;
 	$empty_post->{types}    = $self->_prepare_types;
-	$empty_post->{authors}  = $self->_prepare_authors if $cfg->authors->list;
-	$empty_post->{topics}   = $self->_prepare_topics  if $cfg->topics->list;
+	$empty_post->{authors}  = $self->_prepare_authors if $cfg->get_authors;
+	$empty_post->{topics}   = $self->_prepare_topics  if $cfg->get_topics;
 
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('post', $empty_post);
@@ -214,8 +214,8 @@ sub posts_edit {
 			%cur_topics = map {$_->id => 1} list $post->topics;
 		}
 	
-		$post->{authors}  = $self->_prepare_authors($post->author) if $cfg->authors->list;
-		$post->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->topics->list;
+		$post->{authors}  = $self->_prepare_authors($post->author) if $cfg->get_authors;
+		$post->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->get_topics;
 		$post->{statuses} = $self->_prepare_statuses($post->status);
 		$post->{types}    = $self->_prepare_types($post->type->id);
 	}
@@ -223,8 +223,6 @@ sub posts_edit {
 	my $tmpl = $self->view->load('edit');
 	$tmpl->param('post', $post);
 	$tmpl->param('invalid', $self->param('invalid'));
-
-	$self->miril->store->add_to_latest($post->id, $post->title);
 
 	return $tmpl->output;
 }
@@ -278,13 +276,11 @@ sub posts_delete {
 sub posts_view {
 	my $self = shift;
 	
-    warn "ENTERING POSTS VIEW ACTION";
-
 	my $q = $self->query;
 	my $id = $q->param('old_id') ? $q->param('old_id') : $q->param('id');
 
     my @ids = $self->miril->store->posts;
-    p @ids;
+
 	my $post = $self->miril->store->get_post_by_id($id);
 	if ($post) {
 		$post->{body} = $post->body;
@@ -367,9 +363,12 @@ sub files_list {
 	my @files;
 	
 	try {
-		opendir(my $dir, $files_path);
+        
+        $files_path->mkpath unless -e $files_path;
+        my $dir = $files_path->open or die $!;
 		@files = grep { -f catfile($files_path, $_) } readdir($dir);
 		closedir $dir;
+
 	} catch {
 		Miril::Exception->throw(
 			errorvar => $_,
@@ -464,13 +463,13 @@ sub files_delete {
 sub posts_publish {
 	my $self = shift;
 
-	my $cfg = $self->miril->cfg;
+	my $cfg = $self->miril->config;
 	
 	my $do = $self->query->param("do");
 	my $rebuild = $self->query->param("rebuild");
 
 	if ($do) {
-		Miril::Publisher->publish($self->miril, $rebuild);
+        $self->miril->publisher->publish($rebuild);
 		return $self->redirect("?action=list");
 	} else {
 		my $tmpl = $self->view->load('publish');
@@ -487,9 +486,9 @@ sub _prepare_authors {
 	my $cfg = $self->miril->config;
 	my @authors;
 	if ($selected) {
-		@authors = map {{ name => $_, id => $_ , selected => $_ eq $selected }} $cfg->authors->list;
+		@authors = map {{ name => $_, id => $_ , selected => $_ eq $selected }} $cfg->get_authors;
 	} else {
-		@authors = map {{ name => $_, id => $_  }} $cfg->authors->list;
+		@authors = map {{ name => $_, id => $_  }} $cfg->get_authors;
 	}
 	return \@authors;
 }
@@ -500,11 +499,11 @@ sub _prepare_statuses {
 	my @statuses;
 	if ($selected)
 	{
-		@statuses = map {{ name => $_, id => $_, selected => $_ eq $selected }} $cfg->statuses->list;
+		@statuses = map {{ name => $_, id => $_, selected => $_ eq $selected }} $cfg->get_statuses;
 	}
 	else
 	{
-		@statuses = map {{ name => $_, id => $_ }} $cfg->statuses->list;
+		@statuses = map {{ name => $_, id => $_ }} $cfg->get_statuses;
 	}
 	return \@statuses;
 }
@@ -514,12 +513,12 @@ sub _prepare_topics {
 	my $cfg = $self->miril->config;
 	if (%selected)
 	{
-		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} $cfg->topics->list;
+		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} $cfg->get_topics;
 		return \@topics;
 	}
 	else
 	{
-		my @topics = map {{ name => $_->name, id => $_->id, }} $cfg->topics->list;
+		my @topics = map {{ name => $_->name, id => $_->id, }} $cfg->get_topics;
 		return \@topics;
 	}
 }
@@ -530,11 +529,11 @@ sub _prepare_types {
 	my @types;
 	if ($selected)
 	{
-		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected }} $cfg->types->list;
+		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected }} $cfg->get_types;
 	}
 	else 
 	{
-		@types = map {{ name => $_->name, id => $_->id }} $cfg->types->list;
+		@types = map {{ name => $_->name, id => $_->id }} $cfg->get_types;
 	}
 	return \@types;
 }

@@ -77,6 +77,8 @@ has 'statuses' =>
 	is      => 'ro',
 	isa     => 'ArrayRef',
 	default => sub { [qw(draft published)] },
+    traits  => ['Array'],
+    handles => { get_statuses => 'elements' },
 );
 
 has 'sort' => 
@@ -90,6 +92,9 @@ has 'topics' =>
 	is        => 'ro',
 	isa       => 'ArrayRef[Miril::Topic]',
 	predicate => 'has_topics',
+    default   => sub { [] },
+    traits    => ['Array'],
+    handles   => { get_topics => 'elements' },
 );
 
 has 'types' => 
@@ -97,6 +102,9 @@ has 'types' =>
 	is        => 'ro',
 	isa       => 'ArrayRef[Miril::Type]',
 	predicate => 'has_types',
+    default   => sub { [] },
+    traits    => ['Array'],
+    handles   => { get_types => 'elements' },
 );
 
 has 'authors' => 
@@ -104,6 +112,9 @@ has 'authors' =>
 	is        => 'ro',
 	isa       => 'ArrayRef',
 	predicate => 'has_authors',
+    default   => sub { [] },
+    traits    => ['Array'],
+    handles   => { get_authors => 'elements' },
 );
 
 has 'lists' => 

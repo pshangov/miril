@@ -16,6 +16,8 @@ use Miril::Config;
 use Miril::Taxonomy;
 use Miril::Cache;
 use Miril::Store;
+use Miril::Publisher;
+use Miril::Template;
 use Miril::Util;
 use Class::Load qw(load_class);
 use Hash::MoreUtils qw(slice_def);
@@ -66,18 +68,11 @@ has 'store' =>
 	lazy_build => 1,
 );
 
-has 'tmpl' =>
+has 'template' =>
 (
-	is      => 'ro',
-	isa     => 'Miril::Template',
-	lazy    => 1,
-	builder => sub 
-	{
-		my $self = shift;
-		my $template_name = "Miril::Template::" . $self->cfg->template;
-		Module::Load::load $template_name;
-		return $template_name->new;
-	},
+	is         => 'ro',
+	isa        => 'Miril::Template',
+	lazy_build => 1,
 );
 
 has 'warnings' =>
@@ -90,6 +85,14 @@ has 'warnings' =>
     	push_warning    => 'push',
     	has_no_warnings => 'is_empty',
 	},
+);
+
+has 'publisher' => 
+(
+    is         => 'ro',
+    isa        => 'Miril::Publisher',
+    lazy_build => 1,
+
 );
 
 sub _build_base_dir
@@ -152,6 +155,27 @@ sub _build_cache
         taxonomy    => $self->taxonomy,
         base_url    => $self->config->base_url,
     );
+}
+
+sub _build_publisher
+{
+    my $self = shift;
+
+    use Data::Printer;
+    p $self->config->lists;
+
+    return Miril::Publisher->new(
+        posts       => [$self->store->get_posts],
+        lists       => $self->config->lists,
+        groups      => $self->config->groups,
+        template    => $self->template,
+        output_path => $self->config->output_path,
+    );
+}
+
+sub _build_template
+{
+    return Miril::Template->new;
 }
 
 1;
