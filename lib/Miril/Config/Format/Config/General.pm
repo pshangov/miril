@@ -7,6 +7,7 @@ use Config::General;
 use Ref::List qw(list);
 use Miril::Topic;
 use Miril::Type;
+use Miril::List::Spec;
 use File::Spec;
 use Path::Class qw(file);
 
@@ -39,7 +40,9 @@ around 'BUILDARGS' => sub
 
 	if ($cfg{list})
 	{
-		my @lists = map { { id => $_, %{ $cfg{list}{$_} } } }  keys %{ $cfg{list} };
+		my @lists = map { 
+            Miril::List::Spec->new( id => $_, %{ $cfg{list}{$_} } )
+        }  keys %{ $cfg{list} };
 		$cfg{lists} = \@lists;
 		delete $cfg{list};
 	}

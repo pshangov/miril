@@ -120,7 +120,7 @@ has 'authors' =>
 has 'lists' => 
 (
 	is        => 'ro',
-	isa       => 'ArrayRef',
+	isa       => 'ArrayRef[Miril::List::Spec]',
 	predicate => 'has_lists',
 );
 

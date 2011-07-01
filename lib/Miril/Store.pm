@@ -119,6 +119,20 @@ sub delete
 	$self->delete_post($id);
 }
 
+sub munge_lists
+{
+    my ($self, @specs) = @_;
+    
+    my @lists;
+
+    foreach my $spec (@specs)
+    {
+        push @lists, Miril::List->new(
+            
+        );
+    }
+}
+
 ### PRIVATE FUNCTIONS ###
 
 sub _generate_content
