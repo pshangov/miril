@@ -22,8 +22,9 @@ has 'posts' =>
 
 has 'key' =>
 (
-	is  => 'ro',
-	isa => 'HashRef',
+	is            => 'ro',
+	isa           => 'HashRef',
+    documentation => 'Set from taxonomy by Miril::Publisher',
 );
 
 has 'title' =>
@@ -40,8 +41,9 @@ has 'id' =>
 
 has 'url' =>
 (
-	is  => 'ro',
-	isa => 'Str',
+	is            => 'ro',
+	isa           => 'Str',
+    documentation => 'Caclulated from $self->location by Miril::Publisher',
 );
 
 has 'group' =>
@@ -65,12 +67,15 @@ has 'page' =>
 	predicate => 'is_paged',
 );
 
+### TODO: obsolete, remove!
 has 'location' =>
 (
-	is  => 'ro',
-	isa => 'Str',
+	is            => 'ro',
+	isa           => 'Str',
+    documentation => "Text::Sprintf::Named-compatible string for URL and output file generation",
 );
 
+### TODO: obsolete, remove!
 has 'map' =>
 (
 	is  => 'ro',
@@ -80,8 +85,9 @@ has 'map' =>
 
 has 'path' =>
 (
-	is  => 'ro',
-	isa => 'Path::Class::File',
+	is            => 'ro',
+	isa           => 'Path::Class::File',
+    documentation => 'Caclulated from $self->location by Miril::Publisher',
 );
 
 has 'template' =>

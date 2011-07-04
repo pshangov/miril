@@ -50,8 +50,10 @@ has 'template' =>
 
 has 'match' =>
 (
-    is  => 'ro',
-    isa => 'HashRef',
+    is      => 'ro',
+    isa     => 'HashRef',
+    traits  => ['Hash'],
+    handles => { search_options => 'elements' },
 );
 
 has 'map' =>
@@ -67,6 +69,12 @@ has 'map' =>
         map_location => [ get => 'location' ],
     }
     
+);
+
+has 'posts' => 
+(
+	is  => 'rw',
+	isa => 'ArrayRef[Miril::Post]',
 );
 
 1;

@@ -21,6 +21,7 @@ use Miril::Template;
 use Miril::Util;
 use Class::Load qw(load_class);
 use Hash::MoreUtils qw(slice_def);
+use List::MoreUtils qw(apply);
 
 use Mouse;
 
@@ -161,12 +162,15 @@ sub _build_publisher
 {
     my $self = shift;
 
-    use Data::Printer;
-    p $self->config->lists;
+    my @lists = apply { 
+        $_->posts = [$self->store->search($_->search_options)] 
+    } $self->config->get_lists;
+
+    my @posts = $self->store->get_posts;
 
     return Miril::Publisher->new(
-        posts       => [$self->store->get_posts],
-        lists       => $self->config->lists,
+        posts       => \@posts,
+        lists       => \@lists,
         groups      => $self->config->groups,
         template    => $self->template,
         output_path => $self->config->output_path,

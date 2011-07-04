@@ -463,15 +463,15 @@ sub files_delete {
 sub posts_publish {
 	my $self = shift;
 
-	my $cfg = $self->miril->config;
-	
-	my $do = $self->query->param("do");
 	my $rebuild = $self->query->param("rebuild");
 
-	if ($do) {
+	if ($self->query->param("do")) 
+    {
         $self->miril->publisher->publish($rebuild);
 		return $self->redirect("?action=list");
-	} else {
+	} 
+    else 
+    {
 		my $tmpl = $self->view->load('publish');
 		return $tmpl->output;
 	}

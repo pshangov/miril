@@ -36,7 +36,7 @@ has 'posts' =>
 has 'lists' => 
 (
 	is      => 'ro',
-	isa     => 'ArrayRef[Miril::List]',
+	isa     => 'ArrayRef[Miril::List::Spec]',
 	default => sub { [] },
 	traits  => ['Array'],
 	handles => { get_lists => 'elements' },
