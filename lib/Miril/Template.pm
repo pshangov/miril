@@ -7,26 +7,22 @@ use Template;
 
 has 'config' =>
 (
-    is  => 'ro',
-    isa => 'HashRef'
+    is      => 'ro',
+    isa     => 'HashRef',
+    default => sub { {} },
 );
 
 has 'tt' =>
 (
-    is => 'ro',
-    isa => 'Template',
+    is         => 'ro',
+    isa        => 'Template',
     lazy_build => 1,
 );
 
 sub _build_tt
 {
     my $self = shift;
-
-    my $tt = $self->config 
-        ? Template->new($self->config) 
-        : Template->new;
-    
-    return $tt;
+   return Template->new($self->config);
 }
 
 sub load

@@ -176,10 +176,14 @@ sub _build_publisher
         output_path => dir($self->config->output_path),
     );
 }
-
+use Data::Printer;
 sub _build_template
 {
-    return Miril::Template->new;
+    my $self = shift;
+
+    return Miril::Template->new( 
+        config => { INCLUDE_PATH => dir($self->base_dir, 'templates')->stringify }, 
+    );
 }
 
 1;
