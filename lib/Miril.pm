@@ -163,7 +163,7 @@ sub _build_publisher
     my $self = shift;
 
     my @lists = apply { 
-        $_->posts = [$self->store->search($_->search_options)] 
+        $_->posts([$self->store->search($_->search_options)])
     } $self->config->get_lists;
 
     my @posts = $self->store->get_posts;
@@ -173,7 +173,7 @@ sub _build_publisher
         lists       => \@lists,
         groups      => $self->config->groups,
         template    => $self->template,
-        output_path => $self->config->output_path,
+        output_path => dir($self->config->output_path),
     );
 }
 

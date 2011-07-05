@@ -87,7 +87,7 @@ sub prepare_lists
 				my @new_lists = $self->group_posts(
 					$posts,
 					$group,
-					$list_definition->title,
+					$list_definition->name,
 					$list_definition->id,
 					$formatter,
 					$list_definition->page,
@@ -98,10 +98,11 @@ sub prepare_lists
 				if ($list_definition->has_map)
 				{
 					take ( Miril::List->new(
-						lists => \@new_lists,
-						path  => file($list_definition->map),
-						title => $list_definition->title,
-						id    => $list_definition->id,
+						lists    => \@new_lists,
+						path     => file($list_definition->map_location),
+						title    => $list_definition->map_name,
+                        template => $list_definition->map_template,
+						id       => $list_definition->id,
 					) );
 				}
 			}
@@ -110,7 +111,7 @@ sub prepare_lists
 				take $self->page_posts(
 					$posts,
 					$list_definition->page,
-					$list_definition->title,
+					$list_definition->name,
 					$list_definition->id,
 					$formatter,
 					{},
@@ -121,7 +122,7 @@ sub prepare_lists
 				take ( Miril::List->new(
 					posts => $list_definition->posts,
 					path  => file($list_definition->location),
-					title => $list_definition->title,
+					title => $list_definition->name,
 					id    => $list_definition->id,
 				) );
 			}
@@ -137,16 +138,16 @@ sub group_posts
 
 	my (%grouped_posts, %keys);
 
-	foreach my $post (list $posts)
-	{
-		my %post_keys = $group->get_keys($post);
-		foreach my $sort_key (keys %post_keys)
-		{
-			$grouped_posts{$sort_key} = [] unless $grouped_posts{$sort_key};
-			push @{$grouped_posts{$sort_key}}, $post;
-			$keys{$sort_key} = $post_keys{$sort_key};
-		}
-	}
+    foreach my $post (list $posts)
+    {
+    	my %post_keys = $group->get_keys($post);
+    	foreach my $sort_key (keys %post_keys)
+    	{
+    		$grouped_posts{$sort_key} = [] unless $grouped_posts{$sort_key};
+    		push @{$grouped_posts{$sort_key}}, $post;
+    		$keys{$sort_key} = $post_keys{$sort_key};
+    	}
+    }
 
 	return gather 
 	{

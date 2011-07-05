@@ -122,6 +122,8 @@ has 'lists' =>
 	is        => 'ro',
 	isa       => 'ArrayRef[Miril::List::Spec]',
 	predicate => 'has_lists',
+    traits    => ['Array'],
+    handles   => { get_lists => 'elements' },
 );
 
 has 'base_dir' => 
@@ -187,38 +189,59 @@ has 'groups' =>
 	builder => '_build_groups',
 );
 
+use Data::Printer;
+
 sub _build_groups
 {
 	my @groups = map { Miril::Group->new(%$_) }
 	{
-		name          => 'topic',
-		identifier_cb => sub { first {$_[0]->id eq $_->[1]} list $_[0]->topics },
-		key_cb        => sub { map { $_->id } list $_[0]->topics },
+		name   => 'topic',
+		key_cb => sub { 
+            map { $_->id => { topic => $_->name, object => $_ } } 
+                $_[0]->get_topics
+        },
 	},
 	{
-		name          => 'type',
-		identifier_cb => sub { shift->type },
-		key_cb        => sub { shift->type->id },
+		name   => 'type',
+		key_cb => sub { 
+            $_[0]->type->id => { type => $_[0]->type->id, object => $_[0]->type } 
+        },
 	},
 	{
-		name          => 'author',
-		identifier_cb => sub { shift->author },
-		key_cb        => sub { shift->author },
+		name   => 'author',
+		key_cb => sub { 
+            $_[0]->author->id, { author => $_[0]->author->id, object => $_[0]->author } 
+        },
 	},
 	{
-		name          => 'year',
-		identifier_cb => sub { shift->published },
-		key_cb        => sub { shift->published->strftime('%Y') },
+		name   => 'year',
+		key_cb => sub { 
+            $_[0]->published->as_strftime('%Y') => { 
+                year   => $_[0]->published->as_strftime('%Y'),
+                object => $_[0]->published,
+            } 
+        },
 	},
 	{
-		name          => 'month',
-		identifier_cb => sub { shift->published },
-		key_cb        => sub { shift->published->strftime('%Y%m') },
+		name   => 'month',
+		key_cb => sub { 
+            $_[0]->published->as_strftime('%Y%m') => { 
+                year   => $_[0]->published->as_strftime('%Y'),
+                month  => $_[0]->published->as_strftime('%m'),
+                object => $_[0]->published,
+            }  
+        },
 	},
 	{
-		name          => 'date',
-		identifier_cb => sub { shift->published },
-		key_cb        => sub { shift->published->strftime('%Y%m%d') },
+		name      => 'date',
+		key_cb    => sub { 
+            $_[0]->published->as_strftime('%Y%m%d') => { 
+                year   => $_[0]->published->as_strftime('%Y'),
+                month  => $_[0]->published->as_strftime('%m'),
+                date   => $_[0]->published->as_strftime('%d'),
+                object => $_[0]->published,
+            }              
+        },
 	};
 
 	return \@groups;

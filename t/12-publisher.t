@@ -9,7 +9,7 @@ use Data::Dumper::Concise qw(Dumper);
 use List::MoreUtils qw(true);
 use File::Temp qw(tempdir);
 use Miril::Post;
-use Miril::List;
+use Miril::List::Spec;
 use Miril::Group;
 use Miril::Publisher;
 use Miril::Type;
@@ -62,30 +62,34 @@ my @posts = map
 
 my %list_options = (
 	id       => 'list1',
-	title    => 'List One',
+	name     => 'List One',
 	template => 'list_template',
 	posts    => \@posts,
 );
 
-my $ordinary_list = Miril::List->new(
+my $ordinary_list = Miril::List::Spec->new(
 	%list_options,
 	location => 'list.html',
 );
 
-my $paged_list = Miril::List->new(
+my $paged_list = Miril::List::Spec->new(
 	%list_options,
 	page     => 2,
 	location => 'page/%(page)d/index.html',
 );
 
-my $grouped_list = Miril::List->new(
+my $grouped_list = Miril::List::Spec->new(
 	%list_options,
 	group    => 'type',
 	location => 'type/%(type)s.html',
-	map      => 'list1_map.html',
+	map      => { 
+        name     => 'Articles by Type',
+        template => 'list_template',
+        location => 'list1_map.html',
+    },
 );
 
-my $paged_and_grouped_list = Miril::List->new(
+my $paged_and_grouped_list = Miril::List::Spec->new(
 	%list_options,
 	group    => 'type',
 	page     => 1,
@@ -93,8 +97,8 @@ my $paged_and_grouped_list = Miril::List->new(
 );
 
 my $group = Miril::Group->new(
-	name        => 'type',
-	key_cb      => sub { $_[0]->type->id, { type => $_[0]->type->id } },
+	name      => 'type',
+	key_cb    => sub { $_[0]->type->id => { type => $_[0]->type->id } },
 );
 
 my %publisher_options = (
