@@ -1,0 +1,12 @@
+[% WRAPPER wrapper.tt %]
+
+<h2>[% list.title %]</h2>
+
+[% FOREACH post IN list.posts %]
+
+<h3><a href='[% post.url %]'>[% post.title %]</a></h3>
+[% post.teaser %]
+<div><i><a href='[% post.url %]'>Read Full Article ...</a></i></div>
+
+[% END %]
+

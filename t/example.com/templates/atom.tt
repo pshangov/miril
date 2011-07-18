@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+ 
+<feed xmlns="http://www.w3.org/2005/Atom">
+ 
+	<title>[% list.title %]</title>
+	<link href='[% list.url %]' rel="self" />
+	<id>[% list.tag_url %]</id>
+	<updated>[% list.timestamp.as_iso %]</updated>
+	<author>
+		<name>Your Name</name>
+	</author>
+ 	
+	[% FOREACH post IN list.posts %]
+	<entry>
+		<title>[% post.title %]</title>
+		<link href='[% post.url %]' />
+		<id>[% post.tag_url %]</id>
+		<updated>[% post.published.as_iso %]</updated>
+		<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">[% post.teaser %]</div></summary>
+		<content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">[% post.body %]</div></content>
+	</entry>
+ 	[% END %]
+
+</feed>
+
+
