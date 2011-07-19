@@ -91,6 +91,7 @@ sub prepare_lists
 					$list_definition->id,
 					$formatter,
 					$list_definition->page,
+                    $list_definition->template,
 				);
 
 				take @new_lists;
@@ -120,10 +121,11 @@ sub prepare_lists
 			else
 			{
 				take ( Miril::List->new(
-					posts => $list_definition->posts,
-					path  => file($list_definition->location),
-					title => $list_definition->name,
-					id    => $list_definition->id,
+					posts    => $list_definition->posts,
+					path     => file($list_definition->location),
+					title    => $list_definition->name,
+					id       => $list_definition->id,
+                    template => $list_definition->template,
 				) );
 			}
 		}
@@ -132,7 +134,7 @@ sub prepare_lists
 
 sub group_posts
 {
-    my ($self, $posts, $group, $title, $id, $formatter, $page) = @_;
+    my ($self, $posts, $group, $title, $id, $formatter, $page, $template) = @_;
 
 	return unless $group and $posts;
 
@@ -164,17 +166,19 @@ sub group_posts
 					$id,
 					$formatter,
 					$keys{$key},
+                    $template,
 				);
 			}
 			else
 			{
 				take ( Miril::List->new(
-					posts => \@grouped_posts,
-					key   => $keys{$key},
-					group => $group->name,
-					path  => file( $formatter->format({ args => $keys{$key} }) ),
-					title => $title,
-					id    => $id,
+					posts    => \@grouped_posts,
+					key      => $keys{$key},
+					group    => $group->name,
+					path     => file( $formatter->format({ args => $keys{$key} }) ),
+					title    => $title,
+					id       => $id,
+                    template => $template,
 				) );	
 			}
 		}
@@ -183,7 +187,7 @@ sub group_posts
 
 sub page_posts
 {
-    my ($self, $posts, $entries_per_page, $title, $id, $formatter, $formatter_args) = @_;
+    my ($self, $posts, $entries_per_page, $title, $id, $formatter, $formatter_args, $template) = @_;
 
 	my $pager = Data::Page->new;
 	my $total_entries = scalar @{$posts};
@@ -202,11 +206,12 @@ sub page_posts
 			$formatter_args->{page} = $page_no;
 
 			take ( Miril::List->new(
-				posts => \@current_posts,
-				pager => $current_pager,
-				title => $title,
-				id    => $id,
-				path  => file( $formatter->format({ args => $formatter_args }) ),
+				posts    => \@current_posts,
+				pager    => $current_pager,
+				title    => $title,
+				id       => $id,
+				path     => file( $formatter->format({ args => $formatter_args }) ),
+                template => $template,
 			) );
 		}
 	};

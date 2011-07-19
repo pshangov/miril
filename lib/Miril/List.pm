@@ -92,8 +92,9 @@ has 'path' =>
 
 has 'template' =>
 (
-	is  => 'ro',
-	isa => 'Str',
+	is       => 'ro',
+	isa      => 'Str',
+    required => 1,
 );
 
 sub get_post_by_id

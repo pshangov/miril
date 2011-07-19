@@ -176,7 +176,7 @@ sub _build_publisher
         output_path => dir($self->config->output_path),
     );
 }
-use Data::Printer;
+
 sub _build_template
 {
     my $self = shift;

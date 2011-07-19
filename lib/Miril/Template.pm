@@ -30,7 +30,7 @@ sub load
     my ($self, %params) = @_;
 
     my $output;
-
+    
     $self->tt->process($params{name}, $params{params}, \$output)
         or die $self->tt->error;
     
