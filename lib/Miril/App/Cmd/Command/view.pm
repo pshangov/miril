@@ -13,11 +13,10 @@ sub execute
 	my ($self, $opt, $args) = @_;
 
     my $post = $self->miril->store->get_post_by_id($$args[0]);
+    my $body = "<h1>" . $post->title . "</h1>" . $post->body;
+    my $text = HTML::FormatText::WithLinks::AndTables->convert($body);
 
-    my $text = HTML::FormatText::WithLinks::AndTables->convert($post->body);
-
-    #print $post->title . "\n\n";
-    print $text;
+    print "\n" . $text;
 }
 
 1;

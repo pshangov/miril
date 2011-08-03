@@ -153,13 +153,13 @@ sub new_from_file
     
 	# split sourcefile into sections
 	my ($source, $body, $teaser, $meta) = _parse_source_file($file);
-
+    
 	# parse metadata
 	my %meta = _parse_meta($meta);
 
 	# expand metadata into objects
 	my $author = $taxonomy->get_author_by_id($meta{author}) if $meta{author};
-	my $topics = $taxonomy->get_topics_by_id($meta{topics}) if $meta{topics};
+	my $topics = $taxonomy->get_topics_by_id($meta{topics}) if @{$meta{topics}};
 	my $type   = $taxonomy->get_type_by_id($meta{type})     if $meta{type};
 
 	# prepare the remaining attributes

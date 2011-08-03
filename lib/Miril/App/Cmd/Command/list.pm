@@ -1,4 +1,4 @@
-package Miril::App::Cmd::Command::search;
+package Miril::App::Cmd::Command::list;
 
 use strict;
 use warnings;
@@ -23,11 +23,12 @@ sub execute
 	my ($self, $opt, $args) = @_;
 	
     my $table = Text::ASCIITable->new;
-    $table->setCols('ID', 'Title', 'Modified');
+
+    $table->setCols('ID', 'Title', 'Published');
 
     foreach my $post ($self->miril->store->get_posts)
     {
-        $table->addRow($post->id, $post->title, $post->modified->as_ymdhm);
+        $table->addRow($post->id, $post->title, $post->published->as_ymdhm);
     }
 
     print $table;
