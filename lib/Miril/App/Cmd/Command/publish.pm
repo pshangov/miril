@@ -20,9 +20,7 @@ sub opt_spec
 sub execute 
 {
 	my ($self, $opt, $args) = @_;
-	
-	my $miril = Miril->new($opt->dir, $opt->site);
-	$miril->publish;
+	$self->miril->publisher->publish;
 }
 
 1;
