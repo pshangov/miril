@@ -57,11 +57,6 @@ has 'groups' =>
 	handles => { get_groups => 'elements' },
 );
 
-has 'stash' =>
-(
-	is => 'ro',
-);
-
 has 'output_path' =>
 (
 	is       => 'ro',
@@ -221,7 +216,7 @@ sub render
 {
 	my ( $self, $item ) = @_;
 
-	my %params = ( stash => $self->stash );
+	my %params;
 
 	if ( $item->isa('Miril::Post') )
 	{

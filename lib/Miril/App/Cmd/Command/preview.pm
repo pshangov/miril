@@ -23,7 +23,7 @@ sub execute
     my $directory = $self->miril->config->output_path;
     my $app = Plack::App::File->new( root => $directory )->to_app;
 
-    print "Preview of " . $self->miril->config->name . " at http://" . $opt->{host} . ":" . $opt->{port} ."\n";
+    print "Preview of " . $self->miril->config->name . " started at http://" . $opt->{host} . ":" . $opt->{port} ."\n";
 
     Plack::Loader->auto(
 		host => $opt->{host},

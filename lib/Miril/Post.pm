@@ -168,7 +168,7 @@ sub new_from_file
 	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}) : undef;
     my $modified  = Miril::DateTime->from_epoch($file->stat->mtime);
 	my $url       = $base_url . $type->id . "/$id.html";
-	my $path      = file($output_path, $type->location, $id . ".html");
+	my $path      = file($type->location, $id . ".html");
 
     my $tag_url; 
     #tag:www.mechanicalrevolution.com,2011-05-02:/parameter_apocalypse_take_two

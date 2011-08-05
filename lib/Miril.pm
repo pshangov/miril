@@ -181,9 +181,10 @@ sub _build_template
 {
     my $self = shift;
 
-    return Miril::Template->new( 
-        config => { INCLUDE_PATH => dir($self->base_dir, 'templates')->stringify }, 
-    );
+    return Miril::Template->new( config => { 
+        INCLUDE_PATH => dir($self->base_dir, 'templates')->stringify,
+        VARIABLES    => $self->config->stash,
+    });
 }
 
 1;

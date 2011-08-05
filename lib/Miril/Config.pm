@@ -182,6 +182,12 @@ has 'secret' =>
 	default => 'Papa was a rolling stone!',
 );
 
+has 'stash' =>
+(
+    is  => 'ro',
+    isa => 'HashRef',
+);
+
 has 'groups' =>
 (
 	is      => 'ro',
@@ -189,15 +195,13 @@ has 'groups' =>
 	builder => '_build_groups',
 );
 
-use Data::Printer;
-
 sub _build_groups
 {
 	my @groups = map { Miril::Group->new(%$_) }
 	{
 		name   => 'topic',
 		key_cb => sub { 
-            map { $_->id => { topic => $_->name, object => $_ } } 
+            map { $_->id => { topic => $_->id, object => $_ } } 
                 $_[0]->get_topics
         },
 	},
