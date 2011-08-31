@@ -1,18 +1,25 @@
 MIRIL TODO
 ==========
 
-1. Refactoring and testing of Miril app
-   - DONE - add Miril::Template with TT backend, tests
-2. DONE - Command line application ('test' command)
-3. Web interface
-   - IN PROGRESS - Refactoring and tests for user manager
+Pending
+-------
+
+1. Simplify domain/http_dir/base_dir configuration
+2. Type locations with full name as formatted string
+3. Sync command
+4. Add template options in config
+
+Long term
+---------
+
+1. Web interface
    - refactor CGI::Application code
    - make input validator definitions work as arrays rather than strings
    - switch to Template::Declare
-   - refactor user manager configuration file
-4. Sample blog setup
-5. Documentation
-6. Design
+   - use HTML::FillInForm::Lite
+2. Sample blog setup
+3. Documentation
+4. Design
    - website
    - UI
    - theme pack
