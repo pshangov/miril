@@ -359,7 +359,7 @@ sub files_list {
 	my $cfg = $self->miril->config;
 
 	my $files_path = $cfg->files_path;
-	my $files_http_dir = $cfg->files_http_dir;
+	my $files_url = $cfg->files_url;
 	my @files;
 	
 	try {
@@ -387,7 +387,7 @@ sub files_list {
 
 			take {
 				name     => $file, 
-				href     => $files_http_dir . $file, 
+				href     => $files_url . $file, 
 				size     => format_bytes( -s $filepath ), 
 				modified => strftime( "%d/%m/%Y %H:%M", @modified), 
 			};

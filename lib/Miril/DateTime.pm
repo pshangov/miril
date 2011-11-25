@@ -19,6 +19,10 @@ has 'hour'     => ( is => 'ro' );
 has 'minute'   => ( is => 'ro' );
 has 'second'   => ( is => 'ro' );
 
+# e.g. 2009-11-26T16:55:34+02:00
+sub _re_iso   { qr/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-])(\d{2}):(\d{2})/ }
+sub _re_ymdhm { qr/^(\d\d\d\d)-(\d\d)-(\d\d)\s(\d\d):(\d\d)$/  }
+
 ### CONSTRUCTORS ###
 
 sub now
@@ -39,21 +43,19 @@ sub now
 
 sub from_string
 {
-    my ($class, $string, $format_type) = @_;
+    my ($class, $string) = @_;
 
-    $format_type = 'default' unless $format_type;
-
-    if ($format_type eq 'default')
+    if ($string =~ $class->_re_ymdhm)
     {
         return $class->from_ymdhm($string);
     }
-    elsif ($format_type eq 'iso')
+    elsif ($string =~ $class->_re_iso)
     {
         return $class->from_iso($string);
     }
     else
     {
-        Carp::croak("Ivalid format type $format_type supplied to from_string");
+        Carp::croak("Cannot recognize format of datetime string $string");
     }
 }
 
@@ -61,7 +63,7 @@ sub from_ymdhm
 {
     my ($class, $string) = @_;
 
-    unless ( $string =~ /^(\d\d\d\d)-(\d\d)-(\d\d)\s(\d\d):(\d\d)$/ ) 
+    unless ( $string =~ $class->_re_ymdhm ) 
     {
         Carp::croak("Invalid time format (does not match 'YYYY-MM-DD HH:MM')");
     }
@@ -74,51 +76,47 @@ sub from_ymdhm
         minute => $5 + 0,
         second => 0,
     );
+
 }
 
 sub from_iso
 {
     my ($class, $iso) = @_;
 
-    # e.g. 2009-11-26T16:55:34+02:00
-    my $re = qr/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-])(\d{2}):(\d{2})/;
-
-    if ( $iso =~ $re ) 
+    unless ( $iso =~ $class->_re_iso ) 
     {
-        my $year  = $1;
-        my $month = $2;
-        my $day   = $3;
-        my $hour  = $4;
-        my $min   = $5;
-        my $sec   = $6;
-        my $sign  = $7;
-
-        my $offset = $8*60*60 + $9*60;
-        $offset = -$offset if $sign eq '-';
-
-        my $month_raw = $month - 1;
-        my $year_raw  = $year - 1900;
-
-        my $local = time;
-        my $gm = Time::Local::timelocal( gmtime $local );
-        my $local_offset = $local - $gm;
-        
-        my $time = Time::Local::timelocal($sec, $min, $hour, $day, $month_raw, $year_raw);
-
-        if ( $offset == $local_offset ) 
-        {
-            return $class->from_epoch($time);
-        } 
-        else 
-        {
-            my $abs = abs($local_offset - $offset);
-            my $local_time = $local_offset > $offset ? $time + $abs : $time - $abs;
-            return $class->from_epoch($local_time);
-        }
+        Carp::croak("Invalid time format (does not match 'YYYY-MM-DDTHH:SS:MM+HH:MM')");
     }
-    else
+
+    my $year  = $1;
+    my $month = $2;
+    my $day   = $3;
+    my $hour  = $4;
+    my $min   = $5;
+    my $sec   = $6;
+    my $sign  = $7;
+
+    my $offset = $8*60*60 + $9*60;
+    $offset = -$offset if $sign eq '-';
+
+    my $month_raw = $month - 1;
+    my $year_raw  = $year - 1900;
+
+    my $local = time;
+    my $gm = Time::Local::timelocal( gmtime $local );
+    my $local_offset = $local - $gm;
+    
+    my $time = Time::Local::timelocal($sec, $min, $hour, $day, $month_raw, $year_raw);
+
+    if ( $offset == $local_offset ) 
     {
-        Carp::croak("Parameter $iso does not seem to be a valid ISO time string");
+        return $class->from_epoch($time);
+    } 
+    else 
+    {
+        my $abs = abs($local_offset - $offset);
+        my $local_time = $local_offset > $offset ? $time + $abs : $time - $abs;
+        return $class->from_epoch($local_time);
     }
 }
 

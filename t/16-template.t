@@ -10,6 +10,7 @@ use Miril::Author;
 use Miril::Topic;
 use Miril::Type;
 use Miril::Post;
+use Module::Load;
 use File::Temp qw(tempfile);
 
 ### CONSTRUCTION ###
@@ -100,5 +101,27 @@ my $tt_output = $tt->load(
 );
 
 eq_or_diff ($tt_output, $output, 'template output');
+
+my %formats = (
+	conf => 'Config::General',
+	yaml => 'YAML',
+	xml  => 'XML',
+);
+
+foreach my $format ( keys %formats )
+{
+	my $class = "Miril::Config::Format::" . $formats{$format};
+	Module::Load::load($class);
+	my $config_filename = File::Spec->catfile( 
+		$FindBin::Bin, 'config', 'miril.' . $format,
+	);
+
+    my $config = $class->new($config_filename);
+	my $template = $config->template;
+    my $stash = $config->stash;
+    
+    is_deeply( $template, { EVAL_PERL => 1 }, "template options from $format config file" );
+    is_deeply( $stash, { root => '/' }, "template stash from $format config file" );
+}
 
 done_testing;

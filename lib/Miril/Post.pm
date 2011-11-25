@@ -128,28 +128,18 @@ has 'path' =>
 	documentation => 'Path to the location where the post should be published',
 );
 
-has 'url' => 
+has 'url' =>
 (
-	is            => 'ro',
-	isa           => Url,
-	documentation => 'The absolute URL of this post in the website',
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
 );
-
-
-has 'tag_url' => 
-(
-	is            => 'ro',
-	isa           => TagUrl,
-	documentation => 'Tag URL for this post, to be used e.g. in Atom feeds',
-);	
 
 ### CONSTRUCTORS ###
 
 sub new_from_file
 {
-	my ($class, $file, %options) = @_;
-    
-    my ($taxonomy, $output_path, $base_url) = @options{qw(taxonomy output_path base_url)};
+	my ($class, $file, $taxonomy) = @_;
     
 	# split sourcefile into sections
 	my ($source, $body, $teaser, $meta) = _parse_source_file($file);
@@ -162,43 +152,39 @@ sub new_from_file
 	my $topics = $taxonomy->get_topics_by_id($meta{topics}) if @{$meta{topics}};
 	my $type   = $taxonomy->get_type_by_id($meta{type})     if $meta{type};
 
-	# prepare the remaining attributes
-	my $id        = $file->basename;
-	my $title     = $meta{title};
+	# get times
 	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}) : undef;
     my $modified  = Miril::DateTime->from_epoch($file->stat->mtime);
-	my $url       = $base_url . $type->id . "/$id.html";
-	my $path      = file($type->location, $id . ".html");
 
-    my $tag_url; 
-    #tag:www.mechanicalrevolution.com,2011-05-02:/parameter_apocalypse_take_two
+    # my $tag_url; 
+    # #tag:www.mechanicalrevolution.com,2011-05-02:/parameter_apocalypse_take_two
+    #
+    # if ($published)
+    # {
+    #     my $base_url_sans_protocol = $base_url;
+    #     $base_url_sans_protocol =~ s/^https?:\/\///;
+    #     $base_url_sans_protocol =~ s/\/$//;
+    #
+    #     $tag_url = sprintf('tag:%s,%s:/%s', 
+    #         $base_url_sans_protocol,
+    #         $published->as_strftime('%Y-%m-%d'),
+    #         $id,
+    #     );
+    # }
 
-    if ($published)
-    {
-        my $base_url_sans_protocol = $base_url;
-        $base_url_sans_protocol =~ s/^https?:\/\///;
-        $base_url_sans_protocol =~ s/\/$//;
-
-        $tag_url = sprintf('tag:%s,%s:/%s', 
-            $base_url_sans_protocol,
-            $published->as_strftime('%Y-%m-%d'),
-            $id,
-        );
-    }
+    my $id = $file->basename;
 
     return $class->new( slice_def {
         id          => $id,
-		title       => $title,
+		title       => $meta{title},
 		author      => $author,
         topics      => $topics,
 		type        => $type,
 		body        => $body,
 		teaser      => $teaser,
 		source      => $source,
-		path        => $path,
+		path        => $type->path($id),
 		source_path => $file,
-		url         => $url,
-        tag_url     => $tag_url,
         published   => $published,
         modified    => $modified,
     } );
@@ -212,23 +198,22 @@ sub new_from_cache
 
 sub new_from_params
 {
-	my ($class, $params, %options ) = @_;
+	my ($class, $params, $taxonomy, $data_path) = @_;
 
     my %params = %$params;
-    my $taxonomy = $options{taxonomy};
 
     my $author = $taxonomy->get_author_by_id($params{author}) if $params{author};
 	my $topics = $taxonomy->get_topics_by_id($params{topics}) if $params{topics};
 	my $type   = $taxonomy->get_type_by_id($params{type})     if $params{type};
 
-    my $source_path = file($options{data_dir}, $params{id});
+    my $source_path = file($data_path, $params{id});
 
 	my $published;
 
 	if ($params{status} eq 'published')
 	{
 		$published = $params{published} 
-			? Miril::DateTime->from_epoch($params{published}) 
+			? Miril::DateTime->from_ymdhm($params{published}) 
 			: Miril::DateTime->now;
 	}
 
@@ -249,6 +234,12 @@ sub new_from_params
 }
 
 ### BUILDERS ###
+
+sub _build_url
+{
+    my $self = shift;
+    return $self->path->as_foreign('Unix')->stringify;
+}
 
 sub _build_source
 {

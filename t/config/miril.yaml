@@ -2,21 +2,18 @@
 
 name: "Mechanical Revolution"
 output_path: "C:\Documents\Sites\www\mr.com"
-domain: "http://www.mechanicalrevolution.com/"
-http_dir: ""
-url_base: "http://www.mechanicalrevolution.com/"
 secret: "Papa was a rolling stone!"
 
 types:
 
   - id: blog
     name: Blog
-    location: blog/
+    location: "blog/%(id)s.html"
     template: item.tmpl
 
   - id: page
     name: Page
-    location: ""
+    location: "%(id)s.html"
     template: page.tmpl
 
 topics:
@@ -51,7 +48,7 @@ lists:
     template: front_page.tmpl
     location: index.html
     match:
-      - type: blog
+        type: blog
         last: 6
 
   - id: feed
@@ -59,7 +56,7 @@ lists:
     template: atom.tmpl
     location: feed.xml
     match:
-      - type: blog
+        type: blog
         last: 10
 
   - id: archive
@@ -67,7 +64,7 @@ lists:
     template: archive.tmpl
     location: archive.html
     match:
-      - type: blog
+        type: blog
 
   - id: by_month
     name: "Monthly Archive"
@@ -75,7 +72,7 @@ lists:
     template: by_month.tmpl
     location: "archive/%(year)d/%(month)02d.html"
     match:
-      - type blog
+        type: blog
 
   - id: by_topic
     name: "Topics"
@@ -83,4 +80,12 @@ lists:
     template: by_month.tmpl
     location: "topic/%(topic)s.html"
     match:
-      - type: blog
+        type: blog
+
+### TEMPLATES ###
+
+template:
+    EVAL_PERL: 1
+
+stash:
+    root: /

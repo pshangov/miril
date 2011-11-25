@@ -28,7 +28,9 @@ has 'filter' => (
 has 'template' => 
 (
 	is      => 'ro',
-	default => 'HTML::Template',
+	default => sub { {} },
+    traits  => [qw(Hash)],
+    handles => { template_options => 'elements' },
 );
 
 has 'posts_per_page' => 
@@ -126,48 +128,34 @@ has 'lists' =>
     handles   => { get_lists => 'elements' },
 );
 
-has 'base_dir' => 
-(
-	is       => 'ro',
-	required => 1,
-);
-
-has 'base_url' => 
-(
-	is       => 'ro',
-    #required => 1,
-);
-
 has 'output_path' => 
 (
 	is       => 'ro',
 	required => 1,
 );
 
+has 'files' => 
+(
+    is      => 'ro',
+    isa     => 'HashRef',
+    lazy    => 1,
+    default => sub{ { path => 'files', url => '/files/' } },
+);
+
 has 'files_path' => 
 (
 	is      => 'ro',
     isa     => 'Path::Class::Dir',
-	default => sub { dir( $_[0]->output_path, 'files' ) },
+    lazy    => 1,
+	default => sub { dir( $_[0]->files->{path} ) },
 );
 
-has 'domain' =>
+has 'files_url' => 
 (
-	is       => 'ro',
-	required => 1,
-);
-
-has 'http_dir' =>
-(
-	is       => 'ro',
-	required => 1,
-);
-
-has 'files_http_dir' =>
-(
-	is       => 'ro',
-    isa     => 'Path::Class::Dir',
-	default => sub { dir( $_[0]->http_dir, 'files' ) },
+	is      => 'ro',
+    isa     => 'Str',
+    lazy    => 1,
+	default => sub { $_[0]->files->{url} },
 );
 
 has 'name' =>
@@ -193,6 +181,12 @@ has 'groups' =>
 	is      => 'ro',
 	isa     => 'ArrayRef[Miril::Group]',
 	builder => '_build_groups',
+);
+
+has 'sync' => 
+(
+	is  => 'ro',
+    isa => 'Str',
 );
 
 sub _build_groups

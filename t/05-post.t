@@ -34,8 +34,8 @@ my %topics = map { $_->id => $_ } @topics;
 my $type = Miril::Type->new(
 	id       => 'news',
 	name     => 'News',
-	location => 'somewhere',
-	template => 'some_template',
+	location => 'news/%(id)s.html',
+	template => 'template',
 );
 
 my $taxonomy = Miril::Taxonomy->new( 
@@ -60,7 +60,7 @@ is_deeply( $meta{topics}, [qw(perl python)], 'meta topics' );
 
 # _parse_source_file
 
-my $source_file = file('t\data\aenean_eu_lorem');
+my $source_file = file(qw(t data aenean_eu_lorem));
 my ($source, $body, $teaser, $meta) = 
 	Miril::Post::_parse_source_file($source_file);
 
@@ -134,17 +134,10 @@ is($post->type->id, 'news', 'type');
 
 # new_from_file
 
-@expected{qw(id title status type_id author_id published_epoch)} 
-    = ('aenean_eu_lorem', 'Aenean Eu Lorem', 'published', 'news', 'larry', 1274887320);
+@expected{qw(id title status type_id author_id published_ymdhm)} 
+    = ('aenean_eu_lorem', 'Aenean Eu Lorem', 'published', 'news', 'larry', '2010-05-26 18:22');
 
-my $base_url = 'http://www.example.com/';
-my $output_path = tempdir( CLEANUP => 1 );
-
-my $post_from_file = Miril::Post->new_from_file($source_file, 
-    taxonomy    => $taxonomy,
-    output_path => $output_path, 
-    base_url    => $base_url,
-);
+my $post_from_file = Miril::Post->new_from_file($source_file, $taxonomy);
 
 # new_from_cache
 
@@ -154,7 +147,7 @@ my %cache = (
     id          => $expected{id},
     title       => $expected{title},
     modified    => Miril::DateTime->from_epoch($modified_epoch),
-    published   => Miril::DateTime->from_epoch($expected{published_epoch}),
+    published   => Miril::DateTime->from_ymdhm($expected{published_ymdhm}),
     type        => $type,
     author      => $authors{larry},
     topics      => [$topics{perl}],
@@ -174,10 +167,10 @@ my %params = (
     type      => $expected{type_id},
     source    => $expected{source},
     status    => 'published',
-    published => $expected{published_epoch},
+    published => $expected{published_ymdhm},
 );
 
-my $post_from_params = Miril::Post->new_from_params(\%params, taxonomy => $taxonomy );
+my $post_from_params = Miril::Post->new_from_params(\%params, $taxonomy );
 
 my %posts_for_testing = 
 (
@@ -200,7 +193,7 @@ while ( my ( $from, $post ) = each %posts_for_testing )
     is( $post->author->id, $expected{author_id}, 'author' . " from $from" );
 
     is_deeply( [ map {$_->id} @{$post->topics} ],  [qw(perl)], "topics from $from" );
-    is ($post->published->as_epoch, $expected{published_epoch}, "published from $from");
+    is ($post->published->as_ymdhm, $expected{published_ymdhm}, "published from $from");
 
     # source_path and modified do not exist yet for newly-created posts from params
     if ( $from ne 'params')
@@ -213,13 +206,11 @@ while ( my ( $from, $post ) = each %posts_for_testing )
     # therefore are supplied only to objects created with new_from_file
     if ( $from eq 'file')
     {
-        my $expected_path     = file($output_path, $post->type->location, $post->id . ".html")->stringify;
-        my $expected_url      = 'http://www.example.com/news/aenean_eu_lorem.html';
-        my $expected_tag_url  = 'tag:www.example.com,2010-05-26:/aenean_eu_lorem';
+        my $expected_path     = file('news/aenean_eu_lorem.html');
+        my $expected_url      = 'news/aenean_eu_lorem.html';
 
         is ( $post->path,    $expected_path,    "path from $from"    );
         is ( $post->url,     $expected_url,     "url from $from"     );
-        is ( $post->tag_url, $expected_tag_url, "tag_url from $from" );
     }
 }
 

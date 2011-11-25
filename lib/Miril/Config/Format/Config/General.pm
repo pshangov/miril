@@ -49,7 +49,6 @@ around 'BUILDARGS' => sub
 
 	### ADD BASE DIR INFO ###
 	
-	$cfg{base_dir} = $cfg{domain} . $cfg{http_dir};
 	$cfg{site_dir} = file($filename)->dir;
 
 	return $class->$orig(%cfg);

@@ -22,7 +22,7 @@ has 'tt' =>
 sub _build_tt
 {
     my $self = shift;
-   return Template->new($self->config);
+    return Template->new($self->config);
 }
 
 sub load

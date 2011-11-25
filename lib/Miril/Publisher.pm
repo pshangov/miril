@@ -111,6 +111,7 @@ sub prepare_lists
 					$list_definition->id,
 					$formatter,
 					{},
+                    $list_definition->template,
 				);
 			}
 			else
@@ -241,7 +242,7 @@ sub write
 {
     my ($self, $filename, $data) = @_;
 
-	$filename = file( $self->output_path, $filename ) unless $filename->is_absolute;
+	$filename = file( $self->output_path, $filename );
 	my $path = $filename->dir->stringify;
 	File::Path::make_path($path) or die $! unless -e $path;
 	File::Slurp::write_file($filename->stringify, $data) or die $!;

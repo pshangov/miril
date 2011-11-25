@@ -7,6 +7,7 @@ use XML::TreePP;
 use Ref::List qw(list);
 use Miril::Topic;
 use Miril::Type;
+use Miril::List::Spec;
 use File::Spec;
 
 use Mouse;
@@ -27,11 +28,10 @@ around 'BUILDARGS' => sub
 		user_manager
 		filter
 		template
+        stash
 		posts_per_page
 		sort
 		output_path
-		domain
-		http_dir
 	);
 
 	foreach my $option (@options)
@@ -57,16 +57,26 @@ around 'BUILDARGS' => sub
 		)
 	} list $cfg->{types}{type};
 
+	my @lists = map 
+    { 
+        Miril::List::Spec->new(
+            id       => $_->{id},
+            name     => $_->{name},
+            template => $_->{template},
+            location => $_->{location},
+            match    => $_->{match},
+        )
+    } list $cfg->{lists}{list};
+
 	### SIMPLIFY THE HASHREF ###
 	
 	$args{authors} = $cfg->{authors}{author} if $cfg->{authors}{author};
-	$args{lists}   = $cfg->{lists}{list}     if $cfg->{lists}{list};
+	$args{lists}   = \@lists                 if @lists;
 	$args{topics}  = \@topics                if @topics;
 	$args{types}   = \@types                 if @types;
 
 	### ADD BASE DIR INFO ###
 	
-	$args{base_dir} = $cfg->{domain} . $cfg->{http_dir};
 	$args{site_dir} = File::Spec->updir($filename);
 
 	return $class->$orig(%args);

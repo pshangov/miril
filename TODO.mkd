@@ -1,14 +1,6 @@
 MIRIL TODO
 ==========
 
-Pending
--------
-
-1. Simplify domain/http_dir/base_dir configuration
-2. Type locations with full name as formatted string
-3. Sync command
-4. Add template options in config
-
 Long term
 ---------
 
@@ -17,9 +9,18 @@ Long term
    - make input validator definitions work as arrays rather than strings
    - switch to Template::Declare
    - use HTML::FillInForm::Lite
+   - simplify user file format
 2. Sample blog setup
 3. Documentation
 4. Design
    - website
    - UI
    - theme pack
+5. Bundle
+
+Unicode
+-------
+
+1. Change TT output option to binmode
+2. Change template files to utf8
+3. Decode on `new_from_file`, utf8-encode on output

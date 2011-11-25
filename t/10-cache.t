@@ -19,13 +19,13 @@ use Devel::Dwarn    qw(Dwarn);
 my ($fh, $filename) = tempfile;
 close $fh or die $!;
 
-my $source_path = file('t\data\aenean_eu_lorem');
-my $data_dir = dir('t\data');
+my $source_path = file(qw(t data aenean_eu_lorem));
+my $data_dir = dir(qw(t data));
 
 my $type = Miril::Type->new( 
     id       => 'news', 
     name     => 'News', 
-    location => 'news', 
+    location => 'news/%(id)s.html', 
     template => 'news.tt',
 );
 
@@ -58,7 +58,6 @@ my $cache = Miril::Cache->new(
     posts       => { aenean_eu_lorem => $post },
     taxonomy    => $taxonomy,
     base_url    => 'example.com',
-    output_path => dir('.'),
 );
 
 isa_ok ( $cache, 'Miril::Cache' );
@@ -90,19 +89,14 @@ ok ( $cache->update, "update" );
 ### PRIME CACHE ###
 
 my $retrieved = Miril::Cache->new(
-    filename => file($filename), 
-    data_dir => $data_dir,
+    filename    => file($filename), 
+    data_dir    => $data_dir,
     taxonomy    => $taxonomy,
     base_url    => 'example.com',
-    output_path => dir('.'),
 );
 
 isa_ok ( $retrieved, 'Miril::Cache' );
-
 cmp_deeply ( $retrieved->raw, $serialized, "raw cache" );
-
-$retrieved->posts;
-
 is_deeply ( [$retrieved->post_ids], ['aenean_eu_lorem'], "post ids from cache" );
 
 my $retrieved_from_cache = $cache->get_post_by_id('aenean_eu_lorem');

@@ -51,20 +51,6 @@ has 'taxonomy' =>
     required => 1,    
 );
 
-has 'output_path' =>
-(
-    is       => 'ro',
-    isa      => 'Path::Class::Dir',
-    required => 1,
-);
-
-has 'base_url' =>
-(
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
-
 sub _build_raw
 {
     my $self = shift;
@@ -102,12 +88,7 @@ sub _build_posts
 		# post has been updated
 		elsif ( $post->source_path->stat->mtime > $post->modified->as_epoch )
 		{
-            #FIXME
-			$self->add_post( Miril::Post->new_from_file( $id,
-                taxonomy    => $self->taxonomy, 
-                output_path => $self->output_path,
-                base_url    => $self->base_url,
-            ));
+			$self->add_post( Miril::Post->new_from_file( $id, $self->taxonomy ) );
 		}
 	}
 
@@ -116,11 +97,7 @@ sub _build_posts
 		next if -d $id;
 		unless ( $self->exists_in_cache($id->basename) )
 		{
-            $posts{$id->basename} = Miril::Post->new_from_file( $id,
-                taxonomy    => $self->taxonomy, 
-                output_path => $self->output_path,
-                base_url    => $self->base_url,
-            );
+            $posts{$id->basename} = Miril::Post->new_from_file( $id, $self->taxonomy );
 		}
 	}
 

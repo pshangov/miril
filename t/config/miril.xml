@@ -1,13 +1,12 @@
 <xml>
 
 	<name>Mechanical Revolution</name>
-	<output_path>C:\Documents\Sites\www\mr.com</output_path>
-	<files_path>C:\Documents\Sites\www\mr.com\files</files_path>
+    <output_path>C:\Documents\Sites\www\mr.com</output_path>
 
-	<!-- URL CONSTRUCTION -->
-	<domain>www.mechanicalrevolution.com</domain>
-	<http_dir>/</http_dir>
-	<files_http_dir>/files/</files_http_dir>
+    <files>
+	    <path>C:\Documents\Sites\www\mr.com\files</path>
+        <url>/files/</url>
+    </files>
 
 	<secret>Papa was a rolling stone!</secret>
 
@@ -16,13 +15,13 @@
 		<type>
 			<name>Blog</name>
 			<id>blog</id>
-			<location>blog/</location>
+			<location>blog/%(id)s.html</location>
 			<template>item.tmpl</template>
 		</type>
 		<type>
 			<name>Page</name>
 			<id>page</id>
-			<location></location>
+			<location>%(id)s.html</location>
 			<template>page.tmpl</template>
 		</type>
 	</types>
@@ -117,5 +116,14 @@
 			</match>
 		</list>
 	</lists>
+
+	<!-- TEMPLATE -->
+    <template>
+        <EVAL_PERL>1</EVAL_PERL>
+    </template>
+    
+    <stash>
+        <root>/</root>
+    </stash>
 
 </xml>

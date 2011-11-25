@@ -7,6 +7,7 @@ use YAML::Tiny;
 use Ref::List qw(list);
 use Miril::Topic;
 use Miril::Type;
+use Miril::List::Spec;
 use File::Spec;
 
 use Mouse;
@@ -31,9 +32,15 @@ around 'BUILDARGS' => sub
 		$cfg{types} = \@types;
 	}
 
+	if ($cfg{lists})
+	{
+		my @lists = map { Miril::List::Spec->new(%{$_}) } list $cfg{lists};
+		$cfg{lists} = \@lists;
+	}
+
 	### ADD BASE DIR INFO ###
 	
-	$cfg{base_dir} = $cfg{domain} . $cfg{http_dir};
+    # FIXME
 	$cfg{site_dir} = File::Spec->updir($filename);
 
 	return $class->$orig(%cfg);

@@ -92,10 +92,8 @@ sub save
 {
 	my ($self, %params) = @_;
 
-	my $post = Miril::Post->new_from_params( \%params, 
-        taxonomy => $self->taxonomy,
-        data_dir => $self->data_dir,
-    );
+    # FIXME $self->data_dir is not required to build the post, can we add it later?
+	my $post = Miril::Post->new_from_params( \%params, $self->taxonomy, $self->data_dir );
 	$self->add_post($post->id => $post);
 
 	# delete the old file if we have changed the id

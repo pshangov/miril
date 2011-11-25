@@ -1,13 +1,12 @@
 <xml>
 
 	<name>example.com website</name>
-	<output_path>example/www</output_path>
-	<files_path>example/www/files</files_path>
+    <output_path>example/www</output_path>
 
-	<!-- URL CONSTRUCTION -->
-	<domain>www.example.com</domain>
-	<http_dir>/</http_dir>
-	<files_http_dir>/files/</files_http_dir>
+    <files>
+        <path>example/www/files</path>
+        <url>/files/</url>
+    </files>
 
 	<!-- MAKE SURE YOU CHANGE THIS! -->
 	<secret>Some secret line</secret>

@@ -152,9 +152,7 @@ sub _build_cache
     return Miril::Cache->new(
         filename    => $self->config->cache_path, 
         data_dir    => $self->config->data_path,
-        output_path => dir($self->config->output_path),
         taxonomy    => $self->taxonomy,
-        base_url    => $self->config->base_url,
     );
 }
 
@@ -184,6 +182,7 @@ sub _build_template
     return Miril::Template->new( config => { 
         INCLUDE_PATH => dir($self->base_dir, 'templates')->stringify,
         VARIABLES    => $self->config->stash,
+        $self->config->template_options,
     });
 }
 

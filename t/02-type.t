@@ -3,14 +3,14 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 5;
+use Test::Most tests => 8;
 
 use Miril::Type;
 
 my %attributes = (
 	id       => 'my_type',
 	name     => 'My Type',
-	location => 'somewhere',
+	location => 'somewhere/%(id)s.html',
 	template => 'some_template',
 );
 
@@ -22,3 +22,10 @@ foreach my $attribute ( keys %attributes )
 {
 	is( $type->$attribute, $attributes{$attribute}, $attribute );
 }
+
+my $formatter = $type->_formatter;
+isa_ok($formatter, 'Text::Sprintf::Named');
+
+my $path = $type->path('over_the_rainbow');
+isa_ok ($path, 'Path::Class::File');
+is ( $path, 'somewhere/over_the_rainbow.html', 'formatted path');
