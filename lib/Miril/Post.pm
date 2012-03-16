@@ -100,6 +100,7 @@ has 'published' =>
 (
 	is            => 'ro',
 	isa           => DateTime,
+    predicate     => 'is_published',
 	trigger       => sub { $_[0]->status('published') },
 	documentation => 'Time when the post was published',
 );
@@ -112,7 +113,7 @@ has 'modified' =>
 	documentation => 'Time when the post source post was last modified',
 );
 
-### PATHS AND URLS ###
+### PATHS ###
 
 has 'source_path' =>
 (
@@ -126,13 +127,6 @@ has 'path' =>
 	is            => 'ro',
 	isa           => File,
 	documentation => 'Path to the location where the post should be published',
-);
-
-has 'url' =>
-(
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
 );
 
 ### CONSTRUCTORS ###
@@ -155,22 +149,6 @@ sub new_from_file
 	# get times
 	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}) : undef;
     my $modified  = Miril::DateTime->from_epoch($file->stat->mtime);
-
-    # my $tag_url; 
-    # #tag:www.mechanicalrevolution.com,2011-05-02:/parameter_apocalypse_take_two
-    #
-    # if ($published)
-    # {
-    #     my $base_url_sans_protocol = $base_url;
-    #     $base_url_sans_protocol =~ s/^https?:\/\///;
-    #     $base_url_sans_protocol =~ s/\/$//;
-    #
-    #     $tag_url = sprintf('tag:%s,%s:/%s', 
-    #         $base_url_sans_protocol,
-    #         $published->as_strftime('%Y-%m-%d'),
-    #         $id,
-    #     );
-    # }
 
     my $id = $file->basename;
 
@@ -235,12 +213,6 @@ sub new_from_params
 
 ### BUILDERS ###
 
-sub _build_url
-{
-    my $self = shift;
-    return $self->path->as_foreign('Unix')->stringify;
-}
-
 sub _build_source
 {
 	my $self = shift;
@@ -303,8 +275,9 @@ sub _parse_source_file
         message  => "Cannot load data file",
         errorvar => $_,
     );
-
-    my ($meta, $source) = split( /\n\n/, $source_file, 2);
+    
+    my ($meta, $source) = split( /\r?\n\r?\n/, $source_file, 2);
+    
     my ($body, $teaser) = _parse_source($source);
     
     return $source, $body, $teaser, $meta;
@@ -357,5 +330,7 @@ sub _parse_meta
 
 	return %meta;
 }
+
+with 'Miril::Role::URL';
 
 1;

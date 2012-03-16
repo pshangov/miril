@@ -120,10 +120,9 @@
 	<!-- TEMPLATE -->
     <template>
         <EVAL_PERL>1</EVAL_PERL>
+        <VARIABLES>
+            <root>/</root>
+         </VARIABLES>
     </template>
-    
-    <stash>
-        <root>/</root>
-    </stash>
 
 </xml>

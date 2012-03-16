@@ -28,7 +28,6 @@ around 'BUILDARGS' => sub
 		user_manager
 		filter
 		template
-        stash
 		posts_per_page
 		sort
 		output_path

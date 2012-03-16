@@ -105,7 +105,6 @@ my %publisher_options = (
 	posts       => \@posts,
 	template    => WPS_Test::Template->new,
 	output_path => $dir,
-	stash       => undef,
 	rebuild     => 1,
 );
 

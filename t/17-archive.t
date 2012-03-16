@@ -5,7 +5,7 @@ use Test::Most;
 use Miril::List;
 use Miril::Post;
 use Miril::Type;
-use Miril::Template::Plugin::Archive;
+use Miril::Template::Plugin::Miril;
 
 my $type = Miril::Type->new( 
     id       => 'type', 
@@ -49,9 +49,9 @@ my $list = Miril::List->new(
 	location => 'archive.html',
 );
 
-my $plugin = Miril::Template::Plugin::Archive->new;
+my $plugin = Miril::Template::Plugin::Miril->new;
 
-isa_ok ($plugin, 'Miril::Template::Plugin::Archive');
+isa_ok ($plugin, 'Miril::Template::Plugin::Miril');
 
 my $tree = $plugin->archive($list, 'archive/%(year)d/%(month)02d.html');
 

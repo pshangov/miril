@@ -6,6 +6,9 @@ use autodie;
 
 use HTML::Template::Pluggable;
 use HTML::Template::Plugin::Dot;
+use Template::Declare;
+use Miril::CGI::Application::Theme::Bootstrap;
+require Template::Declare::Tags;
 
 ### ACCESSORS ###
 
@@ -21,7 +24,7 @@ sub new {
 
 ### PUBLIC METHODS ###
 
-sub load {
+sub load_old {
 	my $self = shift;
 	my $name = shift;
 	my %options = @_;
@@ -78,5 +81,20 @@ sub load {
 
 	return $tmpl;
 }
+
+sub load {
+    my ( $self, $template, @params ) = @_;
+    Template::Declare->init( 
+        dispatch_to => ['Miril::CGI::Application::Theme::Bootstrap'] 
+    );
+    Template::Declare->show( $template, @params );
+}
+
+
+
+
+
+
+
 
 1;

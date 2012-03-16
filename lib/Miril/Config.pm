@@ -20,17 +20,19 @@ has 'store' =>
 	default => 'File',
 );
 
-has 'filter' => (
+has 'filter' => 
+(
 	is      => 'ro',
 	default => 'Markdown',
 );
 
-has 'template' => 
+has 'template' =>
 (
-	is      => 'ro',
-	default => sub { {} },
-    traits  => [qw(Hash)],
-    handles => { template_options => 'elements' },
+    is      => 'ro',
+    lazy    => 1,
+    default => sub { {} },
+    traits  => ['Hash'],
+    handles => { template_config => 'elements' },
 );
 
 has 'posts_per_page' => 
@@ -168,12 +170,6 @@ has 'secret' =>
 (
 	is      => 'ro',
 	default => 'Papa was a rolling stone!',
-);
-
-has 'stash' =>
-(
-    is  => 'ro',
-    isa => 'HashRef',
 );
 
 has 'groups' =>

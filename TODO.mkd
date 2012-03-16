@@ -1,22 +1,29 @@
 MIRIL TODO
 ==========
 
-Long term
----------
+CPAN release
+------------
 
-1. Web interface
-   - refactor CGI::Application code
-   - make input validator definitions work as arrays rather than strings
-   - switch to Template::Declare
-   - use HTML::FillInForm::Lite
-   - simplify user file format
-2. Sample blog setup
-3. Documentation
-4. Design
-   - website
-   - UI
-   - theme pack
-5. Bundle
+1. Improve form validation
+2. Check that the UI works
+3. Beautify UI
+4. Study 'less'
+5. Update documentation
+6. Switch to Dist::Zilla
+
+Public release
+--------------
+
+1. `init` command: create a sample website
+2. `fatpack` command: bundle into a single file
+
+Design
+------
+
+1. Create page plan
+2. Create mockups
+3. Create screenshots of existing UI
+4. Sample themes
 
 Unicode
 -------

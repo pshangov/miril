@@ -8,6 +8,7 @@ use Miril::App::Cmd -command;
 
 use Class::Autouse;
 Class::Autouse->autouse('Plack::Loader');
+Class::Autouse->autouse('Plack::Middleware::AccessLog');
 Class::Autouse->autouse('Miril::App::PSGI');
 
 sub opt_spec
@@ -27,7 +28,7 @@ sub execute
 	Plack::Loader->auto(
 		host => $opt->host,
 		port => $opt->port,
-	)->run( Miril::App::PSGI->app($self->miril)	);
+	)->run( Miril::App::PSGI->app($self->miril) );
 }
 
 1;

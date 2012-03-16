@@ -3,21 +3,22 @@ package Miril::URL;
 use strict;
 use warnings;
 
-use Mouse;
+use Exporter 'import';
+our @EXPORT_OK = qw(url);
 
-has 'abs' =>
-(
-	is => 'ro',
-);
-
-has 'rel' =>
-(
-	is => 'ro',
-);
-
-has 'tag' =>
-(
-	is => 'ro',
-);
+sub url {
+    my %params = @_;
+    
+    if (%params)
+    {
+        return '?' . join '&', 
+            map { $_ => $params{$_} }
+            map keys %params;
+    }
+    else
+    {
+        return '';
+    }
+}
 
 1;

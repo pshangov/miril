@@ -9,26 +9,26 @@ use Exception::Class;
 
 use base 'CGI::Application';
 
-use CGI::Application::Plugin::Authentication;
 use CGI::Application::Plugin::Redirect;
 use CGI::Application::Plugin::Forward;
 use Module::Load;
 use File::Spec::Functions qw(catfile);
 use Data::AsObject qw(dao);
 use Data::Page;
-use Ref::List qw(list);
 use Miril;
 use Miril::Exception;
 use Miril::CGI::Application::Theme::Flashyweb;
 use Miril::CGI::Application::View;
 use Miril::CGI::Application::InputValidator;
-use Miril::CGI::Application::UserManager;
 use Miril::Publisher;
 use File::Copy qw(copy);
 use Number::Format qw(format_bytes);
 use POSIX qw(strftime);
 use Syntax::Keyword::Gather qw(gather take);
-use Data::Printer;
+use URI::Query;
+use Data::Page;
+use Data::Page::Navigation;
+use HTML::FillInForm::Lite;
 
 ### ACCESSORS ###
 
@@ -44,56 +44,25 @@ use Object::Tiny qw(
 sub setup {
 	my $self = shift;
 
-	# setup runmodes
-
     $self->mode_param('action');
     $self->run_modes(
-    	'list'         => 'posts_list',
-        'edit'         => 'posts_edit',
-        'create'       => 'posts_create',
-        'delete'       => 'posts_delete',
-        'view'         => 'posts_view',
-        'update'       => 'posts_update',
-		'publish'      => 'posts_publish',
-		'files'        => 'files_list',
-		'upload'       => 'files_upload',
-		'unlink'       => 'files_delete',
+    	'list'         => 'list',
+        'edit'         => 'edit',
+        'create'       => 'create',
+        'delete'       => 'delete',
+        'display'      => 'display',
+        'update'       => 'update',
+		'publish'      => 'publish',
 		'search'       => 'search',
-		'login'        => 'login',
-		'logout'       => 'logout',
-		'account'      => 'account',
 	);
 
 	$self->start_mode('list');
 	$self->error_mode('error');
 
-	# setup miril
-	my $miril_dir = $self->param('miril_dir');
-	my $site = $self->param('site');
-	$self->{miril}= $self->param('miril');
-	
-	# configure authentication
-	$self->{user_manager} = Miril::CGI::Application::UserManager->new($self->miril->config->users_data);
-
-	$self->authen->config( 
-		DRIVER         => [ 'Generic', $self->user_manager->verification_callback ],
-		LOGIN_RUNMODE  => 'login',
-		LOGOUT_RUNMODE => 'logout',
-		CREDENTIALS    => [ 'authen_username', 'authen_password' ],
-		STORE          => [ 'Cookie', SECRET => $self->miril->config->secret, EXPIRY => '+30d', NAME => 'miril_authen' ],
-	);
-
-	$self->authen->protected_runmodes(':all');
-
-	# load view
-	$self->{view} = Miril::CGI::Application::View->new(
-		theme            => Miril::CGI::Application::Theme::Flashyweb->new,
-		is_authenticated => $self->authen->is_authenticated,
-		miril            => $self->miril,
-
-	);
-
+	$self->{miril}     = $self->param('miril');
+	$self->{view}      = Miril::CGI::Application::View->new;
 	$self->{validator} = Miril::CGI::Application::InputValidator->new;
+
 	$self->header_add( -type => 'text/html; set=utf-8');
 
 }
@@ -121,113 +90,68 @@ sub error {
 		);
 	}
 	$self->view->{fatal} = $e;
-	my $tmpl = $self->view->load('error');
-	return $tmpl->output;
+	return $self->view->load('error', $e);
 }
 
-sub posts_list {
+sub list {
 	my $self = shift;
 	my $q = $self->query;
+	my $cfg = $self->miril->config;
 
-	my @posts = $self->miril->store->search(
-		author => ( $q->param('author') or undef ),
-		title  => ( $q->param('title' ) or undef ),
-		type   => ( $q->param('type'  ) or undef ),
-		status => ( $q->param('status') or undef ),
-		topic  => ( $q->param('topic' ) or undef ),
-	);
+    my $uri_query = URI::Query->new($q->Vars);
+    $uri_query->strip_except(qw(author title type status topic page));
+    $uri_query->strip_null;
 
-	my @current_posts = $self->_paginate(@posts);
-	
-	my $tmpl = $self->view->load('list');
-	$tmpl->param('posts', {list => \@current_posts});
-	return $tmpl->output;
+    my @posts = $self->miril->store->search($uri_query->hash);
 
+    my ($pager, $uri_callback);
+
+	if (@posts > $cfg->posts_per_page) 
+    {
+        # setup pager
+        $pager = Data::Page->new;
+        $pager->total_entries(scalar @posts);
+        $pager->entries_per_page($cfg->posts_per_page);
+        # $pager->pages_per_navigation($cfg->pages_per_navigation);
+        $pager->pages_per_navigation(5);
+        $pager->current_page($q->param('page'));
+
+        $uri_callback = sub {
+            my $page_no = shift;
+            $uri_query->replace( action => 'list', page => $page_no );
+            return '?' . $uri_query->stringify;
+        };
+
+        # get just the posts we need
+		@posts = $pager->splice(\@posts);
+    }
+
+	return $self->view->load('list', \@posts, $pager, $uri_callback);
 }
 
 sub search {
 	my $self = shift;
-
-	my $cfg = $self->miril->config;
-
-	my $tmpl = $self->view->load('search');
-
-	$tmpl->param('statuses', $self->_prepare_statuses );
-	$tmpl->param('types',    $self->_prepare_types    );
-	$tmpl->param('topics',   $self->_prepare_topics   ) if $cfg->get_topics;
-	$tmpl->param('authors',  $self->_prepare_authors  ) if $cfg->get_authors;
-
-	return $tmpl->output;
+	return $self->view->load('search', $self->miril->taxonomy);
 }
 
-sub posts_create {
+sub create {
 	my $self = shift;
-
-	my $cfg = $self->miril->config;
-
-	my $empty_post;
-
-	$empty_post->{statuses} = $self->_prepare_statuses;
-	$empty_post->{types}    = $self->_prepare_types;
-	$empty_post->{authors}  = $self->_prepare_authors if $cfg->get_authors;
-	$empty_post->{topics}   = $self->_prepare_topics  if $cfg->get_topics;
-
-	my $tmpl = $self->view->load('edit');
-	$tmpl->param('post', $empty_post);
-	
-	return $tmpl->output;
+	return $self->view->load('edit', $self->miril->taxonomy);
 }
 
-sub posts_edit {
-	my ($self, $invalid_id) = @_;
+sub edit {
+	my $self = shift;
+    my $q = $self->query;
 
-	my $cfg = $self->miril->config;
-	my $q = $self->query;
-	my $post;
+    my %params = $self->param('form-not-valid')
+        ? _query_to_params($q)
+        : _post_to_params($self->miril->store->get_post_by_id($q->param('id')));
 
-	if ($invalid_id) {
-		my %cur_topics;
-		if ($q->param('topic')) {
-			%cur_topics = map {$_ => 1} $q->param('topic');
-		}
-		$post = dao {
-			id       => $q->param('id'),
-			old_id   => $q->param('old_id'),
-			source   => $q->param('source'),
-			title    => $q->param('title'),
-			authors  => $self->_prepare_authors($q->param('author')),
-			topics   => $self->_prepare_topics(%cur_topics),
-			statuses => $self->_prepare_statuses($q->param('status')),
-			types    => $self->_prepare_types($q->param('type')),
-		};
-		use Data::Dumper;
-		warn Dumper $post;
-	} else {
-		#TODO check if $post is defined
-		$post = $self->miril->store->get_post_by_id($q->param('id'));
-	
-		my %cur_topics;
-
-		#FIXME
-		if ( list $post->topics ) 
-		{
-			%cur_topics = map {$_->id => 1} list $post->topics;
-		}
-	
-		$post->{authors}  = $self->_prepare_authors($post->author) if $cfg->get_authors;
-		$post->{topics}   = $self->_prepare_topics(%cur_topics)    if $cfg->get_topics;
-		$post->{statuses} = $self->_prepare_statuses($post->status);
-		$post->{types}    = $self->_prepare_types($post->type->id);
-	}
-
-	my $tmpl = $self->view->load('edit');
-	$tmpl->param('post', $post);
-	$tmpl->param('invalid', $self->param('invalid'));
-
-	return $tmpl->output;
+    my $form = $self->view->load('edit', $self->miril->taxonomy);
+    return HTML::FillInForm::Lite->fill(\$form, \%params);
 }
 
-sub posts_update {
+sub update {
 	my $self = shift;
 	my $q = $self->query;
 
@@ -242,8 +166,8 @@ sub posts_update {
 	}, $q->Vars);
 	
 	if ($invalid) {
-		$self->param('invalid', $invalid);
-		return $self->forward('edit', $q->param('old_id'));
+		$self->param('form-not-valid', 1);
+		return $self->forward('edit');
 	}
 
 	my %post = (
@@ -261,10 +185,10 @@ sub posts_update {
 
 	$self->miril->store->save(%post);
 
-	return $self->redirect("?action=view&id=" . $post{id});
+	return $self->redirect("?action=display&id=" . $post{id});
 }
 
-sub posts_delete {
+sub delete {
 	my $self = shift;
 
 	my $id = $self->query->param('old_id');
@@ -273,194 +197,21 @@ sub posts_delete {
 	return $self->redirect("?action=list");
 }
 
-sub posts_view {
+sub display {
 	my $self = shift;
 	
-	my $q = $self->query;
-	my $id = $q->param('old_id') ? $q->param('old_id') : $q->param('id');
-
-    my @ids = $self->miril->store->posts;
+	my $id = $self->query->param('old_id') 
+        ? $self->query->param('old_id') 
+        : $self->query->param('id');
 
 	my $post = $self->miril->store->get_post_by_id($id);
-	if ($post) {
-		$post->{body} = $post->body;
 
-		my $tmpl = $self->view->load('view');
-		$tmpl->param('post', $post);
-		return $tmpl->output;
-	} else {
-		return $self->redirect("?action=list");	
-	}
+    return $post
+        ? $self->view->load('display', $post)
+        : $self->redirect(URI::Query->new(action => 'list')->stringify);	
 }
 
-sub login {
-	my $self = shift;
-	
-	my $tmpl = $self->view->load('login');
-	return $tmpl->output;
-}
-
-sub logout {
-	my $self = shift;
-
-	$self->authen->logout();
-	
-	return $self->redirect("?action=login");
-}
-
-sub account 
-{
-	my $self = shift;
-	my $q = $self->query;
-
-	if ( $q->param('name') or $q->param('new_password') ) 
-	{
-	
-		my $username        = $q->param('username');
-		my $name            = $q->param('name');
-		my $new_password    = $q->param('new_password');
-		my $retype_password = $q->param('retype_password');
-		my $password        = $q->param('password');
-
-		my $user = $self->user_manager->get_user($username);
-		my $encrypted = $self->user_manager->encrypt($password);
-
-		unless ( ($user->{password} eq $password) or ($user->{password} eq $encrypted) )
-		{
-			$self->miril->push_warning( 
-				message => 'Wrong existing password!',
-				errorvar => '',
-			);
-			return $self->redirect("?action=account") 
-		}
-
-		$user->{name} = $name;
-		if ( $new_password and ($new_password eq $retype_password) ) {
-			$user->{password} = $self->user_manager->encrypt($new_password);
-		}
-		$self->user_manager->set_user($user);
-		return $self->redirect("?"); 
-
-
-	} else {
-	
-		my $username = $self->authen->username;
-		my $user = $self->user_manager->get_user($username);
-
-		my $tmpl = $self->view->load('account');
-		$tmpl->param('user', $user);
-		return $tmpl->output;
-	} 
-}
-
-sub files_list {
-	my $self = shift;
-
-	my $cfg = $self->miril->config;
-
-	my $files_path = $cfg->files_path;
-	my $files_url = $cfg->files_url;
-	my @files;
-	
-	try {
-        
-        $files_path->mkpath unless -e $files_path;
-        my $dir = $files_path->open or die $!;
-		@files = grep { -f catfile($files_path, $_) } readdir($dir);
-		closedir $dir;
-
-	} catch {
-		Miril::Exception->throw(
-			errorvar => $_,
-			message  => 'Could not read files directory',
-		);
-	};
-
-	my @current_files = $self->_paginate(@files);
-
-	my @files_with_data = gather 
-	{ 
-		for my $file (@current_files)
-		{
-			my $filepath = catfile($files_path, $file);
-			my @modified = localtime( time() - ( (-M $filepath) * 60 * 60 * 24 ) );
-
-			take {
-				name     => $file, 
-				href     => $files_url . $file, 
-				size     => format_bytes( -s $filepath ), 
-				modified => strftime( "%d/%m/%Y %H:%M", @modified), 
-			};
-		}
-	};
-
-	my $tmpl = $self->view->load('files');
-	$tmpl->param('files', \@files_with_data);
-	return $tmpl->output;
-}
-
-sub files_upload {
-	my $self = shift;
-	my $q = $self->query;
-	my $cfg = $self->miril->config;
-
-	if ( $q->param('file') or $q->upload('file') ) {
-	
-		my @filenames = $q->param('file');
-		my @fhs = $q->upload('file');
-
-		for ( my $i = 0; $i < @fhs; $i++) {
-
-			my $filename = $filenames[$i];
-			my $fh = $fhs[$i];
-
-			if ($filename and $fh) {
-				my $new_filename = catfile($cfg->files_path, $filename);
-				try {
-					my $new_fh = IO::File->new($new_filename, "w");
-					copy($fh, $new_fh);
-					$new_fh->close;
-				} catch {
-					Miril::Exception->throw(
-						errorvar => $_,
-						message  => 'Could not upload file',
-					);
-				}
-			}
-		}
-
-		return $self->redirect("?action=files");
-
-	} else {
-		my $tmpl = $self->view->load('upload');
-		return $tmpl->output;
-	}
-}
-
-sub files_delete {
-	my $self = shift;	
-	my $cfg = $self->miril->config;
-	my $q = $self->query;
-
-	my @filenames = $q->param('file');
-
-	try {
-		for (@filenames) {
-			try { 
-				unlink( catfile($cfg->files_path, $_) ) 
-			} catch {
-				Miril::Exception->throw(
-					errorvar => $_,
-					message  => 'Could not delete file',
-				);
-			};
-		}
-	};
-
-	return $self->redirect("?action=files");
-}
-
-sub posts_publish {
+sub publish {
 	my $self = shift;
 
 	my $rebuild = $self->query->param("rebuild");
@@ -468,138 +219,43 @@ sub posts_publish {
 	if ($self->query->param("do")) 
     {
         $self->miril->publisher->publish($rebuild);
-		return $self->redirect("?action=list");
+		return $self->redirect(URI::Query->new(action => 'list')->stringify);
 	} 
     else 
     {
-		my $tmpl = $self->view->load('publish');
-		return $tmpl->output;
+		return $self->view->load('publish');
 	}
 }
 
 ### PRIVATE METHODS ###
 
-# form generation utilities: this stuff is ugly, should be replaced with HTML::FillInForm::Lite
+sub _post_to_params {
+    my $post = shift;
 
-sub _prepare_authors {
-	my ($self, $selected) = @_;
-	my $cfg = $self->miril->config;
-	my @authors;
-	if ($selected) {
-		@authors = map {{ name => $_, id => $_ , selected => $_ eq $selected }} $cfg->get_authors;
-	} else {
-		@authors = map {{ name => $_, id => $_  }} $cfg->get_authors;
-	}
-	return \@authors;
+    return (
+        id     => $post->id,
+        title  => $post->title,
+        type   => $post->type->id,
+        author => $post->author,
+        topics => $post->topics,
+        status => $post->status,
+        source => $post->source,
+    );
 }
 
-sub _prepare_statuses {
-	my ($self, $selected) = @_;
-	my $cfg = $self->miril->config;
-	my @statuses;
-	if ($selected)
-	{
-		@statuses = map {{ name => $_, id => $_, selected => $_ eq $selected }} $cfg->get_statuses;
-	}
-	else
-	{
-		@statuses = map {{ name => $_, id => $_ }} $cfg->get_statuses;
-	}
-	return \@statuses;
-}
+sub _query_to_params {
+    my $q = shift;
 
-sub _prepare_topics {
-	my ($self, %selected) = @_;
-	my $cfg = $self->miril->config;
-	if (%selected)
-	{
-		my @topics = map {{ name => $_->name, id => $_->id, selected => $selected{$_->id} }} $cfg->get_topics;
-		return \@topics;
-	}
-	else
-	{
-		my @topics = map {{ name => $_->name, id => $_->id, }} $cfg->get_topics;
-		return \@topics;
-	}
-}
-
-sub _prepare_types {
-	my ($self, $selected) = @_;
-	my $cfg = $self->miril->config;
-	my @types;
-	if ($selected)
-	{
-		@types = map {{ name => $_->name, id => $_->id, selected => $_->id eq $selected }} $cfg->get_types;
-	}
-	else 
-	{
-		@types = map {{ name => $_->name, id => $_->id }} $cfg->get_types;
-	}
-	return \@types;
-}
-
-# pagination: needs to be abstracted so that different UI's (e.g. Mojo) could use it 
-
-sub _paginate {
-	my $self = shift;
-	my @posts = @_;
-	
-	my $cfg = $self->miril->config;
-
-	return unless @posts;
-
-	if (@posts > $cfg->posts_per_page) {
-
-		my $page = Data::Page->new;
-		$page->total_entries(scalar @posts);
-		$page->entries_per_page($cfg->posts_per_page);
-		$page->current_page($self->query->param('page_no') ? $self->query->param('page_no') : 1);
-		
-		my $pager;
-		
-		if ($page->current_page > 1) {
-			$pager->{first}    = $self->_generate_paged_url($page->first_page);
-			$pager->{previous} = $self->_generate_paged_url($page->previous_page);
-		}
-
-		if ($page->current_page < $page->last_page) {
-			$pager->{'last'} = $self->_generate_paged_url($page->last_page);
-			$pager->{'next'} = $self->_generate_paged_url($page->next_page);
-		}
-
-		$self->view->{pager} = $pager;
-		return $page->splice(\@posts);
-
-	} else {
-		return @posts;
-	}
-}
-
-sub _generate_paged_url {
-	my $self = shift;
-	my $page_no = shift;
-
-	my $q = $self->query;
-
-	my $paged_url = '?action=' . $q->param('action');
-
-	if (
-		$q->param('title')  or
-		$q->param('author') or
-		$q->param('type')   or
-		$q->param('status') or
-		$q->param('topic')
-	) {
-		$paged_url .=   '&title='  . $q->param('title')
-		              . '&author=' . $q->param('author') 
-		              . '&type='   . $q->param('type') 
-		              . '&status=' . $q->param('status')
-		              . '&topic='  . $q->param('topic');
-	}
-
-	$paged_url .= "&page_no=$page_no";
-
-	return $paged_url;
+    return (
+        id     => $q->param('id'),
+        old_id => $q->param('old_id'),
+        source => $q->param('source'),
+        title  => $q->param('title'),
+        author => $q->param('author'),
+        topics => [$q->param('topics')],
+        status => $q->param('status'),
+        type   => $q->param('type'),
+    );
 }
 
 1;

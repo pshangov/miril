@@ -7,10 +7,10 @@ use Miril::Post;
 use Miril::List;
 use Miril::Type;
 use Miril::DateTime;
-use Miril::Template::Plugin::TagUrl;
+use Miril::Template::Plugin::Miril;
 
 my $base_url = 'example.com';
-my $plugin   = Miril::Template::Plugin::TagUrl->new;
+my $plugin   = Miril::Template::Plugin::Miril->new;
 my $dt       = Miril::DateTime->new(
     year    => 2011, 
     month   => 11, 

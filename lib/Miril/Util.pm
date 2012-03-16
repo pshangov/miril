@@ -6,7 +6,6 @@ use autodie;
 
 use File::Spec::Functions        qw(catfile);
 use List::Util                   qw(first);
-use Miril::URL                   qw();
 use Miril::DateTime              qw();
 
 use Mouse;

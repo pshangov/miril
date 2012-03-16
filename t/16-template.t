@@ -117,11 +117,9 @@ foreach my $format ( keys %formats )
 	);
 
     my $config = $class->new($config_filename);
-	my $template = $config->template;
-    my $stash = $config->stash;
+	my $options = $config->template;
     
-    is_deeply( $template, { EVAL_PERL => 1 }, "template options from $format config file" );
-    is_deeply( $stash, { root => '/' }, "template stash from $format config file" );
+    is_deeply( $options, { EVAL_PERL => 1, VARIABLES => { root => '/' } }, "template options from $format config file" );
 }
 
 done_testing;

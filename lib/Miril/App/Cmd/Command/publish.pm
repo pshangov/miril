@@ -12,8 +12,8 @@ Class::Autouse->autouse('Miril');
 sub opt_spec
 {
 	return (
-		[ 'dir|d=s',     "miril base dir",             { default => 'example' }     ],
-		[ 'site|s=s',    "website",                    { default => 'example.com' } ],
+		[ 'dir|d=s',     "miril base dir" ],
+		[ 'site|s=s',    "website",       ],
 	);
 }
 

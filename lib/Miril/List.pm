@@ -39,13 +39,6 @@ has 'id' =>
 	isa => 'Str',
 );
 
-has 'url' =>
-(
-	is            => 'ro',
-	isa           => 'Str',
-    documentation => 'Caclulated from $self->location by Miril::Publisher',
-);
-
 has 'group' =>
 (
 	is        => 'ro',
@@ -67,22 +60,6 @@ has 'page' =>
 	predicate => 'is_paged',
 );
 
-### TODO: obsolete, remove!
-has 'location' =>
-(
-	is            => 'ro',
-	isa           => 'Str',
-    documentation => "Text::Sprintf::Named-compatible string for URL and output file generation",
-);
-
-### TODO: obsolete, remove!
-has 'map' =>
-(
-	is  => 'ro',
-	isa => 'Str',
-	predicate => 'has_map',
-);
-
 has 'path' =>
 (
 	is            => 'ro',
@@ -97,6 +74,12 @@ has 'template' =>
     required => 1,
 );
 
+sub group_key
+{
+    my $self = shift;
+    return $self->key->{object} if $self->is_grouped;
+}
+
 sub get_post_by_id
 {
 	my $self = shift;
@@ -104,5 +87,7 @@ sub get_post_by_id
 
 	return first { $_ eq $id } $self->get_posts;
 }
+
+with 'Miril::Role::URL';
 
 1;

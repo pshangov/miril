@@ -26,9 +26,12 @@ sub execute
 
     $table->setCols('ID', 'Title', 'Published');
 
-    foreach my $post ($self->miril->store->get_posts)
+    foreach my $post ($self->miril->store->get_sorted_posts)
     {
-        $table->addRow($post->id, $post->title, $post->published->as_ymdhm);
+        $table->addRow(
+            $post->id, $post->title, 
+            $post->is_published ? $post->published->as_ymdhm : 'N/A',
+        );
     }
 
     print $table;

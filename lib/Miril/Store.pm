@@ -62,22 +62,8 @@ sub search
 	};
 
 	# sort
-	if ($self->sort eq 'modified')
-	{
-		@posts = sort { $b->modified->as_epoch <=> $a->modified->as_epoch } @posts;
-	}
-	else
-	{
-		if ( first { !$_->published } @posts )
-		{
-			@posts = sort { $b->modified->as_epoch <=> $a->modified->as_epoch } @posts;
-		}
-		else
-		{
-			@posts = sort { $b->published->epoch <=> $a->published->epoch } @posts;
-		}
-	}
-	
+    @posts = _sort_posts(@posts);
+
 	# limit
 	if ($params{'limit'})
 	{
@@ -117,6 +103,13 @@ sub delete
 	$self->delete_post($id);
 }
 
+sub get_sorted_posts
+{
+    my $self = shift;
+    return _sort_posts($self->get_posts);
+    
+}
+
 ### PRIVATE FUNCTIONS ###
 
 sub _generate_content
@@ -133,6 +126,30 @@ sub _generate_content
 	$content .= $post->source;
 
 	return $content;
+}
+
+sub _sort_posts
+{
+    my @posts = @_;
+
+    my (@published, @not_published);
+
+    foreach my $post (@posts)
+    {
+        if ($post->status eq 'published')   
+        {
+            push @published, $post;
+        }
+        else
+        {
+            push @not_published, $post;
+        }
+    }
+
+    @not_published = sort { $b->modified->as_epoch <=> $a->modified->as_epoch   } @not_published;
+    @published     = sort { $b->published->as_epoch <=> $a->published->as_epoch } @published;
+
+    return @not_published, @published;
 }
 
 1;

@@ -8,47 +8,6 @@ use Miril::CGI::Application::Theme::Flashyweb::Stylesheet;
 
 ### TEMPLATES ###
 
-my $account = <<EndOfHTML;
-
-<TMPL_VAR NAME="header">
-
-	<!-- start content -->
-	<div id="content">
-		<div class="post">
-			<h2 class="title"><span class="dingbat">&#x273b;</span> <TMPL_VAR NAME="user.username"></h2>
-			<div class="edit">
-				<form method="POST">
-
-					<p class="edit">Name:<br>
-					<input type="text" name="name" class="textbox" value='<TMPL_VAR NAME="user.name">' /></p>
-
-					<p class="edit">New password:<br>
-					<input type="password" name="new_password" class="textbox" />
-					</p>
-
-					<p class="edit">Retype new password:<br>
-					<input type="password" name="retype_password" class="textbox" />
-					</p>
-
-					<p class="edit">Existing password: <span class="required">(Required)</span><br>
-					<input type="password" name="password" class="textbox" />
-					</p>
-
-					<input type="hidden" name="username" value='<TMPL_VAR NAME="user.username">' />
-
-					<button type="submit" id="x" name="action" value="account">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;
-					<button type="submit" id="x" name="action" value="list">Cancel</button>
-
-				</form>
-			</div>
-		</div>
-	</div>
-	<!-- end content -->
-
-<TMPL_VAR NAME="footer">
-
-EndOfHTML
-
 my $edit = <<EndOfHTML;
 
 <TMPL_VAR NAME="header">
@@ -56,7 +15,7 @@ my $edit = <<EndOfHTML;
 	<!-- start content -->
 	<div id="content">
 		<div class="post">
-			<h2 class="title"><TMPL_IF NAME="post.title"><TMPL_VAR NAME="post.title"><TMPL_ELSE>New Article</TMPL_IF></h2>
+			<h2 class="title"><TMPL_IF NAME="post.title"><TMPL_VAR NAME="post.title"><TMPL_ELSE>New post</TMPL_IF></h2>
 			<div class="edit">
 				<form method="POST">
 					<p class="edit">Title:<br>
@@ -108,7 +67,7 @@ my $edit = <<EndOfHTML;
 
 					<button type="submit" id="x" name="action" value="update">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;
 					<button type="submit" id="x" name="action" value="delete">Delete</button>&nbsp;&nbsp;&nbsp;&nbsp;
-					<button type="submit" id="x" name="action" value="view">Cancel</button>
+					<button type="submit" id="x" name="action" value="display">Cancel</button>
 				</form>
 			</div>
 		</div>
@@ -120,70 +79,8 @@ my $edit = <<EndOfHTML;
 
 EndOfHTML
 
-my $files = <<EndOfHTML;
-
-<TMPL_VAR NAME="header">
-
-<div id="content">
-	<div class="post">
-		<h2 class="title"><span class="dingbat">&#x273b;</span> Files</h2>
-		<div class="meta">
-			<p class="links"><a href="?action=upload" class="more">Upload files</a></p>
-		</div>
-		<div class="entry">
-		
-		<form method="POST">
-		<TMPL_LOOP NAME="files">
-			<h3><input type="checkbox" name="file" value='<TMPL_VAR NAME="name">'> <a href='<TMPL_VAR NAME="href">' target="_blank"><TMPL_VAR NAME="name"></a></h3>
-			<p class="item-desc">
-				<b>Size:</b> <TMPL_VAR NAME="size">,&nbsp; 
-				<b>Modified:</b> <TMPL_VAR NAME="modified">
-			</p>
-		</TMPL_LOOP>
-		<div class="pager">
-			<TMPL_VAR NAME="pager">
-		</div>
-		<button type="submit" id="x" name="action" value="unlink">Delete selected</button>
-		</form>
-	
-		</div>
-	</div>
-</div>
-
-<TMPL_VAR NAME="footer">
-
-EndOfHTML
-
-
-my $upload = <<EndOfHTML;
-
-<TMPL_VAR NAME="header">
-
-<div id="content">
-	<div class="post">
-		<h2 class="title"><span class="dingbat">&#x273b;</span> Upload Files</h2>
-		<form method="POST" enctype="multipart/form-data">
-			<div>
-				<p class="edit"><input type="file" name="file" />
-				<p class="edit"><input type="file" name="file" />
-				<p class="edit"><input type="file" name="file" />
-				<p class="edit"><input type="file" name="file" />
-				<p class="edit"><input type="file" name="file" />
-			</div>
-			<button type="submit" id="x" name="action" value="upload">Upload files</button>
-			<button name="action" value="files" id="x">Cancel</button>
-			</p>
-		</form>
-	</div>
-</div>
-
-<TMPL_VAR NAME="footer">
-
-EndOfHTML
-
 my $footer = <<EndOfHTML;
 
-<TMPL_IF NAME="authenticated"><TMPL_VAR NAME="sidebar"></TMPL_IF>
 <div style="clear: both;">&nbsp;</div>
 </div>
 <!-- end page -->
@@ -238,17 +135,14 @@ Description: A two-column, fixed-width and lightweight template ideal for 1024x7
 		<h1><a href="?">Miril</a></h1>
 		<h2>Static Content Publishing</h2>
 	</div>
-	<TMPL_IF NAME="authenticated">
 	<div id="menu">
 		<ul>
-			<li class="active"><a href="?action=list">articles</a></li>
-			<li><a href="?action=files">files</a></li>
+			<li class="active"><a href="?action=list">browse</a></li>
+			<li><a href="?action=search" class="more">search</a></li>
+			<li><a href="?action=create" class="more">create</a></li>
 			<li><a href="?action=publish">publish</a></li>
-			<li><a href="?action=account">account</a></li>
-			<li><a href="?action=logout">logout</a></li>
 		</ul>
 	</div>
-	</TMPL_IF>
 </div>
 <!-- end header -->
 
@@ -273,15 +167,11 @@ my $list = <<EndOfHTML;
 
 <div id="content">
 	<div class="post">
-		<h2 class="title"><span class="dingbat">&#x273b;</span> List of entries</h2>
-		<div class="meta">
-			<p class="links"><a href="?action=search" class="more">Search</a></p>
-			<p class="links"><a href="?action=create" class="more">Post new article</a></p>
-		</div>
+		<h2 class="title"><span class="dingbat">&#x273b;</span> Brose posts</h2>
 		<div class="entry">
 				
 		<TMPL_LOOP NAME="posts.list">
-			<h3><span class="dingbat">&#8226;</span><a href='?action=view&id=<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.title"></a></h3>
+			<h3><span class="dingbat">&#8226;</span><a href='?action=display&id=<TMPL_VAR NAME="this.id">'><TMPL_VAR NAME="this.title"></a></h3>
 			<p class="item-desc">
 				<b>Status:</b> <TMPL_VAR NAME="this.status">,&nbsp; 
 				<b>Modified:</b> <TMPL_VAR NAME="this.modified.as_strftime('%d/%m/%Y %H:%M')">
@@ -305,7 +195,7 @@ my $search = <<EndOfHTML;
 
 <div id="content">
 	<div class="post">
-		<h2 class="title"><span class="dingbat">&#x273b;</span> Search entries</h2>
+		<h2 class="title"><span class="dingbat">&#x273b;</span> Search posts</h2>
 		<div class="entry">
 				
 			<form>
@@ -313,6 +203,7 @@ my $search = <<EndOfHTML;
 				<p class="edit">Title contains:<br />
 				<input type="text" name="title" />
 				</p>
+
 				<p class="edit">Type:<br>
 				<select name="type">
 					<option value=''>--Any--</option>
@@ -364,36 +255,6 @@ my $search = <<EndOfHTML;
 
 EndOfHTML
 
-my $login = <<EndOfHTML;
-
-<TMPL_VAR NAME="header">
-
-<div id="content">
-	<div class="post">
-		<h2 class="title"><span class="dingbat">&#x273b;</span> Sign in</h2>
-
-			<div class="login">
-				<form method="POST">
-
-					<p class="edit">Username:<br>
-					<input type="text" name="authen_username" class="textbox" value='<TMPL_VAR NAME="title">' /></p>
-
-					<p class="edit">Password:<br>
-					<input type="password" name="authen_password" class="textbox" value='<TMPL_VAR NAME="id">' /></p>
-
-					<p><input type="checkbox" name="authen_rememberuser" />Remember me!</p>
-
-					<button type="submit" id="x" name="action" value="list">Sign in</button>
-  
-				</form>
-			</div>
-	</div>
-</div>
-
-<TMPL_VAR NAME="footer">
-
-EndOfHTML
-
 my $publish = <<EndOfHTML;
 
 <TMPL_VAR NAME="header">
@@ -422,39 +283,7 @@ my $publish = <<EndOfHTML;
 
 EndOfHTML
 
-my $sidebar = <<EndOfHTML;
-
-	<!-- start sidebar -->
-	<div id="sidebar">
-		<ul>
-			<li id="search">
-				<h2><b class="text1">Quick Open</b></h2>
-				<form method="get">
-					<fieldset>
-					<input type="text" id="s" name="id" />
-					<button id="x" name="action" value="view" />Go</button>
-					</fieldset>
-				</form>
-			</li>
-			<li>
-				<h2 class="bold">Last edited</h2>
-				<ul>
-				<TMPL_LOOP NAME="latest">
-					<li><div class="dingbat">&#x2726;</div>
-						<a href="?action=view&id=<TMPL_VAR NAME="id">">
-						<TMPL_VAR NAME="title">
-						</a>
-					</li>
-				</TMPL_LOOP>
-				</ul>
-			</li>
-		</ul>
-	</div>
-	<!-- end sidebar -->
-
-EndOfHTML
-
-my $view = <<EndOfHTML;
+my $display = <<EndOfHTML;
 
 <TMPL_VAR NAME="header">
 
@@ -507,17 +336,12 @@ sub get {
 
 	$name eq "css"      && return Miril::CGI::Application::Theme::Flashyweb::Stylesheet::get();
 
-	$name eq "account"  && return $account;
-	$name eq "edit"     && return $edit;
-	$name eq "files"    && return $files;
-	$name eq "footer"   && return $footer;
 	$name eq "header"   && return $header;
+	$name eq "footer"   && return $footer;
+	$name eq "display"  && return $display;
+	$name eq "edit"     && return $edit;
 	$name eq "list"     && return $list;
-	$name eq "login"    && return $login;
 	$name eq "publish"  && return $publish;
-	$name eq "sidebar"  && return $sidebar;
-	$name eq "view"     && return $view;
-	$name eq "upload"   && return $upload;
 	$name eq "error"    && return $error;
 	$name eq "search"   && return $search;
 	$name eq "pager"    && return $pager;

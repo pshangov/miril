@@ -161,7 +161,10 @@ sub _build_publisher
     my $self = shift;
 
     my @lists = apply { 
-        $_->posts([$self->store->search($_->search_options)])
+        $_->posts([ $self->store->search(
+            $_->search_options, 
+            status => 'published')
+        ])
     } $self->config->get_lists;
 
     my @posts = $self->store->get_posts;
@@ -181,8 +184,8 @@ sub _build_template
 
     return Miril::Template->new( config => { 
         INCLUDE_PATH => dir($self->base_dir, 'templates')->stringify,
-        VARIABLES    => $self->config->stash,
-        $self->config->template_options,
+        PLUGIN_BASE  => 'Miril::Template::Plugin',
+        $self->config->template_config,
     });
 }
 

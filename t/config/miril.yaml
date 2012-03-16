@@ -86,6 +86,5 @@ lists:
 
 template:
     EVAL_PERL: 1
-
-stash:
-    root: /
+    VARIABLES:
+        root: /
