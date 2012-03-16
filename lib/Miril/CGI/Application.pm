@@ -34,7 +34,6 @@ use HTML::FillInForm::Lite;
 
 use Object::Tiny qw(
 	view
-	user_manager
 	miril
 	validator
 );
