@@ -34,10 +34,8 @@ sub validate {
 	my ($self, $schema, %data) = @_;
 	my %invalid_fields;
 
-
-
 	foreach my $key (keys %$schema) {
-		my ($type, @other) = split /\s/, $schema->{$key};
+		my ($type, @other) = @{ $schema->{$key} }; 
 		
 		my $required = 1 if first { $_ eq 'required'} @other;
 		my $list = 1 if first { $_ eq 'list'} @other;
@@ -56,10 +54,11 @@ sub validate {
 				$invalid_fields{$key}++ unless $self->_validate_type($type, $data{$key});
 			}
 		} else {
-			die "Required parameter '$key' missing" if $required;
+            $invalid_fields{$key}++ if $required;
 		}
 	}
-	keys %invalid_fields ? return dao \%invalid_fields : return;
+	
+    return \%invalid_fields if keys %invalid_fields;
 }
 
 ### PRIVATE METHODS ###

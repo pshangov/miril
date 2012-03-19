@@ -4,12 +4,10 @@ MIRIL TODO
 CPAN release
 ------------
 
-1. Improve form validation
-2. Check that the UI works
-3. Beautify UI
-4. Study 'less'
-5. Update documentation
-6. Switch to Dist::Zilla
+1. Beautify UI
+2. Study 'less'
+3. Update documentation
+4. Switch to Dist::Zilla
 
 Public release
 --------------

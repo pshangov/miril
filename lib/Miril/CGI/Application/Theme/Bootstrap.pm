@@ -201,7 +201,19 @@ template search => sub {
 };
 
 template edit => sub {
-    my ($self, $taxonomy) = @_;
+    my ($self, $taxonomy, $invalid) = @_;
+
+    my %control_group = map { 
+        $_ => ( $invalid->{$_} ? 'control-group error' : 'control-group' ) 
+    } qw(
+        id
+        title
+        type
+        author
+        status
+        topics
+        source
+    );
 
     wrap {
         h1 { "Edit post" }
@@ -209,7 +221,7 @@ template edit => sub {
         form { attr { class => 'horizontal', method => 'POST' }
             fieldset {
 
-                div { attr { class => 'control-group' } 
+                div { attr { class => $control_group{title} } 
                     label { 
                         attr { class => 'control-label', for => 'title' } 
                         "Title" 
@@ -222,7 +234,7 @@ template edit => sub {
                                 name  => 'title',
                 } } } }
 
-                div { attr { class => 'control-group' } 
+                div { attr { class => $control_group{id} } 
                     label { 
                         attr { class => 'control-label', for => 'id' } 
                         "ID" 
@@ -235,7 +247,7 @@ template edit => sub {
                                 name  => 'id',
                 } } } }
 
-                div { attr { class => 'control-group' } 
+                div { attr { class => $control_group{type} } 
                     label { 
                         attr { class => 'control-label', for => 'type' } 
                         "Type" 
@@ -252,7 +264,7 @@ template edit => sub {
                 } } } };
 
                 if ($taxonomy->has_authors) {
-                    div { attr { class => 'control-group' } 
+                    div { attr { class => $control_group{author} } 
                         label { 
                             attr { class => 'control-label', for => 'author' } 
                             "Author" 
@@ -269,7 +281,7 @@ template edit => sub {
                                     option { attr { value => $author->id } $author->name }
                 } } } }; }
 
-                div { attr { class => 'control-group' } 
+                div { attr { class => $control_group{status} } 
                     label { 
                         attr { class => 'control-label', for => 'status' } 
                         "Status" 
@@ -286,7 +298,7 @@ template edit => sub {
                 } } };
 
                 if ($taxonomy->has_topics) {
-                    div { attr { class => 'control-group' } 
+                    div { attr { class => $control_group{topics}  } 
                         label { 
                             attr { class => 'control-label', for => 'topics' } 
                             "Topics" 
@@ -304,7 +316,7 @@ template edit => sub {
                                     option { attr { value => $topic->id } $topic->name }
                 } } } }; }
 
-                div { attr { class => 'control-group' } 
+                div { attr { class => $control_group{topics} } 
                     label { 
                         attr { class => 'control-label', for => 'source' } 
                         "Body" 

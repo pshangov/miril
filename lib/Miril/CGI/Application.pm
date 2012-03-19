@@ -35,7 +35,6 @@ use HTML::FillInForm::Lite;
 use Object::Tiny qw(
 	view
 	miril
-	validator
 );
 
 ### SETUP ###
@@ -60,7 +59,6 @@ sub setup {
 
 	$self->{miril}     = $self->param('miril');
 	$self->{view}      = Miril::CGI::Application::View->new;
-	$self->{validator} = Miril::CGI::Application::InputValidator->new;
 
 	$self->header_add( -type => 'text/html; set=utf-8');
 
@@ -142,11 +140,13 @@ sub edit {
 	my $self = shift;
     my $q = $self->query;
 
-    my %params = $self->param('form-not-valid')
+    my $invalid = $self->param('form-not-valid');
+
+    my %params = $invalid
         ? _query_to_params($q)
         : _post_to_params($self->miril->store->get_post_by_id($q->param('id')));
 
-    my $form = $self->view->load('edit', $self->miril->taxonomy);
+    my $form = $self->view->load('edit', $self->miril->taxonomy, $invalid);
     return HTML::FillInForm::Lite->fill(\$form, \%params);
 }
 
@@ -154,19 +154,21 @@ sub update {
 	my $self = shift;
 	my $q = $self->query;
 
-	my $invalid = $self->validator->validate({
-		id      => 'text_id required',
-		author  => 'line_text',
-		status  => 'text_id',
-		source  => 'paragraph_text',
-		title   => 'line_text required',
-		type    => 'text_id required',
-		old_id  => 'text_id',
+	my $validator = Miril::CGI::Application::InputValidator->new;
+
+	my $invalid = $validator->validate({
+		id      => [qw(text_id required)],
+		author  => [qw(line_text)],
+		status  => [qw(text_id)],
+		source  => [qw(paragraph_text)],
+		title   => [qw(line_text required)],
+		type    => [qw(text_id required)],
+		old_id  => [qw(text_id)],
 	}, $q->Vars);
 	
 	if ($invalid) {
-		$self->param('form-not-valid', 1);
-		return $self->forward('edit');
+		$self->param('form-not-valid' => $invalid);
+        return $self->forward('edit');
 	}
 
 	my %post = (
@@ -184,7 +186,7 @@ sub update {
 
 	$self->miril->store->save(%post);
 
-	return $self->redirect("?action=display&id=" . $post{id});
+	$self->redirect("?action=display&id=" . $post{id});
 }
 
 sub delete {
@@ -193,7 +195,7 @@ sub delete {
 	my $id = $self->query->param('old_id');
 	$self->miril->store->delete($id);
 
-	return $self->redirect("?action=list");
+	$self->redirect("?action=list");
 }
 
 sub display {
@@ -205,8 +207,8 @@ sub display {
 
 	my $post = $self->miril->store->get_post_by_id($id);
 
-    return $post
-        ? $self->view->load('display', $post)
+    $post
+        ? return $self->view->load('display', $post)
         : $self->redirect(URI::Query->new(action => 'list')->stringify);	
 }
 
@@ -235,25 +237,25 @@ sub _post_to_params {
         id     => $post->id,
         title  => $post->title,
         type   => $post->type->id,
-        author => $post->author,
-        topics => $post->topics,
         status => $post->status,
         source => $post->source,
+        $post->author ? ( author => $post->author ) : (),
+        $post->topics ? ( topics => $post->topics ) : (),
     );
 }
 
 sub _query_to_params {
-    my $q = shift;
+    my ($q, $invalid) = @_;
 
     return (
         id     => $q->param('id'),
         old_id => $q->param('old_id'),
         source => $q->param('source'),
         title  => $q->param('title'),
-        author => $q->param('author'),
-        topics => [$q->param('topics')],
         status => $q->param('status'),
         type   => $q->param('type'),
+        $q->param('author') ? ( author => $q->param('author') )   : (),
+        $q->param('topics') ? ( topics => [$q->param('topics')] ) : (),
     );
 }
 
