@@ -4,8 +4,7 @@ MIRIL TODO
 CPAN release
 ------------
 
-1. Beautify UI
-2. Study 'less'
+1. Play with 'less'
 3. Update documentation
 4. Switch to Dist::Zilla
 

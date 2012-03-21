@@ -10,7 +10,10 @@ use URI::Query;
 sub uri { '?' . URI::Query->new(@_)->stringify } 
 
 BEGIN { create_wrapper wrap => sub {
-    my ( $code ) = @_;
+    my ( $code, $current ) = @_;
+    $current = '' unless $current;
+
+    outs_raw '<!DOCTYPE html>';
 
     html {
         head {
@@ -33,23 +36,16 @@ BEGIN { create_wrapper wrap => sub {
             div { attr { class => "navbar navbar-fixed-top" }
                 div { attr { class => "navbar-inner" }
                     div { attr { class => "container" }
-                        a { attr { class => "brand", href  => "#" } "Miril" }
+                        a { attr { class => "brand", href  => uri( action => 'list' ) } "Miril" }
                         div { attr { class => "nav-collapse" }
                             ul { 
-                                attr { class => "nav" }
+                                attr { class => "nav" };
 
-                                my %links = (
-                                    "Browse"  => uri( action => 'list' ),
-                                    "Search"  => uri( action => 'search' ),
-                                    "Create"  => uri( action => 'create' ),
-                                    "Publish" => uri( action => 'publish' ),
-                                );
-                                
-                                while ( my ( $title, $href ) = each %links ) {
+                                foreach my $section (qw(list search create publish)) {
                                     li { 
-                                        attr { class => "active"}
-                                        a { attr { href => $href } $title }
-                                    }
+                                        attr { class => "active" } if $section eq $current;
+                                        a { attr { href => uri( action => $section ) } ucfirst $section };
+                                    };
                                 }
 
             } } } } } 
@@ -94,7 +90,7 @@ template list => sub {
 
                     li { a { attr { href => $uri_callback->($pager->last_page) } "Last" } }
         } } } 
-    }
+    } 'list';
 };
 
 
@@ -193,11 +189,11 @@ template search => sub {
                 button { attr { 
                     name  => 'action', 
                     value => 'list',
-                    class => 'btn-primary',
+                    class => 'btn btn-primary',
                     type  => 'submit',
                 } 'Search' }
 
-    } } }
+    } } } 'search';
 };
 
 template edit => sub {
@@ -341,7 +337,7 @@ template edit => sub {
                 button { attr { 
                     name  => 'action', 
                     value => 'update',
-                    class => 'btn-primary',
+                    class => 'btn btn-primary',
                     type  => 'submit',
                 } 'Save' }
 
@@ -359,7 +355,7 @@ template edit => sub {
                     type  => 'submit',
                 } 'Cancel' }
 
-    } } }
+    } } } 'create';
 
 };
 
@@ -386,7 +382,7 @@ template publish => sub {
         h1 { 'Publish' }
         a { attr { class => 'btn', href => uri ( action => 'publish' ) } 'Publish' }
         a { attr { class => 'btn', href => uri ( action => 'list' ) } 'Cancel' }
-    }
+    } 'publish';
 };
 
 1;
