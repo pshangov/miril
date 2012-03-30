@@ -4,9 +4,8 @@ MIRIL TODO
 CPAN release
 ------------
 
-1. Play with 'less'
-3. Update documentation
-4. Switch to Dist::Zilla
+1. Update documentation for lists
+2. Switch to Dist::Zilla
 
 Public release
 --------------

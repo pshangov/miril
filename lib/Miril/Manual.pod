@@ -2,33 +2,25 @@
 
 Miril::Manual - Why and how to use Miril, the static content management sytem.
 
-=head1 WHAT IS SPECIAL ABOUT MIRIL
+=head1 WHAT IS MIRIL
+
+Miril is a Perl framework for generating html websites from static content stored in files.
+
+=head1 WHY USE MIRIL
 
 =over
 
 =item * 
 
-Miril is written in perl and uses the L<CGI::Application> framework. 
+Miril stores your data in text files and publishes it to static pages. Unlike homegrown static publishing solutions (e.g. scripts using the Template Toolkit), Miril provides a user interface for editing content (web-based or via a command-line application).
 
 =item * 
 
-Miril stores your data in a backend (text files, a database, etc.) and publishes it to static pages. Unlike homegrown static publishing solutions (e.g. scripts using the Template Toolkit), Miril provides a nice user interface for editing content (web-based or via a command-line application).
+Miril has been designed from the very start to be extremely easy to deploy. The main distribution has only pure-perl dependencies. Stable Miril versions will be available in a tarball with all dependencies bundled, so that deploying on a typical shared host should be a as easy as unpacking.
 
 =item * 
 
-Miril has been designed from the very start to be extremely easy to deploy. The main distribution has only pure-perl dependencies. Stable Miril versions will be available in a tarball with all dependencies bundled, so that installing on a typical shared host should be a no-brainer.
-
-=item * 
-
-Miril has been designed with small to medium-sized websites in mind, i.e. websites with hundreds of pages as opposed to thousands of pages. If you have a typical small website such as a corporate website or a personal blog Miril may be a better deal for you than full-blown content management systems since it is faster to deploy, easier to manage, and generally has less administrative overhead both for the site administrator and for the users.
-
-=item * 
-
-Miril has a user interface that has been deliberately kept extremely simple and uncluttered. The goal is for the end users of Miril (those in charge of managing content) to require little or no training to start using it. This means that some of the administrative tasks (such as user management and adding special types of pages) can only be performed by editing the configuration files and templates manually. For a similar reason, Miril also takes a very simplistic approach towards access management and does not provide roles or complex permissions. In fact, Miril has been designed to be used in teams where 1) users generally can trust each other and complicated access management is not necessary and 2) there is at least one tech-savvy user who can take care of the occasional administrative tasks.
-
-=item * 
-
-Miril is extensible. You can choose between different storage backends (currently only a file-based backend is provided), different templating systems, etc.
+Miril has been designed with small to medium-sized websites in mind, i.e. websites with hundreds of pages as opposed to thousands of pages. If you have a typical small website such as a corporate website or a personal blog Miril may be a better deal for you than full-blown content management systems since it is faster to deploy, easier to manage, and generally has less administrative overhead both for the site administrator and the users.
 
 =back
 
@@ -48,6 +40,10 @@ Of course, if you have sufficient control over your environment and the load on 
 
 =item *
 
+Miril is also available as a C<PSGI> appliction, so you can use it with any C<Plack> server and C<Plack> middleware.
+
+=item *
+
 Because Miril ultimately produces static content only, you can run it from your local machine and then synchronize your local output directory with the web server. This way you can manage websites on servers that don't even have C<perl> installed, or where installing Miril would be difficult.
 
 =back
@@ -58,181 +54,112 @@ Currently Miril is installable only from C<CPAN>. Simply run C<install Miril> fr
 
 =head1 CONFIGURATION
 
-=head2 Create required files and folders
+=head2 Create required folders
 
-Miril requires that you have the following files and folders in place:
+  ~ $ mkdir ./mywebsite              # base directory for the website           
+  ~ $ mkdir ./mywebsite/templates    # you will put your templates here
+  ~ $ mkdir ./mywebsite/www          # Miril will place the HTML output here
 
-  ~/miril - Base Miril directory
-  ~/miril/sites - Site configuration and data
-  ~/miril/sites/some_site/cache - Directory where Miril caches stuff
-  ~/miril/sites/some_site/data - Directory where Miril store data files
-  ~/miril/sites/some_site/tmpl - Directory where you keep the templates for building your site
-  ~/miril/sites/some_site/cfg/config.xml - Main configuration file
-  ~/miril/sites/some_site/cfg/users.xml - Usernames and passwords
-  ~/miril/sites/some_other_site - You can keep info about more than one site
-  ~/miril/lib - If you downloaded Miril with bundled dependencies, they will be here
+=head2 Configuration file
 
-Of these, the two configuration files are the only ones that you need to create manually, and more information is provided below. All other stuff is written by Miril itself, but it does need the directories to exist first. You can just unpack the example site provided with the Miril distribution to get started faster.
+The configuration file contains everything Miril needs to know in order to manage your website.
+It needs to be created in the base directory of the website, and can be in either L<Config::General>, L<YAML> or L<XML> format (with a C<conf>, C<yaml> or C<xml> extension accordingly).
+All the examples below are in C<Config::General> format.
 
-=head2 Create a cgi script
-
-Once you have installed Miril, create a cgi script named C<miril.pl> or C<miril.cgi> with the following content:
-
-  #!/usr/bin/perl
-  
-  use strict;
-  use warnings;
-  
-  use Miril;
-
-  my $app = Miril->new( PARAMS => { 
-      miril_dir => $path_to_base_miril_dir,
-      site      => $name_of_website,
-  });
-  $app->run;
-
-A single Miril installation can handle multiple websites. C<$path_to_base_miril_dir> should point to the base Miril directory, for example C<~/miril>. C<$name_of_website> is the name of the website that will be managed by this particlar Miril instance (e.g. C<some_site> or C<some_other_site>).
-
-=head2 Create a configuration file
-
-Make sure you create your configuration file in the location that you chose above. Currently only XML is supported for the configuration file format.
-
-=head3 Basic configuration options
-
-A minimal configuration file has the following content:
-
-  <xml>
-  
-    <output_path>~/miril/www/some_site</output_path>
-    <files_path>~/miril/www/some_site/files</files_path>
-
-    <domain>www.example.com</domain>
-    <http_dir>/</http_dir>
-    <files_http_dir>/files/</files_http_dir>
-
-    <secret>Some secret line</secret>
-
-  </xml>
-
-The options are explained here:
+  ~ $ vi ./mywebsite/miril.conf
 
 =over
 
-=item files_path
+=item Website name
 
-This is the directory where files (e.g. images, pdf files, etc.) uploaded by Miril users will be stored. Miril must have read-write access to this directory. In a typical installation this directory will be somewhere below your server's document root.
+  name "Mechanical Revolution"
 
-=item output_path
+This is the name of your website, used by the UI's. Optional.
 
-This is the directory where Miril will place all the output files it produces. In a typical installation this directory will be somewhere below your server's document root. 
+=item Output path
 
-=item http_dir
+  output_path "www"
 
-This is the base URL of your website and Miril will use this string to prefix all URL's that it produces. If your website is located at C<http://www.example.com>, you would set C<http_root> to C<http://www.example.com> to produce fully qualified URL's. If you want your website to have relative URL's, you need to leave this option empty. If your website is located at C<http://www.example.com/mywebsite>, you would set C<http_dir> to C<http://www.example.com/mywebsite> for fully qualified URL's and to C</mywebsite> for relative URL's.
+This is the directory where Miril will place all the output files it produces.
+The default location is C<www>, which means that Miril will save the HTML files in the C<www> subdirectory of your base directory, creating that directory if necessary.
+This option is useful primarily if you are running Miril on a shared hosting environment and want your output to be in the web server's document root. E.g.:
 
-=item files_http_dir
-
-This option specifies the base URL for accessing the files managed by the C<files_path> option above. It follows the same rules as C<http_root>.
-
-=item domain
-
-If you have specified a relative URL in C<http_dir> above, use this option to provide the domain name of your website for cases where fully qualified URL's are needed, such as RSS feeds. Leave empty if you have set C<http_dir> to a fully-qualified URL.
-
-=item secret
-
-A random phrase used for security purposes when encrypting authentication data stored in cookies (required by L<CGI::Applciation::Plugin::Authentication::Cookie>).
-
-=item view
-
-Which view module, or templating system, will be used to render your site. Default is C<HTML::Template>, which will load L<Miril::View::HTML::Template>. You can also set this to C<Text::Template>, and additional templating systems may be added in the future.
+  # base dir is ~/miril/mywebsite
+  output_path "~/public_html/mywebsite"
 
 =back
 
-=head3 Configuring content types
+=head3 Content types
 
-Next you may need to configure your content types. This is what a basic configuration looks like:
+Next you need to configure your content types. This is what a basic configuration looks like:
 
-  <xml>
-  ...
+  <type blog>
+    name     Blog
+    location "blog/%(id)s.html"
+    template blog.tt
+  </type>
 
-    <types>
-      <type>
-        <name>Story</name>
-        <id>story</id>
-        <location>story</location>
-        <template>post.tmpl</template>
-      </type>
-      <type>
-        <name>Page</name>
-        <id>page</id>
-        <location></location>
-        <template>page.tmpl</template>
-      </type>
-    </types>
+  <type page>
+    name     Page
+    location "%(id)s.html"
+    template page.tt
+  </type>
 
-  ...
-  </xml>
-
-You will get these two content types by default if you have not specified your own content types in the configuration file.
+Content types are essentially a useful way to classify your html pages by function. You need to have at least one content type defined.
 
 =over
-
-=item name
-
-The user-friendly name of the content type, as it would appear to the end user.
 
 =item id
 
-A unique alphanumeric string identifying the content type, used internally by Miril.
+A unique alphanumeric string identifying the content type, used internally by Miril, e.g. C<blog>.
+
+=item name
+
+The user-friendly name of the content type, as it would appear in the UI, e.g. C<Blog>.
 
 =item location
 
-The location, relative to C<output_path>, where Miril will write entries of this content type.
+The location, relative to C<output_path>, where Miril will write entries of this content type, e.g. C<"blog/%(id)s.html">. The location template is in the L<Text::Sprintf::Named> format. The C<id> parameter will contain the id of the post being published.
 
 =item template
 
-The template file Miril will use to create html pages of this content type.
+The template file Miril will use to create html pages of this content type, e.g. C<blog.tt>.
 
 =back
 
-=head3 Creating lists
+=head3 Lists
 
 Miril allows you to create special pages which combine data from multiple posts - e.g. a list of articles, a RSS feed, etc. This is how you configure lists:
 
-  <xml>
-  ...
+  <list front>
+    name "Front Page"
+    template list.tt
+    location index.html
+    <match>
+      type blog
+      limit 6
+    </match>
+  </list>
 
-    <lists>
-      <list>
-        <id>news</id>
-        <template>news.tmpl</template>
-        <location>news.html</location>
-        <match>
-          <type>story</type>
-          <status>published</status>
-          <last>6</last>
-        </match>
-      </list>
-      <list>
-        <id>feed</id>
-        <template>atom.tmpl</template>
-        <location>atom.xml</location>
-        <match>
-          <type>news</type>
-          <status>published</status>
-          <last>10</last>
-        </match>
-      </list>
-    </lists>
-
-  ...
-  </xml>
+  <list feed>
+    name "Atom Feed"
+    template atom.tt
+    location feed.xml
+    <match>
+      type blog
+      limit 10
+    </match>
+  </list>
 
 =over
 
 =item id
 
 A unique alphanumeric string identifying the list.
+
+=item name
+
+The user-friendly name of the content type, to be used e.g. in page title.
 
 =item template
 
@@ -288,11 +215,11 @@ C<page>, specifies the current page number
 
 =item group
 
-Specifies a grouped list. A grouped list will split the posts it matches into groups and output individual files for each group. This is a powerful option that allows you for example to create archives by month or by year or create lists of posts by topic. The following values for the group option are accepted: C<date>, C<month>, C<year>, C<topic>, C<type>, C<author>. C<Group> works in conjunction with a sprintf-like format in the C<location> option to define the output paths for the individual list files to be produced.
+Specifies a grouped list. A grouped list will split the posts it matches into groups and output individual files for each group. This is a powerful option that allows you for example to create archives by month or by year or create lists of posts by topic. The following values for the group option are accepted: C<date>, C<month>, C<year>, C<topic>, C<type>, C<author>. C<group> works in conjunction with a sprintf-like format in the C<location> option to define the output paths for the individual list files to be produced.
 
 =item page
 
-Specifies a paged list. A paged list will split the posts it matches into smaller lists each containing the number of posts specified as an argument to the C<page> option, and prodice an individual output file for each such list. It works in conjuntion with a sprintf-like format in the C<location> option to define the output paths for the individual list files to be produced. Additionally, the C<list> object passed to your template file has a C<pager> attribute, containing a L<Data::Page> object for the current page.
+Specifies a paged list. A paged list will split the posts it matches into smaller lists each containing the number of posts specified as an argument to the C<page> option, and prodice an individual output file for each such list. It works in conjuntion with a sprintf-like format in the C<location> option to define the output paths for the individual list files to be produced. Additionally, the L<Miril::List> object passed to your template file has a C<pager> attribute, containing a L<Data::Page> object for the current page.
 
 =item match
 
@@ -326,70 +253,51 @@ Only published posts can be included in the list (i.e. posts whose status is C<p
 
 Miril allows you to specify the author of each post. The list of authors is specified in the confuguration file as follows:
 
-  <xml>
-  ...
+  <author jrrtolkien>
+    name "J. R. R. Tolkien"
+  </author>
 
-    <authors>
-      <author>J. R. R. Tolkien</author>
-      <author>J. K. Rowling</author>
-    </authors>
+  <author jkrowling>
+    name "J. K. Rowling"
+  </author>
 
-  ...
-  </xml>
 
-Note that any registered user can specify any author name for any post, so this is used only to display post information in the published site rather than to control access. This is part of Miril's design philosophy (trusted team).
+Note that any registered user can specify any author name for any post, so this is used only to display post information in the published site rather than to control access or track authorship.
 
 =head3 Specifying topics
 
 Miril has basic support for topics, or categories. The list of topics is specified in the confuguration file as follows:
 
-  <xml>
-  ...
+  <topic flowers>
+    name Flowers
+  </topic>
 
-	<topics>
-		<topic>
-			<id>flowers</id>
-			<name>Flowers</name>
-		</topic>
-		<topic>
-			<id>animals</id>
-			<name>Fuzzy Animals</name>
-		</topic>
-		<topic>
-			<id>bananas</id>
-			<name>Bananas</name>
-		</topic>
-	</topics>
+  <topic animals>
+    name Animals
+  </topic>
 
-  ...
-  </xml>
+  <topic bananas>
+    name Bananas
+  </topic>
 
 Each post can then be associated with one or more topics.
 
-=head2 Create a users file
+=head3 Specifying template options
 
-You need a file with information about users and passwords in order to run Miril. The file must be named C<usres.xml> and be located in the directory specified by the C<cfg_path> option in the main configuration file. Currently only XML is supported as the configuration file format. The structure is as follows:
+In the confiuration file you can specify options for the constructor of the L<Template> object.
 
-  <xml>
-    <user>
-      <name>J. R. R. Tolkien</name>
-      <password>123456</password>
-      <username>tolkien</username>
-    </user>
-    <user>
-      <name>J. K. Rowling</name>
-      <password>123456</password>
-      <username>rowling</username>
-    </user>
-  </xml>
+  <template>
+    DEBUG 1
+    <VARIABLES>
+      foo "bar"
+      domain "http://www.example.com/"
+    </VARIABLES>
+  </template>
 
-Passwords can be stored either in plain text, or encrypted (using the MD5 algorithm). When you create a new user, you initially specify their password in plain text and them tell them to log in with this password but change it immediately afterwards. When a password is changed using Miril's user interface, it  will be stored encrypted in the above XML file. Similarly, if a user has forgotten their password, you can temporarily reset it manually to a plain-text password and ask them to change it again. 
-
-Miril is not accessible to unregistered users. All registered users have identical permissions and can edit and publish all types of content.
 
 =head2 Create your output templates
 
-Once the configuration and users files have been set up, you can run Miril and edit content. In order to publish content, however, you need to provide the templates which will be used to render your pages. The templates are located in the directory specified by the C<tmpl_path> option in the configuration file, and must contain all the templates specified when configuring content types and lists, as well as any additional templates referenced by them (such as headers and footers). Currently the only supported template format is L<HTML::Template> with L<HTML::Template::Plugin::Dot>. The templates are initialised with the C<die_on_bad_params> option set to false, and the C<global_vars> option set to true.
+Once the configuration and users files have been set up, you can run Miril and edit content. In order to publish content, however, you need to provide the templates which will be used to render your pages. The templates are rendered using the L<Template> module. Each template used by Miril will be passed either a L<Miril::Post> (if this is a template specified in a type declaration) or a L<Miril::List> object (if this is a template specified in a list declaration). These two objects are described below.
 
 =head3 Posts
 
@@ -419,15 +327,15 @@ A C<Miril::Type> object. Has four properties: C<id>, C<name>, C<location> and C<
 
 =item post.url
 
-A C<Miril::URL> object. Has three properties: C<abs> - an absolute URL, C<rel> - a relateive URL, and C<tag> - a tag URI for Atom feeds.
+URL of the post, derived from the type's location and relative to the website root.
 
 =item post.author
 
-The author of the post.
+A L<Miril::Author> object.
 
 =item post.published
 
-A C<Miril::DateTime> object. Has three methods: C<epoch> - returns epoch time, C<iso> - returns time in an ISO-compliant format suitable for Atom feeds, and C<strftime> - returns time formatted on the basis of the L<POSIX/strftime>-compliant string passed as an argument.
+A C<Miril::DateTime> object. Has three methods: C<as_epoch> - returns epoch time, C<as_iso> - returns time in an ISO-compliant format suitable for Atom feeds, and C<as_strftime> - returns time formatted on the basis of the L<POSIX/strftime>-compliant string passed as an argument.
 
 =item post.modified
 
@@ -459,19 +367,42 @@ An array reference of C<Miril::Post> objects contained in the list. See above fo
 
 =item list.url
 
-A C<Miril::URL> object representing the URL where the list will be visible when published.
+The URL where the list will be visible when published, calculated from the C<location> option in the list's specification, and relative to the website root.
 
 =item list.count
 
 The number of posts contained in the list.
 
+=item list.is_grouped
+
+Tells you whether this is a grouped list or not
+
 =item list.group
 
-A method that groups the posts in the current list according to the parameter passed, and returns a list of C<Miril::List> objects representing the resulting lists. Accepted parameters are C<date>, C<month>, C<year>, C<topic>, C<type> and C<author>. If called without arguments, returns the parameter by which the current list has been grouped, and C<undef> if the list was not generated as a result of grouping.
+For a grouped list, tells you the property the list has been grouped by. Would be one of C<date>, C<month>, C<year>, C<topic>, C<type> or C<author>.
 
-=item list.key
+=item list.group_key
 
-For lists that have been generated as a result of grouping, returns an object that can be used to identify the current group. For example, when a list has been grouped by topic, the C<key> method of each of the resulting list objects will return a C<Miril::Topic> object representing that list's topic. Similarly lists grouped by type are identified by a C<Miril::Type> object, lists grouped by date, month or year are identified by a C<Miril::DateTime> object, and lists grouped by author are identified by an author string.
+For a grouped list, holds the value (normally an object) of the property that the list has been grouped by. For example, of C<list.group> is C<topic>, C<list.key> will hold the actual L<Venda::Topic> object for the current list.
+
+The table belos shows how C<group> values relate to Miril objects:
+
+  Group    Object
+  -----    ------
+  date     Miril::DateTime
+  month    Miril::DateTime
+  year     Miril::DateTime
+  topic    Miril::Topic
+  type     Miril::Type
+  author   Miril::Author
+
+=item list.is_paged
+
+Tells you whether the list is paged or not.
+
+=item list.page
+
+For a paged list, returns the number of the page that the current list represents.
 
 =item list.timestamp
 
@@ -485,19 +416,37 @@ Returns an individual post from the list.
 
 =back
 
+=head2 Create a cgi script
+
+Once you have installed Miril, create a cgi script named C<miril.pl> or C<miril.cgi> with the following content:
+
+  #!/usr/bin/perl
+  
+  use strict;
+  use warnings;
+  use Miril;
+
+  # setup Miril by pointing it to the websites's base dir
+  my $miril = Miril->new( base_dir => '/path/to/website' );
+  
+  # instantiate and run the cgi app
+  Miril::CGI::Application->new( PARAMS => { 
+      miril => $miril,
+  })->run;
+
 =head1 USER INTERFACE
 
 Once you have configured Miril, you can access it by typing the url of the cgi script you created, e.g. C<http://www.examle.com/cgi-bin/miril.pl>. Miril's user interface has the following elements:
 
-=head2 Posts
+=head2 Browse
 
 This is the main screen. It displays a list of all content entries. It provides links to search entries or to post a new entry. 
 
-=head2 Files
+=head2 Search
 
-Displays a list of all files the user has uploaded and a link to a file upload form.
+Allows you to search posts by variious criteria.
 
-=head2 Edit Post
+=head2 Create
 
 This screen is displayed when creating a new post or when modifying an existing one. Most of the options should be self explanatory, but there are a few things to keep in mind:
 
@@ -521,43 +470,11 @@ Additionally, you can break your post into a teaser and full text by inserting t
 
 =back
 
-=head3 Other data passed to templates
+Note that saving a posts only updates the database, and does not publish the post to HTML.
 
-In addition to the post and list objects respectively, each template file is passed the following arguments:
+=head2 Publish
 
-=over
-
-=item id
-
-The string id of the respective post or list object
-
-=item title
-
-The title of the respective post or list object
-
-=item cfg
-
-The global Miril configuration object (i.e. the contents of the configuration file as a hashref).
-
-=back
-
-=head1 CAVEATS
-
-=over
-
-=item *
-
-There are no tests yet. 
-
-=item *
-
-The code is messy and buggy - this is still an alpha release! 
-
-=item *
-
-The API is going to be changing a lot before the 1.0 release, so be sure to keep up with the development process (see L</"SUPPORT"> below) if you plann to use Miril at this stage. Things that may change include the structure of the configuration file, the structure of the C<post> objects, and the API for extending Miril.
-
-=back
+Clicking the C<Publish> button will generate the website and place all HTML in the outpu folder specified in the configuration file.
 
 =head1 SUPPORT
 
@@ -583,7 +500,7 @@ Peter Shangov, C<< <pshangov at yahoo.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009-2010 Peter Shangov.
+Copyright 2009-2012 Peter Shangov.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
