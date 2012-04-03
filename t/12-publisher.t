@@ -13,7 +13,19 @@ use Miril::List::Spec;
 use Miril::Group;
 use Miril::Publisher;
 use Miril::Type;
-use WPS_Test::Template;
+
+{
+    package Miril::Test::Template;
+
+    use Mouse;
+    use Data::Dumper qw(Dumper);
+
+    sub load
+    {
+        my ( $self, %params ) = @_;
+        return Dumper $params{params};
+    }
+}
 
 ### SETUP ###
 
@@ -103,8 +115,8 @@ my $group = Miril::Group->new(
 
 my %publisher_options = (
 	posts       => \@posts,
-	template    => WPS_Test::Template->new,
 	output_path => $dir,
+    template    => Miril::Test::Template->new,
 	rebuild     => 1,
 );
 

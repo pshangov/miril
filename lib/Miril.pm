@@ -27,8 +27,6 @@ use List::MoreUtils qw(apply);
 
 use Mouse;
 
-our $VERSION = '0.008';
-
 has 'base_dir' =>
 (
     is         => 'ro',

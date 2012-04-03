@@ -19,7 +19,6 @@ use Data::AsObject qw(dao);
 use Data::Page;
 use Miril;
 use Miril::Exception;
-use Miril::CGI::Application::Theme::Flashyweb;
 use Miril::CGI::Application::View;
 use Miril::CGI::Application::InputValidator;
 use Miril::Publisher;

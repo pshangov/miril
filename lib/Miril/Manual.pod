@@ -1,10 +1,8 @@
 # PODNAME: Miril::Manual
 
+# ABSTRACT: Why and how to use Miril, the static content management sytem.
+
 =pod
-
-=head1 NAME
-
-Miril::Manual - Why and how to use Miril, the static content management sytem.
 
 =head1 WHAT IS MIRIL
 

@@ -21,8 +21,6 @@ use Data::Dumper::Concise   qw(Dumper);
 use List::Util              qw(first);
 use Miril::List;
 
-our $VERSION = '0.007';
-
 has 'posts' => 
 (
 	is      => 'ro',
