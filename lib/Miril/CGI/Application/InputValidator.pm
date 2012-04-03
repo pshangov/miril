@@ -1,5 +1,7 @@
 package Miril::CGI::Application::InputValidator;
 
+# ABSTRACT: Form input validator for web UI
+
 use strict;
 use warnings;
 use autodie;

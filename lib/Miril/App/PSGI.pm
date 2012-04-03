@@ -1,5 +1,7 @@
 package Miril::App::PSGI;
 
+# ABSTRACT: Miril web UI as a PSGI application
+
 use strict;
 use warnings;
 use autodie;

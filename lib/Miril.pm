@@ -1,5 +1,7 @@
 package Miril;
 
+# ABSTRACT: Static content management system
+
 use warnings;
 use strict;
 use autodie;

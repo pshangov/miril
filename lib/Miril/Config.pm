@@ -1,5 +1,7 @@
 package Miril::Config;
 
+# ABSTRACT: Configuration interface
+
 use strict;
 use warnings;
 

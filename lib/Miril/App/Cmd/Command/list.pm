@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::list;
 
+# ABSTRACT: List posts
+
 use strict;
 use warnings;
 use autodie;

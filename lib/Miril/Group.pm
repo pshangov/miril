@@ -1,5 +1,7 @@
 package Miril::Group;
 
+# ABSTRACT: Group definition object
+
 use strict;
 use warnings;
 

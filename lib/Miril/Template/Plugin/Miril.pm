@@ -1,5 +1,7 @@
 package Miril::Template::Plugin::Miril;
 
+# ABSTRACT: Template Toolkit plugin with Miril-related utility functions
+
 use strict;
 use warnings;
 

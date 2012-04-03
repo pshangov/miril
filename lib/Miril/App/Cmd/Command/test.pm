@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::test;
 
+# ABSTRACT: Check that Miril can be loaded and exit
+
 use strict;
 use warnings;
 

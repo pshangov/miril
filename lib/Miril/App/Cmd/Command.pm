@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command;
 
+# ABSTRACT: Base class for Miril commands
+
 use strict;
 use warnings;
 

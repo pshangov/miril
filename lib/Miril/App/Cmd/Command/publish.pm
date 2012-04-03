@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::publish;
 
+# ABSTRACT: Publish the site
+
 use strict;
 use warnings;
 use autodie;

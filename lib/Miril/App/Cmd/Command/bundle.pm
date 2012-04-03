@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::bundle;
 
+# ABSTRACT: Bundle Miril web UI into a single file
+
 use strict;
 use warnings;
 use autodie;

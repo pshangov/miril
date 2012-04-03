@@ -1,5 +1,7 @@
 package Miril::Publisher;
 
+# ABSTRACT: Publish content to HTML
+
 use warnings;
 use strict;
 

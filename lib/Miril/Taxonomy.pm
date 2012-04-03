@@ -1,5 +1,7 @@
 package Miril::Taxonomy;
 
+# ABSTRACT: Site metadata
+
 use Mouse;
 use Ref::Explicit qw(arrayref);
 use Miril::TypeLib qw(HashRefOfAuthor HashRefOfTopic HashRefOfType);

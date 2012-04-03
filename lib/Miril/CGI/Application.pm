@@ -1,5 +1,7 @@
 package Miril::CGI::Application;
 
+# ABSTRACT: Web UI
+
 use strict;
 use warnings;
 use autodie;

@@ -1,5 +1,7 @@
 package Miril::Store;
 
+# ABSTRACT: Interface to the data in a site
+
 use strict;
 use warnings;
 

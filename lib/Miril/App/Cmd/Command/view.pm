@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::view;
 
+# ABSTRACT: Display content of an individual post
+
 use strict;
 use warnings;
 use autodie;

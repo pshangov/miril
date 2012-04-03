@@ -1,5 +1,7 @@
 package Miril::Type;
 
+# ABSTRACT: Type object
+
 use strict;
 use warnings;
 

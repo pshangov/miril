@@ -1,5 +1,7 @@
 package Miril::TypeLib;
 
+# ABSTRACT: Library of Mouse type constraints
+
 use strict;
 use warnings;
 

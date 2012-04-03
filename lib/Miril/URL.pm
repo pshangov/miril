@@ -1,5 +1,7 @@
 package Miril::URL;
 
+# ABSTRACT: URL generation functions
+
 use strict;
 use warnings;
 

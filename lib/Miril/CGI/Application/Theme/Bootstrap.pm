@@ -1,5 +1,7 @@
 package Miril::CGI::Application::Theme::Bootstrap;
 
+# ABSTRACT: Web UI theme based on Twitter Bootstrap
+
 use strict;
 use warnings;
 

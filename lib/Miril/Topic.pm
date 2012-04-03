@@ -1,5 +1,7 @@
 package Miril::Topic;
 
+# ABSTRACT: Topic object
+
 use strict;
 use warnings;
 

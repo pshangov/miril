@@ -1,5 +1,7 @@
 package Miril::Cache;
 
+# ABSTRACT: Cache posts for speedier loading
+
 use Mouse;
 use Miril::Post;
 use Storable ();

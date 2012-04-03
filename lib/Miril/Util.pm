@@ -1,5 +1,7 @@
 package Miril::Util;
 
+# ABSTRACT: Miscellanous utility functions
+
 use strict;
 use warnings;
 use autodie;

@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::server;
 
+# ABSTRACT: Run the web UI on a local server
+
 use strict;
 use warnings;
 use autodie;

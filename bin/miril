@@ -1,5 +1,7 @@
 #!perl
 
+# PODNAME: miril
+
 use strict;
 use warnings;
 

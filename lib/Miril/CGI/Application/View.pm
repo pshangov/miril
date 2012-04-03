@@ -1,5 +1,7 @@
 package Miril::CGI::Application::View;
 
+# ABSTRACT: Interface to web UI templating backends
+
 use strict;
 use warnings;
 use autodie;

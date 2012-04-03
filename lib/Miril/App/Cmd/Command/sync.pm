@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::sync;
 
+# ABSTRACT: Upload the website to a remote server
+
 use strict;
 use warnings;
 

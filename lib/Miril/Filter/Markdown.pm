@@ -1,5 +1,7 @@
 package Miril::Filter::Markdown;
 
+# ABSTRACT: Markdown support for editing Miril content
+
 use strict;
 use warnings;
 use autodie;

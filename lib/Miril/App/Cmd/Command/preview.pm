@@ -1,5 +1,7 @@
 package Miril::App::Cmd::Command::preview;
 
+# ABSTRACT: Preview the generated website on a local webserver
+
 use strict;
 use warnings;
 

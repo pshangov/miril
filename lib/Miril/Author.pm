@@ -1,5 +1,7 @@
 package Miril::Author;
 
+# ABSTRACT: Author object
+
 use strict;
 use warnings;
 

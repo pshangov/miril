@@ -1,5 +1,7 @@
 package Miril::Template;
 
+# ABSTRACT: Wrapper around Template Toolkit
+
 use strict;
 use warnings;
 use Mouse;

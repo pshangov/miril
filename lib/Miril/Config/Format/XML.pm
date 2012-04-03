@@ -1,5 +1,7 @@
 package Miril::Config::Format::XML;
 
+# ABSTRACT: XML format support for Miril configuration files
+
 use strict;
 use warnings;
 

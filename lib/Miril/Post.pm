@@ -1,5 +1,7 @@
 package Miril::Post;
 
+# ABSTRACT: Post object
+
 use strict;
 use warnings;
 

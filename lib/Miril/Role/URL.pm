@@ -1,5 +1,7 @@
 package Miril::Role::URL;
 
+# ABSTRACT: Mouse role to provide URL support to list and post objects
+
 use strict;
 use warnings;
 

@@ -1,5 +1,7 @@
 package Miril::Config::Format::Config::General;
 
+# ABSTRACT: Config::General format support for Miril configuration files
+
 use strict;
 use warnings;
 

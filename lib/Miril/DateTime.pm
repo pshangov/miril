@@ -1,5 +1,7 @@
 package Miril::DateTime;
 
+# ABSTRACT: DateTime object
+
 use strict;
 use warnings;
 

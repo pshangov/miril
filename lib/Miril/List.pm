@@ -1,5 +1,7 @@
 package Miril::List;
 
+# ABSTRACT: Post collection object
+
 use strict;
 use warnings;
 

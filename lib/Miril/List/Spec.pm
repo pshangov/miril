@@ -1,5 +1,7 @@
 package Miril::List::Spec;
 
+# ABSTRACT: List specification object
+
 use strict;
 use warnings;
 

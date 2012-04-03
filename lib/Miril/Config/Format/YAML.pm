@@ -1,5 +1,7 @@
 package Miril::Config::Format::YAML;
 
+# ABSTRACT: YAML format support for Miril configuration files
+
 use strict;
 use warnings;
 
