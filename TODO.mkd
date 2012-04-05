@@ -1,17 +1,17 @@
 MIRIL TODO
 ==========
 
-CPAN release
-------------
+Extensibility
+-------------
 
-1. Update documentation for lists
-2. Switch to Dist::Zilla
+1. Configurable taxonomy
+2. Pluggable post-publishing actions
 
 Public release
 --------------
 
-1. `init` command: create a sample website
-2. `fatpack` command: bundle into a single file
+1. 'init' command: create a sample website
+2. 'fatpack' command: bundle into a single file
 
 Design
 ------
@@ -27,3 +27,11 @@ Unicode
 1. Change TT output option to binmode
 2. Change template files to utf8
 3. Decode on `new_from_file`, utf8-encode on output
+
+Next version
+------------
+
+1. Messing with the UI
+2. Form validation improvements
+3. UI tests
+4. Multiple sections in body
