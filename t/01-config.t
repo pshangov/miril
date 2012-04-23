@@ -5,12 +5,12 @@ use File::Spec;
 use Module::Load;
 use Data::Dumper;
 
-use Test::More tests => 3;
+use Test::More tests => 1;
 
 my %formats = (
 	conf => 'Config::General',
-	yaml => 'YAML',
-	xml  => 'XML',
+    # yaml => 'YAML',
+    # xml  => 'XML',
 );
 
 foreach my $format ( keys %formats )

@@ -20,7 +20,7 @@ has 'options' =>
     isa      => 'HashRef',
     required => 1,
     traits   => ['Hash'],
-    handles  => { has_option => 'exists', get_option => 'get' }
+    handles  => { has_option => 'exists', option => 'get' }
 );
 
 sub process {

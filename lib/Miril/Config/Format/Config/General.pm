@@ -6,10 +6,8 @@ use strict;
 use warnings;
 
 use Config::General;
-use Miril::Topic;
 use Miril::Type;
 use Miril::List::Spec;
-use File::Spec;
 use Path::Class qw(file);
 use Class::Load qw(load_class);
 

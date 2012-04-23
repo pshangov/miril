@@ -3,21 +3,9 @@ package Miril::Taxonomy;
 # ABSTRACT: Site metadata
 
 use Mouse;
+use List::Util qw(first);
 use Ref::Explicit qw(arrayref);
 use Miril::TypeLib qw(HashRefOfAuthor HashRefOfTopic HashRefOfType);
-
-has 'authors' => (
-	is      => 'ro',
-	isa     => HashRefOfAuthor,
-	traits  => ['Hash'],
-	handles => { 
-        get_author_by_id => 'get', 
-        get_authors      => 'elements', 
-        has_authors      => 'count' 
-    },
-    coerce  => 1,
-    default => sub {[]},
-);
 
 has 'types' => (
 	is      => 'ro',
@@ -31,17 +19,13 @@ has 'types' => (
     default => sub {[]},
 );
 
-has 'topics' => (
+has 'fields' => (
 	is      => 'ro',
-	isa     => HashRefOfTopic,
+	isa     => 'HashRef[Object]',
 	traits  => ['Hash'],
-	handles => { 
-        get_topic_by_id => 'get', 
-        get_topics      => 'values', 
-        has_topics      => 'count' 
-    },
+	handles => { field => 'get', fields => 'values' },
     coerce  => 1,
-    default => sub {[]},
+    default => sub {{}},
 );
 
 sub get_topics_by_id
@@ -50,5 +34,11 @@ sub get_topics_by_id
     return arrayref $self->get_topic_by_id(@$ids);
 }
 
-1;
+sub get_field_named
+{
+	my ($self, $name) = @_;
+	return first { $_->name eq $name } $self->fields;
 
+}
+
+1;

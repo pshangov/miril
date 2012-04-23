@@ -7,29 +7,33 @@ use Test::Most;
 
 use Path::Class qw(file);
 use File::Temp  qw(tempdir);
-
+use Miril::Field::Option;
 use Miril::Post;
 use Miril::Type;
-use Miril::Author;
-use Miril::Topic;
 use Miril::DateTime;
 use Miril::Taxonomy;
 
 ### PREPARE ###
 
-my @authors = map { Miril::Author->new(
-	id   => $_->[0],
-	name => $_->[1],
-)} [ larry => 'Larry Wall' ], [ damian => 'Damian Conway'];
+my $authors = Miril::Field::Option->new(
+	id      => 'author',
+	name    => 'Author',
+	options => {
+		larry  => 'Larry Wall',
+		damian => 'Damian Conway',
+	},
+);
 
-my %authors = map { $_->id => $_ } @authors;
-
-my @topics = map { Miril::Topic->new(
-	id   => $_->[0],
-	name => $_->[1],
-)} [ perl => 'Perl' ], [ python => 'Python'], [ ruby => 'Ruby' ];
-
-my %topics = map { $_->id => $_ } @topics;
+my $topics = Miril::Field::Option->new(
+	id       => 'topic',
+	name     => 'author',
+	multiple => 1,
+	options  => {
+		perl   => 'Perl',
+		python => 'Python',
+		ruby   => 'Ruby',
+	},
+);
 
 my $type = Miril::Type->new(
 	id       => 'news',
@@ -39,9 +43,8 @@ my $type = Miril::Type->new(
 );
 
 my $taxonomy = Miril::Taxonomy->new( 
-    authors => \%authors, 
-    topics  => \%topics, 
-    types   => { news => $type }, 
+    types  => { news => $type }, 
+	fields => { author => $authors, topic => $topics },
 );
 
 ### PRIVATE FUNCTIONS ###
@@ -149,8 +152,8 @@ my %cache = (
     modified    => Miril::DateTime->from_epoch($modified_epoch),
     published   => Miril::DateTime->from_ymdhm($expected{published_ymdhm}),
     type        => $type,
-    author      => $authors{larry},
-    topics      => [$topics{perl}],
+    author      => $authors->option('larry'),
+    topics      => [$topics->option('perl')],
     source_path => $source_file,
 
 );

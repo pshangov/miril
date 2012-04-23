@@ -11,6 +11,7 @@ use Path::Class     qw(file dir);
 use List::Util      qw(first);
 use Class::Load     qw(load_class);
 use Hash::MoreUtils qw(slice_def);
+use Carp            qw(Croak);
 use Miril::DateTime;
 
 ### ID ###
@@ -61,22 +62,11 @@ has 'teaser' =>
 
 ### METADATA ###
 
-has 'author' => 
-(
-	is            => 'ro',
-	isa           => Author,
-	documentation => 'Post author',
-);
-
-has 'topics' => 
-(
-	is            => 'ro',
-    isa           => ArrayRefOfTopic,
-    #weak_ref     => 1,
-    default       => sub { [] },
-    traits        => ['Array'],
-    handles       => { get_topics => 'elements' },
-	documentation => 'List of Miril::Topic objects for this post',
+has 'fields' => (
+	is      => 'ro',
+	isa     => 'HashRef[Object]',
+	traits  => ['Hash'],
+	handles => { field            => 'get' },
 );
 
 has 'type' => 
@@ -146,7 +136,7 @@ sub new_from_file
 	# expand metadata into objects
 	my $author = $taxonomy->get_author_by_id($meta{author}) if $meta{author};
 	my $topics = $taxonomy->get_topics_by_id($meta{topics}) if @{$meta{topics}};
-	my $type   = $taxonomy->get_type_by_id($meta{type})     if $meta{type};
+	my $type   = $taxonomy->get_type_by_id($meta{type}) if $meta{type};
 
 	# get times
 	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}) : undef;
@@ -305,31 +295,32 @@ sub _parse_source
 
 sub _parse_meta 
 {
-	my ($meta) = @_;
+	my ($meta, $taxonomy) = @_;
 
 	my @lines = split /\n/, $meta;
 	my %meta;
 	
 	foreach my $line (@lines) 
     {
-		if ($line =~ /^(Published|Title|Type|Author|Status):\s+(.+)/) 
-        {
-			my $name = lc $1;
-			my $value = $2;
-			$value  =~ s/\s+$//;
-			$meta{$name} = $value;
-		} 
-        elsif ($line =~ /Topics:\s+(.+)/) 
-        {
-			my $value = lc $1;
-			$value  =~ s/\s+$//;
-			my @values = split /\s+/, $value;
-			$meta{topics} = \@values;
+		if ( $line =~ /^([^:]+):\s+(.+)/ )
+		{
+			my ($name, $value) = ($1, $2);
+			
+			if ( my $field = $taxonomy->get_field_hamed($name) )
+			{
+				$meta{$field->id} = $field->process($value);
+			}
+			else
+			{
+				croak "No field named '$name' deifned.";
+			}
+		}
+		else
+		{
+			croak "Failed parsing metadata statement '$line'.";
 		}
 	}
 	
-	$meta{topics} = [] unless defined $meta{topics};
-
 	return %meta;
 }
 

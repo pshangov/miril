@@ -26,12 +26,6 @@ has 'required' => (
     isa => 'Bool',
 );
 
-has 'types' => (
-    is        => 'ro',
-    isa       => 'ArrayRef[Str]',
-    predicate => 'has_defined_types',
-);
-
 has 'group_callback' => 
 (
     is        => 'ro',
