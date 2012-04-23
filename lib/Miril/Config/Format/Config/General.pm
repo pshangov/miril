@@ -6,12 +6,12 @@ use strict;
 use warnings;
 
 use Config::General;
-use Ref::List qw(list);
 use Miril::Topic;
 use Miril::Type;
 use Miril::List::Spec;
 use File::Spec;
 use Path::Class qw(file);
+use Class::Load qw(load_class);
 
 use Mouse;
 extends 'Miril::Config';
@@ -20,7 +20,10 @@ around 'BUILDARGS' => sub
 {
 	my ($orig, $class, $filename) = @_;
 
-	my %cfg = Config::General->new($filename)->getall;
+	my %cfg = Config::General->new(
+		-ConfigFile => $filename,
+		-AutoTrue   => 1,
+	)->getall;
 
 	if ($cfg{topic})
 	{
@@ -47,6 +50,17 @@ around 'BUILDARGS' => sub
         }  keys %{ $cfg{list} };
 		$cfg{lists} = \@lists;
 		delete $cfg{list};
+	}
+
+	if ($cfg{field})
+	{
+		my @fields = map {
+            my $class = 'Miril::Field::' . delete $cfg{field}{$_}{class};
+            load_class $class;
+            $class->new( id => $_, %{ $cfg{field}{$_} } )
+        }  keys %{ $cfg{field} };
+		$cfg{fields} = \@fields;
+		delete $cfg{field};
 	}
 
 	### ADD BASE DIR INFO ###

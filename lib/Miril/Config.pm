@@ -187,6 +187,12 @@ has 'sync' =>
     isa => 'Str',
 );
 
+has 'fields' =>
+(
+    is  => 'ro',
+    isa => 'ArrayRef[Object]',
+);
+
 sub _build_groups
 {
 	my @groups = map { Miril::Group->new(%$_) }
