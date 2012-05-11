@@ -3,16 +3,14 @@ use warnings;
 
 use Test::Most;
 
-use Miril::Cache    qw();
-use Miril::Post     qw();
-use Miril::DateTime qw();
-use Miril::Type     qw();
-use Miril::Author   qw();
-use Miril::Topic    qw();
-use Miril::Taxonomy qw();
-use Path::Class     qw(file dir);
-use File::Temp      qw(tempfile);
-use Devel::Dwarn    qw(Dwarn);
+use Miril::Cache;
+use Miril::Post;
+use Miril::DateTime;
+use Miril::Type;
+use Miril::Taxonomy;
+use Miril::Field::Option;
+use Path::Class  qw(file dir);
+use File::Temp   qw(tempfile);
 
 ### SETUP ###
 
@@ -29,14 +27,29 @@ my $type = Miril::Type->new(
     template => 'news.tt',
 );
 
-my $author = Miril::Author->new( id => 'larry', name => 'Larry Wall' );
-my $topic = Miril::Topic->new( id => 'perl', name => 'Perl' );
+my $author = Miril::Field::Option->new(
+	id      => 'author',
+	name    => 'Author',
+	options => { larry  => 'Larry Wall' },
+);
+
+my $topic = Miril::Field::Option->new(
+	id       => 'topic',
+	name     => 'Topics',
+	multiple => 1,
+	options  => { perl   => 'Perl' },
+);
+
 my $now = Miril::DateTime->now;
 
 my $taxonomy = Miril::Taxonomy->new(
-    authors => { larry => $author },
-    topics  => { perl  => $topic  },
-    types   => { news  => $type   },
+    types  => { news  => $type   },
+    fields => { author => $author, topic => $topic },
+);
+
+my %fields = (
+    author => $taxonomy->field('author')->process('larry'),
+    topic  => $taxonomy->field('topic')->process('perl'),
 );
 
 my $post = Miril::Post->new(
@@ -44,10 +57,10 @@ my $post = Miril::Post->new(
     title       => 'Aenean Eu Lorem',
     modified    => $now,
     published   => $now,
-    type        => $type,
-    author      => $author,
     topics      => [$topic],
     source_path => $source_path,
+    type        => $type,
+    fields      => \%fields,
 );
 
 ### FRESH CACHE ###
@@ -76,8 +89,7 @@ my $serialized = { aenean_eu_lorem =>
         modified    => $now,
         published   => $now,
         type        => $type,
-        author      => $author,
-        topics      => [$topic],
+        fields      => \%fields,
         source_path => $source_path,
     }
 };

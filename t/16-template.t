@@ -6,10 +6,9 @@ use rlib;
 use Test::Most;
 use Miril::Template;
 use Miril::DateTime;
-use Miril::Author;
-use Miril::Topic;
 use Miril::Type;
 use Miril::Post;
+use Miril::Config::Format::Config::General;
 use Module::Load;
 use File::Temp qw(tempfile);
 
@@ -58,18 +57,7 @@ Aenean eu lorem at odio placerat fringilla.
 Cras faucibus velit quis dui.
 EoSource
 
-
 my $now = Miril::DateTime->now;
-
-my $author = Miril::Author->new(
-	id   => 'larry',
-	name => 'Larry Wall',
-);
-
-my @topics = map { Miril::Topic->new(
-	id   => $_->[0],
-	name => $_->[1],
-)} [ perl => 'Perl' ], [ python => 'Python'];
 
 my $type = Miril::Type->new(
 	id       => 'news',
@@ -78,16 +66,14 @@ my $type = Miril::Type->new(
 	template => 'some_template',
 );
 
-
 my $post = Miril::Post->new(
     id        => 'aenean_eu_lorem',
     title     => 'Aenean Eu Lorem',
-    author    => $author,
-    topics    => \@topics,
     type      => $type,
     source    => $source,
     status    => 'published',
     published => $now,
+    #fields    => { author => $author, topic => \@topics },
 );
 
 isa_ok ($post, 'Miril::Post');
@@ -102,24 +88,16 @@ my $tt_output = $tt->load(
 
 eq_or_diff ($tt_output, $output, 'template output');
 
-my %formats = (
-	conf => 'Config::General',
-	yaml => 'YAML',
-	xml  => 'XML',
+my $config_filename = File::Spec->catfile( 
+    $FindBin::Bin, 'config', 'miril.conf',
 );
 
-foreach my $format ( keys %formats )
-{
-	my $class = "Miril::Config::Format::" . $formats{$format};
-	Module::Load::load($class);
-	my $config_filename = File::Spec->catfile( 
-		$FindBin::Bin, 'config', 'miril.' . $format,
-	);
-
-    my $config = $class->new($config_filename);
-	my $options = $config->template;
+my $config = Miril::Config::Format::Config::General->new($config_filename);
+my $options = $config->template;
     
-    is_deeply( $options, { EVAL_PERL => 1, VARIABLES => { root => '/' } }, "template options from $format config file" );
-}
+is_deeply( 
+    $options, { EVAL_PERL => 1, VARIABLES => { root => '/' } }, 
+    "template options from config file" 
+);
 
 done_testing;

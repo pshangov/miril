@@ -256,6 +256,11 @@ sub publish
 	{
 		$self->write($item->path, $self->render($item))
 	}
+
+    foreach my $plugin ($self->plugins_with('Miril::Role::AfterPublish'))
+    {
+        $plugin->after_publish;
+    }
 }
 
 no Mouse;

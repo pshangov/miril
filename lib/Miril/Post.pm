@@ -10,8 +10,8 @@ use Miril::TypeLib  qw(TextId Str Author ArrayRefOfTopic Type Status DateTime Fi
 use Path::Class     qw(file dir);
 use List::Util      qw(first);
 use Class::Load     qw(load_class);
-use Hash::MoreUtils qw(slice_def);
-use Carp            qw(Croak);
+use Hash::MoreUtils qw(slice_def slice_grep);
+use Carp            qw(croak);
 use Miril::DateTime;
 
 ### ID ###
@@ -64,9 +64,9 @@ has 'teaser' =>
 
 has 'fields' => (
 	is      => 'ro',
-	isa     => 'HashRef[Object]',
+	isa     => 'HashRef',
 	traits  => ['Hash'],
-	handles => { field            => 'get' },
+	handles => { field => 'get', has_field => 'exists' },
 );
 
 has 'type' => 
@@ -131,24 +131,18 @@ sub new_from_file
 	my ($source, $body, $teaser, $meta) = _parse_source_file($file);
     
 	# parse metadata
-	my %meta = _parse_meta($meta);
+	my %meta = _parse_meta($meta, $taxonomy);
 
 	# expand metadata into objects
-	my $author = $taxonomy->get_author_by_id($meta{author}) if $meta{author};
-	my $topics = $taxonomy->get_topics_by_id($meta{topics}) if @{$meta{topics}};
-	my $type   = $taxonomy->get_type_by_id($meta{type}) if $meta{type};
-
-	# get times
-	my $published = $meta{'published'} ? Miril::DateTime->from_string($meta{'published'}) : undef;
+	my $type      = $taxonomy->type($meta{type});
+	my $published = $meta{'published'} ? Miril::DateTime->from_string( $meta{'published'} ) : undef;
     my $modified  = Miril::DateTime->from_epoch($file->stat->mtime);
-
-    my $id = $file->basename;
+    my $id        = $file->basename;
 
     return $class->new( slice_def {
         id          => $id,
 		title       => $meta{title},
-		author      => $author,
-        topics      => $topics,
+        fields      => $meta{fields},
 		type        => $type,
 		body        => $body,
 		teaser      => $teaser,
@@ -172,11 +166,9 @@ sub new_from_params
 
     my %params = %$params;
 
-    my $author = $taxonomy->get_author_by_id($params{author}) if $params{author};
-	my $topics = $taxonomy->get_topics_by_id($params{topics}) if $params{topics};
-	my $type   = $taxonomy->get_type_by_id($params{type})     if $params{type};
-
+	my $type = $taxonomy->type($params{type}) if $params{type};
     my $source_path = file($data_path, $params{id});
+    my ($body, $teaser) = _parse_source($params{source});
 
 	my $published;
 
@@ -187,13 +179,17 @@ sub new_from_params
 			: Miril::DateTime->now;
 	}
 
-    my ($body, $teaser) = _parse_source($params{source});
+    my %fields;
+
+    foreach my $key ( keys %params ) {
+        next unless $type->has_field($key);
+        $fields{$key} = $taxonomy->field($key)->process($params{$key});
+    }
 
 	return $class->new( slice_def {
 		id          => $params{id},
 		title       => $params{title},
-		author      => $author,
-		topics      => $topics,
+        fields      => \%fields,
 		type        => $type,
 		source      => $params{source},
         body        => $body,
@@ -306,9 +302,13 @@ sub _parse_meta
 		{
 			my ($name, $value) = ($1, $2);
 			
-			if ( my $field = $taxonomy->get_field_hamed($name) )
+            if ( $name =~ /^(Type|Title|Published)$/ ) 
+            {
+                $meta{lc($name)} = $value;
+            }
+			elsif ( my $field = $taxonomy->get_field_named($name) )
 			{
-				$meta{$field->id} = $field->process($value);
+				$meta{fields}{$field->id} = $field->process($value);
 			}
 			else
 			{
@@ -320,7 +320,16 @@ sub _parse_meta
 			croak "Failed parsing metadata statement '$line'.";
 		}
 	}
-	
+
+	if ( $meta{type} and my $type = $taxonomy->type($meta{type}) ) {
+		foreach my $key ( keys %{ $meta{fields} }) {
+			delete $meta{fields}{$key} unless $type->has_field($key);
+		}
+	} else {
+		croak "Could not load type '$meta{type}'";
+	}
+
+
 	return %meta;
 }
 

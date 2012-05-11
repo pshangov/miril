@@ -96,6 +96,18 @@ has 'publisher' =>
 
 );
 
+has 'plugins' =>
+(
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+    traits     => ['Hash'],
+    handles    => { 
+        all_plugins => 'values',
+        get_plugin  => 'get',
+    },
+);
+
 sub _build_base_dir
 {
     return dir('.');
@@ -187,6 +199,30 @@ sub _build_template
         PLUGIN_BASE  => 'Miril::Template::Plugin',
         $self->config->template_config,
     });
+}
+
+sub _build_plugins
+{
+    my $self = shift;
+
+    my %plugins;
+
+    while ( my ( $name, $config ) = $self->config->plugin_specs )
+    {
+        my $class = "Miril::Plugin::$class";
+        load_class ($class);
+        my $plugin = $class->new($config);
+        $plugins{$name} = $plugin;
+    }
+
+    return \%plugins;
+}
+
+sub plugins_with
+{
+    my ( $self, $role ) = shift;
+
+    return grep { $_->DOES($role) } $self->all_plugins;
 }
 
 1;

@@ -55,10 +55,8 @@ sub search
 		{
 			my $title_rx = $params{'title'};
 			next if $params{'title'}  && $post->title      !~ /$title_rx/i;
-			next if $params{'author'} && $post->author->id ne $params{'author'};
 			next if $params{'type'}   && $post->type->id   ne $params{'type'};
 			next if $params{'status'} && $post->status     ne $params{'status'};
-			next if $params{'topic'}  && !first {$_->id eq $params{'topic'}} $post->get_topics;
 			take $post;
 		}
 	};
@@ -91,7 +89,7 @@ sub save
 	}	
 
 	# update the data file
-	my $content = _generate_content($post);
+	my $content = _generate_content($post, $self->taxonomy);
 
 	my $fh = $post->source_path->open('>') or die $!;
 	$fh->print($content)                   or die $!;
@@ -116,16 +114,27 @@ sub get_sorted_posts
 
 sub _generate_content
 {
-	my $post = shift;
+	my ( $post, $taxonomy ) = @_;
 	my $content;
 
-	$content .= "Title: "     . $post->title          . "\n";
-	$content .= "Type: "      . $post->type->id       . "\n";
-	$content .= "Author: "    . $post->author->id     . "\n" if $post->author;
-	$content .= "Published: " . $post->published->as_ymdhm . "\n" if $post->published;
-	$content .= "Topics: "    . join( " ", map { $_->id } $post->get_topics ) . "\n\n";
+    my $template = "%s: %s\n";
 
-	$content .= $post->source;
+	$content .= sprintf( $template, "Title", $post->title );
+	$content .= sprintf( $template, "Type", $post->type->id );
+	$content .= sprintf( $template, "Published", $post->published->as_ymdhm ) if $post->published;
+
+    foreach my $field_id ( $post->type->field_list ) {
+        
+        my $field = $taxonomy->field($field_id);
+
+        $content .= sprintf( $template, 
+            $field->name, 
+            $field->serialize( $post->field($field_id) ),
+        ) if $post->has_field( $field_id );
+
+    }
+
+	$content .= "\n" . $post->source;
 
 	return $content;
 }
@@ -148,7 +157,7 @@ sub _sort_posts
         }
     }
 
-    @not_published = sort { $b->modified->as_epoch <=> $a->modified->as_epoch   } @not_published;
+    @not_published = sort { $b->modified->as_epoch  <=> $a->modified->as_epoch  } @not_published;
     @published     = sort { $b->published->as_epoch <=> $a->published->as_epoch } @published;
 
     return @not_published, @published;

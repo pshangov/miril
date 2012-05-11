@@ -1,11 +1,18 @@
 MIRIL TODO
 ==========
 
-Extensibility
--------------
+Plugins
+-------
 
-1. Configurable taxonomy
-2. Pluggable post-publishing actions
+1. Plugin options in configuration file
+   - module name
+   - configuration options
+2. Plugin manager in Miril.pm
+   - `get_plugin` - lazily load plugin
+   - `get_plugins_with` - lazily load all plugins implementing role
+3. Miril::Plugin::Role::AfterPublish
+4. Change Miril::Publish to execute `after_publish` actions
+
 
 Public release
 --------------

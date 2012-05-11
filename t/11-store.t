@@ -4,9 +4,7 @@ use warnings;
 use Test::Most;
 use Path::Class qw(file dir);
 use File::Temp  qw(tempdir);
-
-use Miril::Author;
-use Miril::Topic;
+use Miril::Field::Option;
 use Miril::Type;
 use Miril::Taxonomy;
 use Miril::DateTime;
@@ -20,27 +18,37 @@ use Miril::Store;
 
 ### TAXONOMY ###
 
-my %authors = map { $_->[0] => Miril::Author->new(
-	id   => $_->[0],
-	name => $_->[1],
-)} [ larry => 'Larry Wall' ], [ damian => 'Damian Conway'];
+my $authors = Miril::Field::Option->new(
+	id      => 'author',
+	name    => 'Author',
+	options => {
+		larry  => 'Larry Wall',
+		damian => 'Damian Conway',
+	},
+);
 
-my %topics = map { $_->[0] => Miril::Topic->new(
-	id   => $_->[0],
-	name => $_->[1],
-)} [ perl => 'Perl' ], [ python => 'Python'], [ ruby => 'Ruby' ];
+my $topics = Miril::Field::Option->new(
+	id       => 'topic',
+	name     => 'Topics',
+	multiple => 1,
+	options  => {
+		perl   => 'Perl',
+		python => 'Python',
+		ruby   => 'Ruby',
+	},
+);
 
 my $type = Miril::Type->new(
 	id       => 'news',
 	name     => 'News',
 	location => 'somewhere',
 	template => 'some_template',
+	fields   => [qw(topic author)],
 );
 
 my $taxonomy = Miril::Taxonomy->new( 
-    authors => \%authors, 
-    topics  => \%topics, 
-    types   => { news => $type },
+    types  => { news => $type },
+    fields => { author => $authors, topic => $topics },
 );
 
 ### CACHE ###
@@ -56,8 +64,10 @@ my %posts = (
         modified    => $now,
         published   => $now,
         type        => $type,
-        author      => $authors{larry},
-        topics      => [$topics{perl}],
+        fields      => {
+            author => $taxonomy->field('author')->process('larry'),
+            topic  => $taxonomy->field('topic')->process('perl'),
+        },
         source_path => $dummy_file, 
     ),
     lorem_ipsum_dolor => Miril::Post->new(
@@ -66,8 +76,10 @@ my %posts = (
         modified    => $now,
         published   => $now,
         type        => $type,
-        author      => $authors{damian},
-        topics      => [$topics{python}],
+        fields      => {
+            author => $taxonomy->field('author')->process('damian'),
+            topic  => $taxonomy->field('topic')->process('python'),
+        },
         source_path => $dummy_file, 
     ),
 );
@@ -109,8 +121,6 @@ isa_ok ( $post_from_store->type, 'Miril::Type', "post type" );
 ### SEARCH ###
 
 my @results_title  = map { $_->id } $store->search( title  => 'aenean' );
-my @results_author = map { $_->id } $store->search( author => 'damian' );
-my @results_topic  = map { $_->id } $store->search( topic  => 'perl' );
 
 my @results_type   = sort map { $_->id } $store->search( type  => 'news' );
 my @results_limit  = $store->search( limit => 1 );
@@ -124,13 +134,10 @@ my @results_complex = map { $_->id } $store->search(
 );
 
 my @results_not_found = map { $_->id } $store->search(
-    title  => 'aenean',
-    author => 'damian',
+    title  => 'kaboom',
 );
 
 is_deeply ( \@results_title,     ['aenean_eu_lorem'],                     'search by id' );
-is_deeply ( \@results_author,    ['lorem_ipsum_dolor'],                   'search by author' );
-is_deeply ( \@results_topic,     ['aenean_eu_lorem'],                     'search by topic' );
 is_deeply ( \@results_complex,   ['aenean_eu_lorem'],                     'complex search' );
 is_deeply ( \@results_type,      [qw(aenean_eu_lorem lorem_ipsum_dolor)], 'search by type' );
 is_deeply ( \@results_not_found, [],                                      'search not found' );
@@ -150,9 +157,9 @@ my $date_published = $now->as_ymdhm;
 my $expected_content = <<EndOfSource;
 Title: Aenean Eu Lorem
 Type: news
-Author: larry
 Published: $date_published
 Topics: perl
+Author: larry
 
 Aenean eu lorem at odio placerat fringilla.
 <!-- BREAK -->
@@ -165,13 +172,15 @@ my $post_content = Miril::Post->new(
     modified    => $now,
     published   => $now,
     type        => $type,
-    author      => $authors{larry},
-    topics      => [$topics{perl}],
     source_path => $dummy_file, 
     source      => $source,
+    fields      => {
+        author => $taxonomy->field('author')->process('larry'),
+        topic  => $taxonomy->field('topic')->process('perl'),
+    },
 );
 
-my $content = Miril::Store::_generate_content($post_content);
+my $content = Miril::Store::_generate_content($post_content, $taxonomy);
 
 eq_or_diff($content, $expected_content, 'generate content');
 
@@ -189,7 +198,7 @@ my %params = (
     id     => $id_to_save,
     title  => 'Etiam Rhoncus',
     author => 'larry',
-    topics => ['perl'],
+    topic  => ['perl'],
     type   => 'news',
     status => 'published',
     source => $source_save,
@@ -206,9 +215,9 @@ my $date_saved = $new_post->published->as_ymdhm;
 my $expected_file_content = <<EndOfContent;
 Title: Etiam Rhoncus
 Type: news
-Author: larry
 Published: $date_saved
 Topics: perl
+Author: larry
 
 Etiam rhoncus.
 <!-- BREAK -->

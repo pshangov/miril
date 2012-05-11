@@ -8,6 +8,8 @@ use warnings;
 use Config::General;
 use Miril::Type;
 use Miril::List::Spec;
+use Miril::Field::Text;
+use Ref::Explicit qw(hashref);
 use Path::Class qw(file);
 use Class::Load qw(load_class);
 
@@ -21,6 +23,7 @@ around 'BUILDARGS' => sub
 	my %cfg = Config::General->new(
 		-ConfigFile => $filename,
 		-AutoTrue   => 1,
+		-ForceArray => 1,
 	)->getall;
 
 	if ($cfg{topic})
@@ -34,7 +37,11 @@ around 'BUILDARGS' => sub
 
 	if ($cfg{type})
 	{
-		my @types = map { 
+		my @types = map {
+			if ( my $fields = delete $cfg{type}{$_}{fields} ) {
+				my @fields = split /\s+/, $fields;
+				$cfg{type}{$_}{fields} = \@fields;
+			}
 			Miril::Type->new( id => $_, %{ $cfg{type}{$_} }) 
 		} keys %{ $cfg{type} };
 		$cfg{types} = \@types;
@@ -57,9 +64,16 @@ around 'BUILDARGS' => sub
             load_class $class;
             $class->new( id => $_, %{ $cfg{field}{$_} } )
         }  keys %{ $cfg{field} };
-		$cfg{fields} = \@fields;
+
+        $cfg{fields} = \@fields;
 		delete $cfg{field};
 	}
+
+    if ($cfg{plugin})
+    {
+        $cfg{plugins} = hashref map { $_ => $cfg{plugin}{$_} } keys %{ $cfg{plugin} };
+        delete $cfg{plugin};
+    }
 
 	### ADD BASE DIR INFO ###
 	

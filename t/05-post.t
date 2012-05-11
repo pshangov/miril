@@ -8,6 +8,7 @@ use Test::Most;
 use Path::Class qw(file);
 use File::Temp  qw(tempdir);
 use Miril::Field::Option;
+use Miril::Field::Text;
 use Miril::Post;
 use Miril::Type;
 use Miril::DateTime;
@@ -26,7 +27,7 @@ my $authors = Miril::Field::Option->new(
 
 my $topics = Miril::Field::Option->new(
 	id       => 'topic',
-	name     => 'author',
+	name     => 'Topics',
 	multiple => 1,
 	options  => {
 		perl   => 'Perl',
@@ -40,6 +41,7 @@ my $type = Miril::Type->new(
 	name     => 'News',
 	location => 'news/%(id)s.html',
 	template => 'template',
+	fields   => [qw(author topic)],
 );
 
 my $taxonomy = Miril::Taxonomy->new( 
@@ -51,15 +53,16 @@ my $taxonomy = Miril::Taxonomy->new(
 
 # _parse_meta
 
-my %meta = Miril::Post::_parse_meta(<<EoMeta);
+my %meta = Miril::Post::_parse_meta(<<EoMeta, $taxonomy);
 Title: Funky Stuff
+Type: news
 Author: damian
 Topics: perl python
 EoMeta
 
 is( $meta{title}, 'Funky Stuff', 'meta title' );
-is( $meta{author}, 'damian', 'meta author' );
-is_deeply( $meta{topics}, [qw(perl python)], 'meta topics' );
+is( $meta{fields}{author}->name, 'damian', 'meta author' );
+is_deeply( [ map { $_->name } @{ $meta{fields}{topic} } ], [qw(perl python)], 'meta topics' );
 
 # _parse_source_file
 
@@ -152,10 +155,11 @@ my %cache = (
     modified    => Miril::DateTime->from_epoch($modified_epoch),
     published   => Miril::DateTime->from_ymdhm($expected{published_ymdhm}),
     type        => $type,
-    author      => $authors->option('larry'),
-    topics      => [$topics->option('perl')],
     source_path => $source_file,
-
+    fields      => {
+        author => $taxonomy->field('author')->process('larry'),
+        topic  => $taxonomy->field('topic')->process('perl'),
+    }
 );
 
 my $post_from_cache = Miril::Post->new_from_cache(\%cache);
@@ -166,7 +170,7 @@ my %params = (
     id        => $expected{id},
     title     => $expected{title},
     author    => $expected{author_id},
-    topics    => [qw(perl)],
+    topic     => [qw(perl)],
     type      => $expected{type_id},
     source    => $expected{source},
     status    => 'published',
@@ -186,16 +190,16 @@ while ( my ( $from, $post ) = each %posts_for_testing )
 {
     isa_ok( $post, 'Miril::Post' );
 
-    is( $post->id,         $expected{id},        'id'     . " from $from" );
-    is( $post->title,      $expected{title},     'title'  . " from $from" );
-    is( $post->teaser,     $expected{teaser},    'teaser' . " from $from" );
-    is( $post->body,       $expected{body},      'body'   . " from $from" );
-    is( $post->source,     $expected{source},    'source' . " from $from" );
-    is( $post->status,     $expected{status},    'status' . " from $from" );
-    is( $post->type->id,   $expected{type_id},   'type'   . " from $from" );
-    is( $post->author->id, $expected{author_id}, 'author' . " from $from" );
+    is( $post->id,       $expected{id},        'id'     . " from $from" );
+    is( $post->title,    $expected{title},     'title'  . " from $from" );
+    is( $post->teaser,   $expected{teaser},    'teaser' . " from $from" );
+    is( $post->body,     $expected{body},      'body'   . " from $from" );
+    is( $post->source,   $expected{source},    'source' . " from $from" );
+    is( $post->status,   $expected{status},    'status' . " from $from" );
+    is( $post->type->id, $expected{type_id},   'type'   . " from $from" );
+    is( $post->field('author')->name, $expected{author_id}, 'author' . " from $from" );
 
-    is_deeply( [ map {$_->id} @{$post->topics} ],  [qw(perl)], "topics from $from" );
+    is_deeply( [ map {$_->name} @{$post->field('topic')} ],  [qw(perl)], "topics from $from" );
     is ($post->published->as_ymdhm, $expected{published_ymdhm}, "published from $from");
 
     # source_path and modified do not exist yet for newly-created posts from params

@@ -193,6 +193,14 @@ has 'fields' =>
     isa => 'ArrayRef[Object]',
 );
 
+has 'plugins' =>
+(
+    is      => 'ro',
+    isa     => 'HashRef[HashRef]',
+    traits  => ['Hash'],
+    handles => { plugin_specs => 'kv' },
+);
+
 sub _build_groups
 {
 	my @groups = map { Miril::Group->new(%$_) }

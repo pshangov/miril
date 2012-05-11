@@ -3,16 +3,15 @@ package Miril::Field::Option;
 use strict;
 use warnings;
 
+use Class::Load qw(load_class);
+use Ref::Explicit qw(arrayref);
+
 use Mouse;
 
 with 'Miril::Role::Field';
+with 'Miril::Role::Group';
 
 has 'multiple' => ( is => 'ro', isa => 'Bool' );
-
-#TODO
-has '+group_callback' => ( default => sub { return sub {
-    $_[0]->author->id, { author => $_[0]->author->id, object => $_[0]->author } 
-} } );
 
 has 'options' => 
 (
@@ -23,15 +22,46 @@ has 'options' =>
     handles  => { has_option => 'exists', option => 'get' }
 );
 
-sub process {
+sub group_callback
+{ 
+    return sub {
+        $_[0]->author->id, { author => $_[0]->author->id, object => $_[0]->author }
+    };
+}
+
+sub process
+{
     my ( $self, $string ) = @_;
     
-    my @text_ids = grep { $self->has_option($_) } split /\s+/, $string;
+    my @text_ids = ref $string
+        ? @$string # handle arrayref of multivalue CGI.pm params
+        : grep { $self->has_option($_) } split /\s+/, $string;
+    
+    my $data_class = $self->data_class;
+    load_class $data_class;
 
-    return map { $self->data_class->new(
+    my @options = map { $self->data_class->new(
         name  => $_,
-        value => $self->get_option($_),
+        value => $self->option($_),
     ) } @text_ids;
+
+    return $self->multiple ? \@options : $options[0];
+}
+
+sub serialize
+{
+	my ( $self, $data ) = @_;
+
+	if ($data)
+	{
+		return $self->multiple 
+			? join ' ', map { $_->name } @$data 
+			: $data->name;
+	}
+	else
+	{
+		return '';
+	}
 }
 
 sub render { 1 }

@@ -119,9 +119,8 @@ sub serialize
 			modified    => $post->modified,
 			published   => $post->published,
             type        => $post->type,
-            author      => $post->author,
-            topics      => $post->topics,
             source_path => $post->source_path,
+            fields      => $post->fields,
 		};
 	}
 

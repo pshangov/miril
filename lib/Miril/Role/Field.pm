@@ -3,11 +3,15 @@ package Miril::Role::Field;
 use strict;
 use warnings;
 
+use Scalar::Util qw(blessed);
+
 use Mouse::Role;
 
 requires 'render';
 
 requires 'process';
+
+requires 'serialize';
 
 has 'name' => (
     is       => 'ro', 
@@ -26,15 +30,9 @@ has 'required' => (
     isa => 'Bool',
 );
 
-has 'group_callback' => 
-(
-    is        => 'ro',
-    isa       => 'CodeRef',
-    predicate => 'can_group',
-);
-
 sub data_class {
-    return __PACKAGE__ . '::Data';
+    my $self = shift;
+    return blessed($self) . '::Data';
 }
 
 1;
