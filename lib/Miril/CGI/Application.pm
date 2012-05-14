@@ -13,7 +13,6 @@ use base 'CGI::Application';
 
 use CGI::Application::Plugin::Redirect;
 use CGI::Application::Plugin::Forward;
-use Module::Load;
 use File::Spec::Functions qw(catfile);
 use Data::AsObject qw(dao);
 use Data::Page;

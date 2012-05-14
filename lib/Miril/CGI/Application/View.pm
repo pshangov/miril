@@ -6,8 +6,6 @@ use strict;
 use warnings;
 use autodie;
 
-use HTML::Template::Pluggable;
-use HTML::Template::Plugin::Dot;
 use Template::Declare;
 use Miril::CGI::Application::Theme::Bootstrap;
 require Template::Declare::Tags;

@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 
-use rlib;
 use Test::Most;
 use Path::Class;
 use Data::Dumper::Concise qw(Dumper);

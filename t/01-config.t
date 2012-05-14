@@ -3,7 +3,6 @@
 use FindBin;
 use File::Spec;
 use Module::Load;
-use Data::Dumper;
 
 use Test::More tests => 1;
 

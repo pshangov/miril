@@ -4,7 +4,6 @@ package Miril::Taxonomy;
 
 use Mouse;
 use List::Util     qw(first);
-use Ref::Explicit  qw(arrayref);
 use Miril::TypeLib qw(HashRefOfType);
 
 has 'types' => (

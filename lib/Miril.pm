@@ -4,16 +4,13 @@ package Miril;
 
 use warnings;
 use strict;
-use autodie;
 
-use Try::Tiny;
-use Exception::Class;
-use Carp;
-use Module::Load;
-use Ref::List qw(list);
-use Path::Class qw(file dir);
+use Path::Class     qw(file dir);
+use Class::Load     qw(load_class);
+use Hash::MoreUtils qw(slice_def);
+use List::MoreUtils qw(apply);
+
 use Miril::Warning;
-use Miril::Exception;
 use Miril::Config;
 use Miril::Taxonomy;
 use Miril::Cache;
@@ -21,9 +18,6 @@ use Miril::Store;
 use Miril::Publisher;
 use Miril::Template;
 use Miril::Util;
-use Class::Load qw(load_class);
-use Hash::MoreUtils qw(slice_def);
-use List::MoreUtils qw(apply);
 
 use Mouse;
 
@@ -209,7 +203,7 @@ sub _build_plugins
 
     while ( my ( $name, $config ) = $self->config->plugin_specs )
     {
-        my $class = "Miril::Plugin::$class";
+        my $class = "Miril::Plugin::$name";
         load_class ($class);
         my $plugin = $class->new($config);
         $plugins{$name} = $plugin;

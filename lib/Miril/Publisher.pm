@@ -7,18 +7,16 @@ use strict;
 
 use Mouse;
 
-use Try::Tiny               qw(try catch);
-use Carp                    qw();
 use Ref::List               qw(list);
 use Path::Class             qw(file);
-use File::Path              qw();
-use File::Slurp             qw();
-use Text::Sprintf::Named    qw();
 use Syntax::Keyword::Gather qw(gather take);
-use Data::Page              qw();
-use Class::Load             qw();
-use Data::Dumper::Concise   qw(Dumper);
 use List::Util              qw(first);
+use File::Path              ();
+use File::Slurp             ();
+use Text::Sprintf::Named    ();
+use Data::Page              ();
+use Class::Load             ();
+
 use Miril::List;
 
 has 'posts' => 

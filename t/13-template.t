@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 
-use rlib;
 use Test::Most;
 use Miril::Template;
 use Miril::DateTime;
@@ -11,6 +10,7 @@ use Miril::Post;
 use Miril::Config::Format::Config::General;
 use Module::Load;
 use File::Temp qw(tempfile);
+use FindBin;
 
 ### CONSTRUCTION ###
 
