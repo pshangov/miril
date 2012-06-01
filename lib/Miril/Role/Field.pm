@@ -4,10 +4,9 @@ use strict;
 use warnings;
 
 use Scalar::Util qw(blessed);
+use Class::Load  qw(load_class);
 
 use Mouse::Role;
-
-requires 'render';
 
 requires 'process';
 
@@ -30,9 +29,29 @@ has 'required' => (
     isa => 'Bool',
 );
 
-sub data_class {
+has 'template_name' => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+    default  => 'default',
+);
+
+has 'data_class' => (
+    is  => 'ro',
+    isa => 'Str',
+    default => sub { blessed($self) . '::Data' },
+);
+
+has 'template_class' => (
+    is  => 'ro',
+    isa => 'Str',
+    default => sub { blessed($self) . '::Template' },
+);
+
+sub render {
     my $self = shift;
-    return blessed($self) . '::Data';
+    load_class( $self->template_class );
+    return $self->template_class->show($self->template_name);
 }
 
 1;

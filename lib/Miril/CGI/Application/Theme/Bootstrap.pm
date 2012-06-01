@@ -135,24 +135,6 @@ template search => sub {
                                 option { attr { value => $type->id } $type->name }
                 } } } };
 
-                if ($taxonomy->has_authors) {
-                    div { attr { class => 'control-group' } 
-                        label { 
-                            attr { class => 'control-label', for => 'author' } 
-                            "Author" 
-                        }
-                        div { attr { class => 'controls' } 
-                            select { attr {
-                                    class => 'input-xlarge',
-                                    id    => 'author',
-                                    name  => 'author',
-                                }
-
-                                option { attr { value => '' } '--Any--' };
-                                foreach my $author ($taxonomy->get_authors) {
-                                    option { attr { value => $author->id } $author->name }
-                } } } }; }
-
                 div { attr { class => 'control-group' } 
                     label { 
                         attr { class => 'control-label', for => 'status' } 
@@ -169,24 +151,6 @@ template search => sub {
                             option { attr { value => 'published' } 'Published' }
                             option { attr { value => 'draft'     } 'Draft' }
                 } } };
-
-                if ($taxonomy->has_topics) {
-                    div { attr { class => 'control-group' } 
-                        label { 
-                            attr { class => 'control-label', for => 'topic' } 
-                            "Topic" 
-                        }
-                        div { attr { class => 'controls' } 
-                            select { attr {
-                                    class => 'input-xlarge',
-                                    id    => 'topic',
-                                    name  => 'topic',
-                                }
-
-                                option { attr { value => '' } '--Any--' };
-                                foreach my $topic ($taxonomy->get_topics) {
-                                    option { attr { value => $topic->id } $topic->name }
-                } } } }; }
 
                 button { attr { 
                     name  => 'action', 
@@ -207,9 +171,7 @@ template edit => sub {
         id
         title
         type
-        author
         status
-        topics
         source
     );
 
@@ -261,24 +223,6 @@ template edit => sub {
                                 option { attr { value => $type->id } $type->name }
                 } } } };
 
-                if ($taxonomy->has_authors) {
-                    div { attr { class => $control_group{author} } 
-                        label { 
-                            attr { class => 'control-label', for => 'author' } 
-                            "Author" 
-                        }
-                        div { attr { class => 'controls' } 
-                            select { attr {
-                                    class => 'input-xlarge',
-                                    id    => 'author',
-                                    name  => 'author',
-                                };
-
-                                option { attr { value => '' } 'N/A' };
-                                foreach my $author ($taxonomy->get_authors) {
-                                    option { attr { value => $author->id } $author->name }
-                } } } }; }
-
                 div { attr { class => $control_group{status} } 
                     label { 
                         attr { class => 'control-label', for => 'status' } 
@@ -295,26 +239,17 @@ template edit => sub {
                             option { attr { value => 'published' } 'Published' }
                 } } };
 
-                if ($taxonomy->has_topics) {
-                    div { attr { class => $control_group{topics}  } 
+                foreach my $field ($taxonomy->fields) {
+                    div { attr { class => 'control-group' } 
                         label { 
-                            attr { class => 'control-label', for => 'topics' } 
-                            "Topics" 
+                            attr { class => 'control-label', for => $field->id } 
+                            $field->name 
                         }
                         div { attr { class => 'controls' } 
-                            select { attr {
-                                    class    => 'input-xlarge',
-                                    id       => 'topics',
-                                    name     => 'topics',
-                                    size     => 3,
-                                    multiple => 1,
-                                };
+                            outs_raw $field->render;
+                } }; }
 
-                                foreach my $topic ($taxonomy->get_topics) {
-                                    option { attr { value => $topic->id } $topic->name }
-                } } } }; }
-
-                div { attr { class => $control_group{topics} } 
+                div { attr { class => $control_group{source} } 
                     label { 
                         attr { class => 'control-label', for => 'source' } 
                         "Body" 
@@ -328,7 +263,7 @@ template edit => sub {
                                 cols  => 20,
                 } } } }
 
-                 div { attr { class => 'controls' } 
+                div { attr { class => 'controls' } 
                         input { attr {
                                 type  => 'hidden',
                                 class => 'input-xlarge',

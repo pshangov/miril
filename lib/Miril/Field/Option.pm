@@ -64,6 +64,4 @@ sub serialize
 	}
 }
 
-sub render { 1 }
-
 1;
