@@ -19,7 +19,11 @@ has 'options' =>
     isa      => 'HashRef',
     required => 1,
     traits   => ['Hash'],
-    handles  => { has_option => 'exists', option => 'get' }
+    handles  => {
+        has_option  => 'exists',
+        option      => 'get',
+        option_list => 'keys'
+    },
 );
 
 sub group_callback
@@ -32,6 +36,8 @@ sub group_callback
 sub process
 {
     my ( $self, $string ) = @_;
+
+    $string = '' unless $string;
     
     my @text_ids = ref $string
         ? @$string # handle arrayref of multivalue CGI.pm params
@@ -61,6 +67,22 @@ sub serialize
 	else
 	{
 		return '';
+	}
+}
+
+sub serialize_to_param
+{
+	my ( $self, $data ) = @_;
+
+	if ($data)
+	{
+		return $self->multiple 
+			? [ map { $_->name } @$data ]
+			: $data->name;
+	}
+	else
+	{
+		return;
 	}
 }
 

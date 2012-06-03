@@ -96,7 +96,7 @@ sub list {
 	my $cfg = $self->miril->config;
 
     my $uri_query = URI::Query->new($q->Vars);
-    $uri_query->strip_except(qw(author title type status topic page));
+    $uri_query->strip_except(qw(title type status page));
     $uri_query->strip_null;
 
     my @posts = $self->miril->store->search($uri_query->hash);
@@ -133,60 +133,92 @@ sub search {
 
 sub create {
 	my $self = shift;
-	return $self->view->load('edit', $self->miril->taxonomy);
+	return $self->view->load('create', $self->miril->taxonomy);
 }
 
 sub edit {
-	my $self = shift;
-    my $q = $self->query;
+	my $self     = shift;
+    my $q        = $self->query;
+    my $id       = $q->param('id');
+    my $taxonomy = $self->miril->taxonomy;
 
-    my $invalid = $self->param('form-not-valid');
+    # edit an existing post
+    if ($id)
+    {
+        my $invalid = $self->param('form-not-valid');
 
-    my %params = $invalid
-        ? _query_to_params($q)
-        : _post_to_params($self->miril->store->get_post_by_id($q->param('id')));
+        my %params;
+        
+        if ($invalid)
+        {
+            %params = $q->Vars;
+        }
+        else
+        {
+            my $post = $self->miril->store->get_post_by_id($id);
 
-    my $form = $self->view->load('edit', $self->miril->taxonomy, $invalid);
-    return HTML::FillInForm::Lite->fill(\$form, \%params);
+            %params = (
+                id     => $post->id,
+                title  => $post->title,
+                type   => $post->type->id,
+                status => $post->status,
+                source => $post->source,
+                map { 
+                    $_, $taxonomy->field($_)->serialize_to_param($post->field($_))
+                } $post->field_list,
+            );
+        }
+        
+        # default empty hashref if $invalid is undefined
+        $invalid = {} unless $invalid;
+
+        my $type = $params{'type'};
+        my @fields = map { $taxonomy->field($_) } $taxonomy->type($type)->field_list;
+        my $form = $self->view->load( 'edit', $taxonomy, \@fields, $invalid );
+        
+        return HTML::FillInForm::Lite->fill(\$form, \%params);
+    }
+    # create new post (forwarded from 'create')
+    else
+    {
+        my $type = $q->param('type');
+        my @fields = map { $taxonomy->field($_) } $taxonomy->type($type)->field_list;
+        return $self->view->load('edit', $taxonomy, \@fields );
+    }
 }
 
 sub update {
-	my $self = shift;
-	my $q = $self->query;
-
-	my $validator = Miril::CGI::Application::InputValidator->new;
+	my $self       = shift;
+	my $q          = $self->query;
+    my $type       = $q->param('type');
+    my $taxonomy   = $self->miril->taxonomy;
+    my @field_list = $taxonomy->type($type)->field_list;
+    my @fields     = map { $taxonomy->field($_) } @field_list;
+	my $validator  = Miril::CGI::Application::InputValidator->new;
 
 	my $invalid = $validator->validate({
 		id      => [qw(text_id required)],
-		author  => [qw(line_text)],
 		status  => [qw(text_id)],
 		source  => [qw(paragraph_text)],
 		title   => [qw(line_text required)],
 		type    => [qw(text_id required)],
 		old_id  => [qw(text_id)],
+        map { $_->name => $_->validation } @fields
 	}, $q->Vars);
 	
-	if ($invalid) {
+	if ($invalid)
+    {
 		$self->param('form-not-valid' => $invalid);
         return $self->forward('edit');
 	}
+    else
+    {
+        my %post = map { $_ => ( $q->param($_) or undef) } 
+            qw(id status source title type old_id), @field_list;
 
-	my %post = (
-		'id'     => $q->param('id'),
-		'author' => ( $q->param('author') or undef ),
-		'status' => ( $q->param('status') or undef ),
-		'source' => ( $q->param('source') or undef ),
-		'title'  => ( $q->param('title')  or undef ),
-		'type'   => ( $q->param('type')   or undef ),
-		'old_id' => ( $q->param('old_id') or undef ),
-	);
-
-	# SHOULD NOT BE HERE
-	$post{topics} = [$q->param('topic')] if $q->param('topic');
-
-	$self->miril->store->save(%post);
-
-	$self->redirect("?action=display&id=" . $post{id});
+        $self->miril->store->save(%post);
+        $self->redirect("?action=display&id=" . $post{id});
+    }
 }
 
 sub delete {
@@ -226,37 +258,6 @@ sub publish {
     {
 		return $self->view->load('publish');
 	}
-}
-
-### PRIVATE METHODS ###
-
-sub _post_to_params {
-    my $post = shift;
-
-    return (
-        id     => $post->id,
-        title  => $post->title,
-        type   => $post->type->id,
-        status => $post->status,
-        source => $post->source,
-        $post->author ? ( author => $post->author ) : (),
-        $post->topics ? ( topics => $post->topics ) : (),
-    );
-}
-
-sub _query_to_params {
-    my ($q, $invalid) = @_;
-
-    return (
-        id     => $q->param('id'),
-        old_id => $q->param('old_id'),
-        source => $q->param('source'),
-        title  => $q->param('title'),
-        status => $q->param('status'),
-        type   => $q->param('type'),
-        $q->param('author') ? ( author => $q->param('author') )   : (),
-        $q->param('topics') ? ( topics => [$q->param('topics')] ) : (),
-    );
 }
 
 1;

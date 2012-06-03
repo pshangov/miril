@@ -190,7 +190,7 @@ has 'sync' =>
 has 'fields' =>
 (
     is  => 'ro',
-    isa => 'ArrayRef[Object]',
+    isa => 'HashRef[Object]',
 );
 
 has 'plugins' =>

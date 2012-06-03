@@ -145,9 +145,8 @@ sub _build_taxonomy
     my $self = shift;
 
     return Miril::Taxonomy->new( slice_def {
-        authors => $self->config->authors, 
-        topics  => $self->config->topics, 
-        types   => $self->config->types,
+        types  => $self->config->types,
+        fields => $self->config->fields, 
     } );
 }
 

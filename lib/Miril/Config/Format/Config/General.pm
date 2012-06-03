@@ -26,15 +26,6 @@ around 'BUILDARGS' => sub
 		-ForceArray => 1,
 	)->getall;
 
-	if ($cfg{topic})
-	{
-		my @topics = map { 
-			Miril::Topic->new( id => $_, %{ $cfg{topic}{$_} }) 
-		} keys %{ $cfg{topic} };
-		$cfg{topics}  = \@topics;
-		delete $cfg{topic};
-	}
-
 	if ($cfg{type})
 	{
 		my @types = map {
@@ -59,13 +50,14 @@ around 'BUILDARGS' => sub
 
 	if ($cfg{field})
 	{
-		my @fields = map {
+		my %fields = map {
             my $class = 'Miril::Field::' . delete $cfg{field}{$_}{class};
             load_class $class;
-            $class->new( id => $_, %{ $cfg{field}{$_} } )
+            $_ => $class->new( id => $_, %{ $cfg{field}{$_} } )
         }  keys %{ $cfg{field} };
 
-        $cfg{fields} = \@fields;
+        $cfg{fields} = \%fields;
+
 		delete $cfg{field};
 	}
 

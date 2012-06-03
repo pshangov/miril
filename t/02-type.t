@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::Most tests => 8;
-
+use Path::Class qw(file);
 use Miril::Type;
 
 my %attributes = (
@@ -28,4 +28,4 @@ isa_ok($formatter, 'Text::Sprintf::Named');
 
 my $path = $type->path('over_the_rainbow');
 isa_ok ($path, 'Path::Class::File');
-is ( $path, 'somewhere/over_the_rainbow.html', 'formatted path');
+is ( $path, file('somewhere/over_the_rainbow.html'), 'formatted path');

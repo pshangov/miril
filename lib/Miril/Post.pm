@@ -66,7 +66,7 @@ has 'fields' => (
 	is      => 'ro',
 	isa     => 'HashRef',
 	traits  => ['Hash'],
-	handles => { field => 'get', has_field => 'exists' },
+	handles => { field => 'get', has_field => 'exists', field_list => 'keys' },
 );
 
 has 'type' => 
@@ -298,7 +298,7 @@ sub _parse_meta
 	
 	foreach my $line (@lines) 
     {
-		if ( $line =~ /^([^:]+):\s+(.+)/ )
+		if ( $line =~ /^([^:]+):(?:\s+(.+))?/ )
 		{
 			my ($name, $value) = ($1, $2);
 			

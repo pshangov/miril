@@ -14,18 +14,18 @@ use Class::Load  ();
 
 use overload '0+' => \&as_epoch;
 
-has 'year'     => ( is => 'ro' );
-has 'month'    => ( is => 'ro' );
-has 'day'      => ( is => 'ro' );
-has 'hour'     => ( is => 'ro' );
-has 'minute'   => ( is => 'ro' );
-has 'second'   => ( is => 'ro' );
+has 'year'   => ( is => 'ro' );
+has 'month'  => ( is => 'ro' );
+has 'day'    => ( is => 'ro' );
+has 'hour'   => ( is => 'ro' );
+has 'minute' => ( is => 'ro', default => 0 );
+has 'second' => ( is => 'ro', default => 0 );
 
 # 2009-11-26T16:55:34+02:00
-sub _re_iso   { qr/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-])(\d{2}):(\d{2})/ }
+my $re_iso = qr/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-])(\d{2}):(\d{2})/;
 
 # 2009-11-26 16:55:34
-sub _re_ymdhm { qr/^(\d\d\d\d)-(\d\d)-(\d\d)\s(\d\d):(\d\d)$/  }
+my $re_ymdhm = qr/^(\d\d\d\d)-(\d\d)-(\d\d)\s(\d\d):(\d\d)$/;
 
 ### CONSTRUCTORS ###
 
@@ -49,11 +49,11 @@ sub from_string
 {
     my ($class, $string) = @_;
 
-    if ($string =~ $class->_re_ymdhm)
+    if ($string =~ $re_ymdhm)
     {
         return $class->from_ymdhm($string);
     }
-    elsif ($string =~ $class->_re_iso)
+    elsif ($string =~ $re_iso)
     {
         return $class->from_iso($string);
     }
@@ -67,27 +67,29 @@ sub from_ymdhm
 {
     my ($class, $string) = @_;
 
-    unless ( $string =~ $class->_re_ymdhm ) 
+    if ( $string =~ $re_ymdhm ) 
+    {
+        return $class->new(
+            year   => $1 + 0,
+            month  => $2 + 0,
+            day    => $3 + 0,
+            hour   => $4 + 0,
+            minute => $5 + 0,
+            second => 0,
+        );
+    }
+    else
     {
         Carp::croak("Invalid time format (does not match 'YYYY-MM-DD HH:MM')");
     }
     
-    return $class->new(
-        year   => $1 + 0,
-        month  => $2 + 0,
-        day    => $3 + 0,
-        hour   => $4 + 0,
-        minute => $5 + 0,
-        second => 0,
-    );
-
 }
 
 sub from_iso
 {
     my ($class, $iso) = @_;
 
-    unless ( $iso =~ $class->_re_iso ) 
+    unless ( $iso =~ $re_iso ) 
     {
         Carp::croak("Invalid time format (does not match 'YYYY-MM-DDTHH:SS:MM+HH:MM')");
     }

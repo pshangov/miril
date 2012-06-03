@@ -5,8 +5,10 @@ use warnings;
 
 use Scalar::Util qw(blessed);
 use Class::Load  qw(load_class);
-
+use Template::Declare;
 use Mouse::Role;
+
+use Miril::TypeLib qw(FieldValidation);
 
 requires 'process';
 
@@ -24,9 +26,9 @@ has 'id' => (
     required => 1,
 );
 
-has 'required' => (
+has 'validation' => (
     is  => 'ro',
-    isa => 'Bool',
+    isa => FieldValidation,
 );
 
 has 'template_name' => (
@@ -39,19 +41,20 @@ has 'template_name' => (
 has 'data_class' => (
     is  => 'ro',
     isa => 'Str',
-    default => sub { blessed($self) . '::Data' },
+    default => sub { blessed(shift) . '::Data' },
 );
 
 has 'template_class' => (
     is  => 'ro',
     isa => 'Str',
-    default => sub { blessed($self) . '::Template' },
+    default => sub { blessed(shift) . '::Template' },
 );
 
 sub render {
     my $self = shift;
     load_class( $self->template_class );
-    return $self->template_class->show($self->template_name);
+    Template::Declare->init( dispatch_to => [$self->template_class] );
+    return Template::Declare->show( $self->template_name, $self );
 }
 
 1;

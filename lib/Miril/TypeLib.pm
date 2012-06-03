@@ -6,18 +6,18 @@ use strict;
 use warnings;
 
 use MouseX::Types;
-use Ref::Explicit qw(hashref);
+use Ref::Explicit qw(arrayref hashref);
 
 subtype TextId
 	=> as      Str
 	=> where   { /^\w+$/ }
 	=> message { "Id contains non-alphanumeric symbols" };
 
-class_type Topic      => { class => 'Miril::Topic' };
-class_type Author     => { class => 'Miril::Author' };
-class_type Type       => { class => 'Miril::Type' };
-class_type Post       => { class => 'Miril::Post' };
-class_type DateTime   => { class => 'Miril::DateTime' };
+class_type Topic    => { class => 'Miril::Topic' };
+class_type Author   => { class => 'Miril::Author' };
+class_type Type     => { class => 'Miril::Type' };
+class_type Post     => { class => 'Miril::Post' };
+class_type DateTime => { class => 'Miril::DateTime' };
 
 
 class_type File => { class => 'Path::Class::File' };
@@ -48,17 +48,20 @@ coerce HashRefOfType
     => from ArrayRefOfType
     => via { hashref map { $_->id => $_ } @$_ };
 
+subtype FieldValidation => as 'ArrayRef[Str]';
+
+coerce FieldValidation
+    => from Str
+    => via { arrayref split /\s+/ };
+
 ### EXPORT SUBTYPES DEFINED HERE PLUS BUILT-IN MOUSE TYPES ###
 
 sub type_storage 
 {
 	my %types = map { $_ => $_ } 
-	# mouse
 	qw(
 		Str
-	),
-	# miril
-	qw(
+
 		TextId
 		Topic
 		Author
@@ -76,6 +79,7 @@ sub type_storage
         HashRefOfAuthor
         HashRefOfTopic
         HashRefOfType
+        FieldValidation
 	);
 	return \%types;
 }	

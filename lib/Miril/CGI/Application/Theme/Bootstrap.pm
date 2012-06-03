@@ -162,18 +162,29 @@ template search => sub {
     } } } 'search';
 };
 
+template create => sub {
+    my ($self, $taxonomy) = @_;
+
+    wrap {
+        h1 { "Create new post" }
+
+        ul {
+            foreach my $type ($taxonomy->get_types) {
+                li { a { attr { 
+                    href => uri( action => 'edit', type => $type->id )
+                } $type->name } }
+            }
+        }
+
+    }
+};
+
 template edit => sub {
-    my ($self, $taxonomy, $invalid) = @_;
+    my ($self, $taxonomy, $fields, $invalid) = @_;
 
     my %control_group = map { 
         $_ => ( $invalid->{$_} ? 'control-group error' : 'control-group' ) 
-    } qw(
-        id
-        title
-        type
-        status
-        source
-    );
+    } qw(id title type status source), map { $_->name } @$fields;
 
     wrap {
         h1 { "Edit post" }
@@ -239,7 +250,7 @@ template edit => sub {
                             option { attr { value => 'published' } 'Published' }
                 } } };
 
-                foreach my $field ($taxonomy->fields) {
+                foreach my $field ( @$fields ) {
                     div { attr { class => 'control-group' } 
                         label { 
                             attr { class => 'control-label', for => $field->id } 

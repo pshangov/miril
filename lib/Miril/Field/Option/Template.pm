@@ -9,22 +9,21 @@ use base 'Template::Declare';
 use Template::Declare::Tags 'HTML';
 
 template default => sub {
-    my ($self, $name, $options, $multiple) = @_;
+    my ($self, $field) = @_;
 
     select { 
 
         attr { 
             class => 'input-xlarge',
-            id    => $name,
-            name  => $name,
-            size  => 3,
-            $multiple ? multiple => 1 : (),
+            id    => $field->id,
+            name  => $field->id,
+            $field->multiple ? ( multiple => 1, size => 3 ) : (),
         }
 
         option { attr { value => '' } 'N/A' };
 
-        while ( my ($value, $text) = each %$options ) {
-            option { attr { value => $value } $text }
+        foreach my $option ( sort $field->option_list ) {
+            option { attr { value => $option } $field->option($option) }
         }
     }
 };
