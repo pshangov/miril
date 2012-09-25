@@ -9,7 +9,6 @@ use Mouse;
 
 with 'Miril::Role::Field';
 
-
 sub process 
 {
     my ( $self, $string ) = @_;

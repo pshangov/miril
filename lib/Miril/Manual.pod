@@ -18,23 +18,23 @@ Miril stores your data in text files and publishes it to static pages. Unlike ho
 
 =item * 
 
-Miril has been designed from the very start to be extremely easy to deploy. The main distribution has only pure-perl dependencies. Stable Miril versions will be available in a tarball with all dependencies bundled, so that deploying on a typical shared host should be a as easy as unpacking.
+Miril has been designed from the very start to be extremely easy to deploy. The main distribution has only pure-perl dependencies. Stable Miril versions are also be available in a tarball with all dependencies bundled, so that deploying on a typical shared host should be a as easy as unpacking and configuring.
 
 =item * 
 
-Miril has been designed with small to medium-sized websites in mind, i.e. websites with hundreds of pages as opposed to thousands of pages. If you have a typical small website such as a corporate website or a personal blog Miril may be a better deal for you than full-blown content management systems since it is faster to deploy, easier to manage, and generally has less administrative overhead both for the site administrator and the users.
+Miril has been designed with small to medium-sized websites in mind, i.e. websites with hundreds of pages as opposed to thousands of pages. If you have a typical small website such as a corporate website or a personal blog Miril may be a better option for you than full-blown content management systems since it is faster to deploy, easier to manage, and generally has less administrative overhead both for the site administrator and the users.
 
 =back
 
 =head1 DEPLOYMENT OPTIONS
 
-Miril is run as a cgi script. This means that:
+Miril's user interface runs as a cgi script. This means that:
 
 =over
 
 =item *
 
-On a shared host, you can run Miril from your C<cgi-bin> directory. It will run slower than in a C<mod_perl> environment, but since Miril will be used only when managing content this should not be a problem.
+On a shared host, you can run Miril from your C<cgi-bin> directory. It will run slower than in a persistent environment, but since Miril will be used only when managing content this should not be a problem.
 
 =item *
 
@@ -42,7 +42,7 @@ Of course, if you have sufficient control over your environment and the load on 
 
 =item *
 
-Miril is also available as a C<PSGI> appliction, so you can use it with any C<Plack> server and C<Plack> middleware.
+Miril is also available as a C<PSGI> appliction, so you can use it with any C<Plack>-compatible server, or augment it with C<Plack> middleware.
 
 =item *
 
@@ -64,9 +64,7 @@ Currently Miril is installable only from C<CPAN>. Simply run C<install Miril> fr
 
 =head2 Configuration file
 
-The configuration file contains everything Miril needs to know in order to manage your website.
-It needs to be created in the base directory of the website, and can be in either L<Config::General>, L<YAML> or L<XML> format (with a C<conf>, C<yaml> or C<xml> extension accordingly).
-All the examples below are in C<Config::General> format.
+The configuration file contains everything Miril needs to know in order to manage your website. Miril will look for a configuration file named C<miril.conf> in the base directory of the website. L<Config::General> is used for parsing the file contents.
 
   ~ $ vi ./mywebsite/miril.conf
 
@@ -76,18 +74,18 @@ All the examples below are in C<Config::General> format.
 
   name "Mechanical Revolution"
 
-This is the name of your website, used by the UI's. Optional.
+This is the name of your website. Optional, as it is only used by the UI.
 
 =item Output path
 
-  output_path "www"
+  output "www"
 
 This is the directory where Miril will place all the output files it produces.
 The default location is C<www>, which means that Miril will save the HTML files in the C<www> subdirectory of your base directory, creating that directory if necessary.
-This option is useful primarily if you are running Miril on a shared hosting environment and want your output to be in the web server's document root. E.g.:
+This option is useful primarily if you are running Miril on a shared hosting environment and want your output to be directly in the web server's document root. E.g.:
 
   # base dir is ~/miril/mywebsite
-  output_path "~/public_html/mywebsite"
+  output "~/public_html/mywebsite"
 
 =back
 
@@ -97,13 +95,14 @@ Next you need to configure your content types. This is what a basic configuratio
 
   <type blog>
     name     Blog
-    location "blog/%(id)s.html"
+    location blog/%(id)s.html
     template blog.tt
+    fields   topic, author
   </type>
 
   <type page>
     name     Page
-    location "%(id)s.html"
+    location %(id)s.html
     template page.tt
   </type>
 
@@ -117,17 +116,75 @@ A unique alphanumeric string identifying the content type, used internally by Mi
 
 =item name
 
-The user-friendly name of the content type, as it would appear in the UI, e.g. C<Blog>.
+The user-friendly name of the content type (as it would be seen in the UI), e.g. C<Blog>.
 
 =item location
 
-The location, relative to C<output_path>, where Miril will write entries of this content type, e.g. C<"blog/%(id)s.html">. The location template is in the L<Text::Sprintf::Named> format. The C<id> parameter will contain the id of the post being published.
+The location, relative to C<output>, where Miril will write entries of this content type, e.g. C<blog/%(id)s.html>. The location template uses L<Text::Sprintf::Named> for substitutions. The C<id> parameter will contain the id of the post being published.
 
 =item template
 
 The template file Miril will use to create html pages of this content type, e.g. C<blog.tt>.
 
+=item fields
+
+Comma-separated list id's of addtional custom fields that will be associated with this type - see below for details.
+
 =back
+
+=head3 Fields
+
+Each content item (a.k.a. "post") in Miril comes with a number of default fields, such as name, date published, etc. (see the full documentation is in L</Posts> below). In addition, Miril allows you to define custom field that can can be associated with one or more content types. Here is how you define a new field:
+
+  <field topic>
+    name     Topics
+    class    Option
+    multiple yes
+    required no
+    <options>
+      perl5   Perl 5
+      perl6   Perl 6
+      ruby    Ruby
+      python  Python
+      js      JavaScript
+    </options>
+  </field>
+
+=over
+
+=item id
+
+Unique alphanumeric id for this field.
+
+=item name
+
+User-friendly name for the field. You will use this name to access the field in templates.
+
+=item required
+
+Boolean indicating whether the field is required or not. Off by default.
+
+=item class
+
+The class, or type of the field, determines a number of its properties, such as what kind of data it can hold, how its data will be accessed, and how it will appear in the user interface. Currently, only C<Text> and C<Option> field classes are available. A C<Text> field allows you to store and retrive simple text, and edit it via a text box. An C<Option> fields allows you store key/value pairs editable via a select box.
+
+=back
+
+Any other options will be passed directly to the the respective field class, it it should know how to handle them. Specifically, the C<Option> class currently accepts the follwing additional parameters:
+
+=over
+
+=item multiple
+
+Booliean indicating whether multiple values can be selected at onece. Off by default.
+
+=item options
+
+The key/value map of options available for selection.
+
+=back
+
+See below for information on how to use access fields inside templates.
 
 =head3 Lists
 
@@ -161,7 +218,7 @@ A unique alphanumeric string identifying the list.
 
 =item name
 
-The user-friendly name of the content type, to be used e.g. in page title.
+The user-friendly name of the content type, to be used e.g. in the page title.
 
 =item template
 
@@ -169,7 +226,7 @@ The template file Miril will use to create this list.
 
 =item location
 
-The location of the file, relative to C<output_path>, where Miril will write this list. If this is a grouped or paged list (see C<group> and C<page> below) this parameter accepts a L<Text::Sprintf::Named> string used to generate the location of the individual grouped or paged lists. 
+The location of the file, relative to C<output>, where Miril will write this list. If this is a grouped or paged list (see C<group> and C<page> below) this parameter accepts a L<Text::Sprintf::Named> string used to generate the location of the individual grouped or paged lists. 
 
 =back
 
@@ -251,39 +308,6 @@ Only published posts can be included in the list (i.e. posts whose status is C<p
 
 =back
 
-=head3 Specifying authors
-
-Miril allows you to specify the author of each post. The list of authors is specified in the confuguration file as follows:
-
-  <author jrrtolkien>
-    name "J. R. R. Tolkien"
-  </author>
-
-  <author jkrowling>
-    name "J. K. Rowling"
-  </author>
-
-
-Note that any registered user can specify any author name for any post, so this is used only to display post information in the published site rather than to control access or track authorship.
-
-=head3 Specifying topics
-
-Miril has basic support for topics, or categories. The list of topics is specified in the confuguration file as follows:
-
-  <topic flowers>
-    name Flowers
-  </topic>
-
-  <topic animals>
-    name Animals
-  </topic>
-
-  <topic bananas>
-    name Bananas
-  </topic>
-
-Each post can then be associated with one or more topics.
-
 =head3 Specifying template options
 
 In the confiuration file you can specify options for the constructor of the L<Template> object.
@@ -291,7 +315,7 @@ In the confiuration file you can specify options for the constructor of the L<Te
   <template>
     DEBUG 1
     <VARIABLES>
-      foo "bar"
+      foo    "bar"
       domain "http://www.example.com/"
     </VARIABLES>
   </template>
@@ -331,10 +355,6 @@ A C<Miril::Type> object. Has four properties: C<id>, C<name>, C<location> and C<
 
 URL of the post, derived from the type's location and relative to the website root.
 
-=item post.author
-
-A L<Miril::Author> object.
-
 =item post.published
 
 A C<Miril::DateTime> object. Has three methods: C<as_epoch> - returns epoch time, C<as_iso> - returns time in an ISO-compliant format suitable for Atom feeds, and C<as_strftime> - returns time formatted on the basis of the L<POSIX/strftime>-compliant string passed as an argument.
@@ -343,11 +363,13 @@ A C<Miril::DateTime> object. Has three methods: C<as_epoch> - returns epoch time
 
 A C<Miril::DateTime> object. See above for details.
 
-=item post.topics
-
-An arreyref of C<Miril::Topic> objects associated with this post. Each topic is an object with two properties: C<id> and C<name>.
-
 =back
+
+Additionally, you can access custom field data using the following syntax in your templates:
+
+  [% post.field('Topic').value %]
+
+Basically, C<post.field('FieldName')> fetches a data object associated with this field, and then you call methods on that object to access its content. Normally you would call a C<value> method to fetch the field value, but field classes may choose to implement additional functionality. For example, the C<Option> class also supplies a C<key> method to fetch the alphanumeric key associated with the current value.
 
 =head3 Lists
 
@@ -420,21 +442,24 @@ Returns an individual post from the list.
 
 =head2 Create a cgi script
 
-Once you have installed Miril, create a cgi script named C<miril.pl> or C<miril.cgi> with the following content:
+Once you have installed Miril, create a cgi script named C<miril.pl> with the following content:
 
   #!/usr/bin/perl
   
   use strict;
   use warnings;
+
   use Miril;
 
   # setup Miril by pointing it to the websites's base dir
   my $miril = Miril->new( base_dir => '/path/to/website' );
   
   # instantiate and run the cgi app
-  Miril::CGI::Application->new( PARAMS => { 
-      miril => $miril,
-  })->run;
+  Miril::CGI::Application->new( PARAMS => { miril => $miril })->run;
+
+Make sure the file is executable:
+
+  % chmod +x miril.pl
 
 =head1 USER INTERFACE
 

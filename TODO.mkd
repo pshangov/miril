@@ -1,6 +1,11 @@
 MIRIL TODO
 ==========
 
+Documentation
+=============
+
+1. Check how custom fields can be used in grouping
+
 Plugins
 -------
 
