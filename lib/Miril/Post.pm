@@ -12,6 +12,7 @@ use List::Util      qw(first);
 use Class::Load     qw(load_class);
 use Hash::MoreUtils qw(slice_def slice_grep);
 use Carp            qw(croak);
+use Text::Trim      qw(trim);
 use Miril::DateTime;
 
 ### ID ###
@@ -129,7 +130,7 @@ sub new_from_file
     
 	# split sourcefile into sections
 	my ($source, $body, $teaser, $meta) = _parse_source_file($file);
-    
+
 	# parse metadata
 	my %meta = _parse_meta($meta, $taxonomy);
 
@@ -293,7 +294,7 @@ sub _parse_meta
 {
 	my ($meta, $taxonomy) = @_;
 
-	my @lines = split /\n/, $meta;
+	my @lines = map trim, split /\n/, $meta;
 	my %meta;
 	
 	foreach my $line (@lines) 
