@@ -136,6 +136,8 @@ has 'output_path' =>
 (
 	is       => 'ro',
 	required => 1,
+    init_arg => 'output',
+    default  => 'www',
 );
 
 has 'files' => 
