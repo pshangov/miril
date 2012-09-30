@@ -20,15 +20,10 @@ BEGIN { create_wrapper wrap => sub {
     html {
         head {
             meta { attr { charset => "utf-8" } }
-            title { "Miril" }
+            title { "Miril" };
             
-            my @stylesheets = (
-                "http://twitter.github.com/bootstrap/assets/css/bootstrap.css",
-                "http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css",
-            );
-
-            foreach my $stylesheet (@stylesheets) {
-                link { attr { href => $stylesheet, rel => "stylesheet" } }
+            foreach my $stylesheet (@{ __PACKAGE__->stash->{css} }) {
+                link { attr { href => $stylesheet, rel => "stylesheet" } };
             }
 
             style { "body { padding-top: 60px; }" }
@@ -38,7 +33,7 @@ BEGIN { create_wrapper wrap => sub {
             div { attr { class => "navbar navbar-fixed-top" }
                 div { attr { class => "navbar-inner" }
                     div { attr { class => "container" }
-                        a { attr { class => "brand", href  => uri( action => 'list' ) } "Miril" }
+                        a { attr { class => "brand", href  => uri( action => 'list' ) } __PACKAGE__->stash->{name} }
                         div { attr { class => "nav-collapse" }
                             ul { 
                                 attr { class => "nav" };
@@ -67,14 +62,20 @@ template list => sub {
 
         table { attr { class => "table table-striped table-bordered table-condensed" }
 
-            thead { row { th { "Name" } th { "Type" } th { "Date" } } }
+            thead { row { th { "Name" } th { "Type" } th {  attr { style => "text-align: right"}
+"Date" } } }
 
             tbody {
                 foreach my $post (@$posts) {
                     row {
                         cell { a { attr { href => uri( action => 'display', id => $post->id ) } $post->title } }
-                        cell { span { attr { class => "label" } $post->type->name } }
-                        cell { $post->modified->as_ymdhm }
+                        cell { span { $post->type->name } }
+                        #cell { span { attr { class => "label" } $post->type->name } }
+                        cell { attr { style => "text-align: right"}
+                            $post->is_published 
+                                ? $post->published->as_strftime("%d %B %Y, %H:%M")
+                                : '(' . $post->modified->as_strftime("%d %B %Y, %H:%M") . ')'
+                        }
         } } } }; 
         
         if ($pager) {
@@ -176,7 +177,7 @@ template create => sub {
             }
         }
 
-    }
+    } 'create';
 };
 
 template edit => sub {
@@ -218,22 +219,6 @@ template edit => sub {
                                 name  => 'id',
                 } } } }
 
-                div { attr { class => $control_group{type} } 
-                    label { 
-                        attr { class => 'control-label', for => 'type' } 
-                        "Type" 
-                    }
-                    div { attr { class => 'controls' } 
-                        select { attr {
-                                class => 'input-xlarge',
-                                id    => 'title',
-                                name  => 'type',
-                            };
-
-                            foreach my $type ($taxonomy->get_types) {
-                                option { attr { value => $type->id } $type->name }
-                } } } };
-
                 div { attr { class => $control_group{status} } 
                     label { 
                         attr { class => 'control-label', for => 'status' } 
@@ -274,34 +259,31 @@ template edit => sub {
                                 cols  => 20,
                 } } } }
 
-                div { attr { class => 'controls' } 
-                        input { attr {
-                                type  => 'hidden',
-                                class => 'input-xlarge',
-                                id    => 'old_id',
-                                name  => 'old_id',
-                } } }
+                input { attr { type => 'hidden', id => 'old_id', name => 'old_id' } } 
+                input { attr { type => 'hidden', id => 'type', name => 'type' } }
+                
+                div { attr { class => 'form-actions' }
+                    button { attr { 
+                        name  => 'action', 
+                        value => 'update',
+                        class => 'btn btn-primary',
+                        type  => 'submit',
+                    } 'Save' }
 
-                button { attr { 
-                    name  => 'action', 
-                    value => 'update',
-                    class => 'btn btn-primary',
-                    type  => 'submit',
-                } 'Save' }
+                    button { attr { 
+                        name  => 'action', 
+                        value => 'delete',
+                        class => 'btn btn-danger',
+                        type  => 'submit',
+                    } 'Delete' }
 
-                button { attr { 
-                    name  => 'action', 
-                    value => 'delete',
-                    class => 'btn',
-                    type  => 'submit',
-                } 'Delete' }
-
-                button { attr { 
-                    name  => 'action', 
-                    value => 'display',
-                    class => 'btn',
-                    type  => 'submit',
-                } 'Cancel' }
+                    button { attr { 
+                        name  => 'action', 
+                        value => 'display',
+                        class => 'btn',
+                        type  => 'submit',
+                    } 'Cancel' }
+                }
 
     } } } 'create';
 
@@ -318,9 +300,11 @@ template display => sub {
     wrap {
         h1 { $post->title }
         div { outs_raw( $post->body ) }
-        a { attr { class => 'btn', href => uri ( action => 'edit', id => $post->id ) } 'Edit' }
-        a { attr { class => 'btn', href => uri ( action => 'list' ) } 'Cancel' }
-    }
+        div { attr { class => 'form-actions' }
+            a { attr { class => 'btn btn-primary', href => uri ( action => 'edit', id => $post->id ) } 'Edit' }
+            a { attr { class => 'btn', href => uri ( action => 'list' ) } 'Cancel' }
+        }
+    } 'list';
 };
 
 template publish => sub {
@@ -328,7 +312,7 @@ template publish => sub {
 
     wrap {
         h1 { 'Publish' }
-        a { attr { class => 'btn', href => uri ( action => 'publish' ) } 'Publish' }
+        a { attr { class => 'btn btn-primary', href => uri ( action => 'publish' ) } 'Publish' }
         a { attr { class => 'btn', href => uri ( action => 'list' ) } 'Cancel' }
     } 'publish';
 };

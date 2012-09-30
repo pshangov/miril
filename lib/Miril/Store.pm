@@ -46,12 +46,12 @@ sub search
 {
 	my ($self, %params) = @_;
 
-	return $self->get_posts unless %params;
+    return $self->get_sorted_posts unless %params;
 
 	# search
 	my @posts = gather 
 	{
-		foreach my $post ($self->get_posts)
+		foreach my $post ($self->get_sorted_posts)
 		{
 			my $title_rx = $params{'title'};
 			next if $params{'title'}  && $post->title      !~ /$title_rx/i;
@@ -61,10 +61,7 @@ sub search
 		}
 	};
 
-	# sort
-    @posts = _sort_posts(@posts);
-
-	# limit
+	# limit (used in lists definitions)
 	if ($params{'limit'})
 	{
 		my $count = ( $params{'limit'} < @posts ? $params{'limit'} : @posts );
@@ -106,8 +103,27 @@ sub delete
 sub get_sorted_posts
 {
     my $self = shift;
-    return _sort_posts($self->get_posts);
-    
+
+    my @posts = $self->get_posts;
+
+    my (@published, @not_published);
+
+    foreach my $post (@posts)
+    {
+        if ($post->status eq 'published')   
+        {
+            push @published, $post;
+        }
+        else
+        {
+            push @not_published, $post;
+        }
+    }
+
+    @not_published = sort { $b->modified->as_epoch  <=> $a->modified->as_epoch  } @not_published;
+    @published     = sort { $b->published->as_epoch <=> $a->published->as_epoch } @published;
+
+    return @not_published, @published;
 }
 
 ### PRIVATE FUNCTIONS ###
@@ -137,30 +153,6 @@ sub _generate_content
 	$content .= "\n" . $post->source;
 
 	return $content;
-}
-
-sub _sort_posts
-{
-    my @posts = @_;
-
-    my (@published, @not_published);
-
-    foreach my $post (@posts)
-    {
-        if ($post->status eq 'published')   
-        {
-            push @published, $post;
-        }
-        else
-        {
-            push @not_published, $post;
-        }
-    }
-
-    @not_published = sort { $b->modified->as_epoch  <=> $a->modified->as_epoch  } @not_published;
-    @published     = sort { $b->published->as_epoch <=> $a->published->as_epoch } @published;
-
-    return @not_published, @published;
 }
 
 1;

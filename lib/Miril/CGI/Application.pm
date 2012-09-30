@@ -57,8 +57,17 @@ sub setup {
 	$self->start_mode('list');
 	$self->error_mode('error');
 
-	$self->{miril}     = $self->param('miril');
-	$self->{view}      = Miril::CGI::Application::View->new;
+	$self->{miril} = my $miril = $self->param('miril');
+
+    # a little bit of ickiness - initialize the template engine
+	$self->{view} = 'Template::Declare';
+    my $theme = 'Miril::CGI::Application::Theme::Bootstrap';
+    Template::Declare->init( dispatch_to => [$theme] );
+    $theme->mk_classdata( 'stash' => { 
+        name => $miril->config->name,
+        css  => $miril->config->css,
+        js   => $miril->config->js,
+    } );
 
 	$self->header_add( -type => 'text/html; set=utf-8');
 
@@ -87,7 +96,7 @@ sub error {
 		);
 	}
 	$self->view->{fatal} = $e;
-	return $self->view->load('error', $e);
+	return $self->view->show('error', $e);
 }
 
 sub list {
@@ -123,17 +132,17 @@ sub list {
 		@posts = $pager->splice(\@posts);
     }
 
-	return $self->view->load('list', \@posts, $pager, $uri_callback);
+	return $self->view->show('list', \@posts, $pager, $uri_callback);
 }
 
 sub search {
 	my $self = shift;
-	return $self->view->load('search', $self->miril->taxonomy);
+	return $self->view->show('search', $self->miril->taxonomy);
 }
 
 sub create {
 	my $self = shift;
-	return $self->view->load('create', $self->miril->taxonomy);
+	return $self->view->show('create', $self->miril->taxonomy);
 }
 
 sub edit {
@@ -174,7 +183,7 @@ sub edit {
 
         my $type = $params{'type'};
         my @fields = map { $taxonomy->field($_) } $taxonomy->type($type)->field_list;
-        my $form = $self->view->load( 'edit', $taxonomy, \@fields, $invalid );
+        my $form = $self->view->show( 'edit', $taxonomy, \@fields, $invalid );
         
         return HTML::FillInForm::Lite->fill(\$form, \%params);
     }
@@ -183,7 +192,7 @@ sub edit {
     {
         my $type = $q->param('type');
         my @fields = map { $taxonomy->field($_) } $taxonomy->type($type)->field_list;
-        return $self->view->load('edit', $taxonomy, \@fields );
+        return $self->view->show('edit', $taxonomy, \@fields );
     }
 }
 
@@ -240,7 +249,7 @@ sub display {
 	my $post = $self->miril->store->get_post_by_id($id);
 
     $post
-        ? return $self->view->load('display', $post)
+        ? return $self->view->show('display', $post)
         : $self->redirect(URI::Query->new(action => 'list')->stringify);	
 }
 
@@ -256,7 +265,7 @@ sub publish {
 	} 
     else 
     {
-		return $self->view->load('publish');
+		return $self->view->show('publish');
 	}
 }
 

@@ -10,8 +10,8 @@ use Miril::Type;
 use Miril::List::Spec;
 use Miril::Field::Text;
 use Ref::Explicit qw(hashref);
-use Path::Class qw(file);
-use Class::Load qw(load_class);
+use Path::Class   qw(file);
+use Class::Load   qw(load_class);
 
 use Mouse;
 extends 'Miril::Config';
@@ -25,6 +25,13 @@ around 'BUILDARGS' => sub
 		-AutoTrue   => 1,
 		-ForceArray => 1,
 	)->getall;
+
+    if ( exists $cfg{output} and exists $cfg{output}{path} ) 
+    {
+        my $output_path = $cfg{output}{path};
+        delete $cfg{output};
+        $cfg{output_path} = $output_path;
+    }
 
 	if ($cfg{type})
 	{
@@ -65,6 +72,18 @@ around 'BUILDARGS' => sub
     {
         $cfg{plugins} = hashref map { $_ => $cfg{plugin}{$_} } keys %{ $cfg{plugin} };
         delete $cfg{plugin};
+    }
+
+    if ($cfg{ui})
+    {
+        my %ui = %{ delete $cfg{ui} };
+        my @fields = grep { $ui{$_} } qw(name css js);
+        @cfg{@fields} = @ui{@fields};
+
+        foreach my $field ( grep /^(css|js)$/, @fields )
+        {
+            $cfg{$field} = [$cfg{$field}] unless ref $cfg{$field};
+        }
     }
 
 	### ADD BASE DIR INFO ###

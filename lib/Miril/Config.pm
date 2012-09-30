@@ -136,7 +136,6 @@ has 'output_path' =>
 (
 	is       => 'ro',
 	required => 1,
-    init_arg => 'output',
     default  => 'www',
 );
 
@@ -201,6 +200,20 @@ has 'plugins' =>
     isa     => 'HashRef[HashRef]',
     traits  => ['Hash'],
     handles => { plugin_specs => 'kv' },
+);
+
+has 'css' =>
+(
+    is      => 'ro',
+    isa     => 'ArrayRef',
+    default => sub {[]},
+);
+
+has 'js' =>
+(
+    is      => 'ro',
+    isa     => 'ArrayRef',
+    default => sub {[]},
 );
 
 sub _build_groups
