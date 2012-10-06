@@ -33,12 +33,12 @@ BEGIN { create_wrapper wrap => sub {
             div { attr { class => "navbar navbar-fixed-top" }
                 div { attr { class => "navbar-inner" }
                     div { attr { class => "container" }
-                        a { attr { class => "brand", href  => uri( action => 'list' ) } __PACKAGE__->stash->{name} }
+                        a { attr { class => "brand", href  => uri( action => 'browse' ) } __PACKAGE__->stash->{name} }
                         div { attr { class => "nav-collapse" }
                             ul { 
                                 attr { class => "nav" };
 
-                                foreach my $section (qw(list search create publish)) {
+                                foreach my $section (qw(browse search create publish)) {
                                     li { 
                                         attr { class => "active" } if $section eq $current;
                                         a { attr { href => uri( action => $section ) } ucfirst $section };
@@ -54,11 +54,13 @@ BEGIN { create_wrapper wrap => sub {
     }
 } }
 
-template list => sub {
-    my ($self, $posts, $pager, $uri_callback) = @_;
+template browse => sub {
+    my ($self, $posts, $context, $pager, $uri_callback) = @_;
+    
+    my $title = $context eq 'search' ? "Search results" : "Browse posts";
 
     wrap {
-        h1 { "List posts" }
+        h1 { $title }
 
         table { attr { class => "table table-striped table-bordered table-condensed" }
 
@@ -68,7 +70,7 @@ template list => sub {
             tbody {
                 foreach my $post (@$posts) {
                     row {
-                        cell { a { attr { href => uri( action => 'display', id => $post->id ) } $post->title } }
+                        cell { a { attr { href => uri( action => 'display', context => $context, id => $post->id ) } $post->title } }
                         cell { span { $post->type->name } }
                         #cell { span { attr { class => "label" } $post->type->name } }
                         cell { attr { style => "text-align: right"}
@@ -93,7 +95,7 @@ template list => sub {
 
                     li { a { attr { href => $uri_callback->($pager->last_page) } "Last" } }
         } } } 
-    } 'list';
+    } $context;
 };
 
 
@@ -153,9 +155,11 @@ template search => sub {
                             option { attr { value => 'draft'     } 'Draft' }
                 } } };
 
+                input { attr { type => 'hidden', name => 'context', value => 'search' } } 
+
                 button { attr { 
                     name  => 'action', 
-                    value => 'list',
+                    value => 'browse',
                     class => 'btn btn-primary',
                     type  => 'submit',
                 } 'Search' }
@@ -181,14 +185,16 @@ template create => sub {
 };
 
 template edit => sub {
-    my ($self, $taxonomy, $fields, $invalid) = @_;
+    my ($self, $taxonomy, $context, $fields, $invalid) = @_;
 
     my %control_group = map { 
         $_ => ( $invalid->{$_} ? 'control-group error' : 'control-group' ) 
     } qw(id title type status source), map { $_->name } @$fields;
 
+    my $title = $context eq 'create' ? 'Create post' : 'Edit post';
+
     wrap {
-        h1 { "Edit post" }
+        h1 { $title }
 
         form { attr { class => 'horizontal', method => 'POST' }
             fieldset {
@@ -252,7 +258,7 @@ template edit => sub {
                     }
                     div { attr { class => 'controls' } 
                         textarea { attr {
-                                class => 'input-xlarge',
+                                class => 'input-xxlarge',
                                 id    => 'source',
                                 name  => 'source',
                                 rows  => 10,
@@ -268,14 +274,16 @@ template edit => sub {
                         value => 'update',
                         class => 'btn btn-primary',
                         type  => 'submit',
-                    } 'Save' }
-
-                    button { attr { 
-                        name  => 'action', 
-                        value => 'delete',
-                        class => 'btn btn-danger',
-                        type  => 'submit',
-                    } 'Delete' }
+                    } 'Save' };
+                    
+                    if ($context ne 'create') {
+                        button { attr { 
+                            name  => 'action', 
+                            value => 'delete',
+                            class => 'btn btn-danger',
+                            type  => 'submit',
+                        } 'Delete' };
+                    }
 
                     button { attr { 
                         name  => 'action', 
@@ -285,7 +293,7 @@ template edit => sub {
                     } 'Cancel' }
                 }
 
-    } } } 'create';
+    } } } $context;
 
 };
 
@@ -295,16 +303,16 @@ template error => sub {
 };
 
 template display => sub {
-    my ( $self, $post )  = @_;
+    my ( $self, $post, $context )  = @_;
 
     wrap {
         h1 { $post->title }
         div { outs_raw( $post->body ) }
         div { attr { class => 'form-actions' }
-            a { attr { class => 'btn btn-primary', href => uri ( action => 'edit', id => $post->id ) } 'Edit' }
-            a { attr { class => 'btn', href => uri ( action => 'list' ) } 'Cancel' }
+            a { attr { class => 'btn btn-primary', href => uri ( action => 'edit', id => $post->id, context => $context ) } 'Edit' }
+            a { attr { class => 'btn', href => uri ( action => 'browse' ) } 'Cancel' }
         }
-    } 'list';
+    } $context;
 };
 
 template publish => sub {
@@ -313,7 +321,7 @@ template publish => sub {
     wrap {
         h1 { 'Publish' }
         a { attr { class => 'btn btn-primary', href => uri ( action => 'publish' ) } 'Publish' }
-        a { attr { class => 'btn', href => uri ( action => 'list' ) } 'Cancel' }
+        a { attr { class => 'btn', href => uri ( action => 'browse' ) } 'Cancel' }
     } 'publish';
 };
 

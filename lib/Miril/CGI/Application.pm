@@ -44,7 +44,7 @@ sub setup {
 
     $self->mode_param('action');
     $self->run_modes(
-    	'list'         => 'list',
+    	'browse'       => 'browse',
         'edit'         => 'edit',
         'create'       => 'create',
         'delete'       => 'delete',
@@ -54,7 +54,7 @@ sub setup {
 		'search'       => 'search',
 	);
 
-	$self->start_mode('list');
+	$self->start_mode('browse');
 	$self->error_mode('error');
 
 	$self->{miril} = my $miril = $self->param('miril');
@@ -99,13 +99,15 @@ sub error {
 	return $self->view->show('error', $e);
 }
 
-sub list {
+sub browse {
 	my $self = shift;
 	my $q = $self->query;
 	my $cfg = $self->miril->config;
 
+    my $context = $q->param('context') || 'browse';
+
     my $uri_query = URI::Query->new($q->Vars);
-    $uri_query->strip_except(qw(title type status page));
+    $uri_query->strip_except(qw(title type status page context));
     $uri_query->strip_null;
 
     my @posts = $self->miril->store->search($uri_query->hash);
@@ -124,7 +126,7 @@ sub list {
 
         $uri_callback = sub {
             my $page_no = shift;
-            $uri_query->replace( action => 'list', page => $page_no );
+            $uri_query->replace( action => 'browse', page => $page_no );
             return '?' . $uri_query->stringify;
         };
 
@@ -132,7 +134,7 @@ sub list {
 		@posts = $pager->splice(\@posts);
     }
 
-	return $self->view->show('list', \@posts, $pager, $uri_callback);
+	return $self->view->show('browse', \@posts, $context, $pager, $uri_callback);
 }
 
 sub search {
@@ -154,6 +156,7 @@ sub edit {
     # edit an existing post
     if ($id)
     {
+        my $context = $q->param('context') || 'browse';
         my $invalid = $self->param('form-not-valid');
 
         my %params;
@@ -183,7 +186,7 @@ sub edit {
 
         my $type = $params{'type'};
         my @fields = map { $taxonomy->field($_) } $taxonomy->type($type)->field_list;
-        my $form = $self->view->show( 'edit', $taxonomy, \@fields, $invalid );
+        my $form = $self->view->show( 'edit', $taxonomy, $context, \@fields, $invalid );
         
         return HTML::FillInForm::Lite->fill(\$form, \%params);
     }
@@ -192,7 +195,7 @@ sub edit {
     {
         my $type = $q->param('type');
         my @fields = map { $taxonomy->field($_) } $taxonomy->type($type)->field_list;
-        return $self->view->show('edit', $taxonomy, \@fields );
+        return $self->view->show('edit', $taxonomy, 'create', \@fields );
     }
 }
 
@@ -236,7 +239,7 @@ sub delete {
 	my $id = $self->query->param('old_id');
 	$self->miril->store->delete($id);
 
-	$self->redirect("?action=list");
+	$self->redirect("?action=browse");
 }
 
 sub display {
@@ -246,11 +249,13 @@ sub display {
         ? $self->query->param('old_id') 
         : $self->query->param('id');
 
+    my $context = $self->query->param('context') || 'browse';
+
 	my $post = $self->miril->store->get_post_by_id($id);
 
     $post
-        ? return $self->view->show('display', $post)
-        : $self->redirect(URI::Query->new(action => 'list')->stringify);	
+        ? return $self->view->show('display', $post, $context)
+        : $self->redirect(URI::Query->new(action => 'browse')->stringify);	
 }
 
 sub publish {
@@ -261,7 +266,7 @@ sub publish {
 	if ($self->query->param("do")) 
     {
         $self->miril->publisher->publish($rebuild);
-		return $self->redirect(URI::Query->new(action => 'list')->stringify);
+		return $self->redirect(URI::Query->new(action => 'browse')->stringify);
 	} 
     else 
     {
