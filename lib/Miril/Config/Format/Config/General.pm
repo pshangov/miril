@@ -77,7 +77,7 @@ around 'BUILDARGS' => sub
     if ($cfg{ui})
     {
         my %ui = %{ delete $cfg{ui} };
-        my @fields = grep { $ui{$_} } qw(name css js);
+        my @fields = grep { $ui{$_} } qw(name css js static);
         @cfg{@fields} = @ui{@fields};
 
         foreach my $field ( grep /^(css|js)$/, @fields )

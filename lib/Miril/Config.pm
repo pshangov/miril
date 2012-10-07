@@ -216,6 +216,12 @@ has 'js' =>
     default => sub {[]},
 );
 
+has 'static' =>
+(
+    is      => 'ro',
+    isa     => 'Str',
+);
+
 sub _build_groups
 {
 	my @groups = map { Miril::Group->new(%$_) }
